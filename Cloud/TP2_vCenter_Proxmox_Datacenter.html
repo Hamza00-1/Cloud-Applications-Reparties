@@ -1,0 +1,1747 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TP — vCenter Server &amp; Proxmox Datacenter</title>
+<style>
+:root {
+  --bg: #f5f5f0;
+  --bg-card: #ffffff;
+  --text: #1a1a1a;
+  --text-secondary: #4a4a4a;
+  --accent: #1b4965;
+  --accent-light: #dce8f0;
+  --border: #c8c8c0;
+  --info-bg: #e8f0fe;
+  --info-border: #4285f4;
+  --action-bg: #e6f4ea;
+  --action-border: #34a853;
+  --verif-bg: #fef7e0;
+  --verif-border: #f9ab00;
+  --secu-bg: #fce8e6;
+  --secu-border: #ea4335;
+  --error-bg: #f3e8fd;
+  --error-border: #9334e6;
+  --code-bg: #1e1e2e;
+  --code-text: #cdd6f4;
+  --toc-bg: #fafaf8;
+  --highlight: #e2725b;
+  --vmware-color: #696969;
+  --proxmox-color: #e57000;
+  --radius: 6px;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.12);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  font-size: 15px;
+}
+/* ===== COVER PAGE ===== */
+.cover {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1b4965 0%, #2d6a8f 40%, #4a8fb5 100%);
+  color: #fff;
+  text-align: center;
+  padding: 2rem;
+  page-break-after: always;
+}
+.cover h1 { font-size: 2.4rem; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 0.5rem; }
+.cover h2 { font-size: 1.3rem; font-weight: 400; opacity: 0.9; margin-bottom: 2rem; }
+.cover .meta { font-size: 0.95rem; opacity: 0.8; margin-bottom: 0.5rem; }
+.cover .obj-box {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: var(--radius);
+  padding: 1.5rem 2rem;
+  max-width: 700px;
+  text-align: left;
+  margin-top: 1.5rem;
+}
+.cover .obj-box h3 { font-size: 1.05rem; margin-bottom: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.25); padding-bottom: 0.4rem; }
+.cover .obj-box ul { list-style: none; padding: 0; }
+.cover .obj-box li { padding: 0.25rem 0; padding-left: 1.2rem; position: relative; font-size: 0.93rem; }
+.cover .obj-box li::before { content: '→'; position: absolute; left: 0; color: #f9ab00; }
+
+/* ===== LAYOUT ===== */
+.container { max-width: 1080px; margin: 0 auto; padding: 1.5rem; }
+.toc-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--toc-bg);
+  border-bottom: 2px solid var(--border);
+  padding: 0.6rem 1rem;
+  margin-bottom: 1.5rem;
+}
+.toc-wrapper summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--accent);
+}
+.toc-content {
+  columns: 2;
+  column-gap: 2rem;
+  padding-top: 0.5rem;
+}
+.toc-content a {
+  display: block;
+  padding: 0.2rem 0;
+  text-decoration: none;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  border-bottom: 1px dotted var(--border);
+}
+.toc-content a:hover { color: var(--accent); }
+.toc-content .toc-section {
+  font-weight: 700;
+  color: var(--accent);
+  margin-top: 0.5rem;
+  border-bottom: none;
+  font-size: 0.88rem;
+}
+
+/* ===== HEADINGS ===== */
+h2.section-title {
+  font-size: 1.6rem;
+  color: var(--accent);
+  border-bottom: 3px solid var(--accent);
+  padding-bottom: 0.4rem;
+  margin: 2.5rem 0 1rem;
+}
+h3 { font-size: 1.2rem; color: var(--accent); margin: 1.5rem 0 0.6rem; }
+h4 { font-size: 1.05rem; color: var(--text); margin: 1rem 0 0.4rem; }
+
+/* ===== CALLOUT BOXES ===== */
+.callout {
+  border-left: 4px solid;
+  border-radius: var(--radius);
+  padding: 0.9rem 1.1rem;
+  margin: 1rem 0;
+  position: relative;
+}
+.callout .callout-label {
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.3rem;
+}
+.callout.info    { background: var(--info-bg); border-color: var(--info-border); }
+.callout.action  { background: var(--action-bg); border-color: var(--action-border); }
+.callout.verif   { background: var(--verif-bg); border-color: var(--verif-border); }
+.callout.secu    { background: var(--secu-bg); border-color: var(--secu-border); }
+.callout.error   { background: var(--error-bg); border-color: var(--error-border); }
+.callout.info .callout-label   { color: var(--info-border); }
+.callout.action .callout-label { color: var(--action-border); }
+.callout.verif .callout-label  { color: var(--verif-border); }
+.callout.secu .callout-label   { color: var(--secu-border); }
+.callout.error .callout-label  { color: var(--error-border); }
+
+/* ===== LEGEND ===== */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 1rem 0 1.5rem;
+  padding: 0.8rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+}
+.legend-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* ===== STEP CARDS ===== */
+.step-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 1.2rem 0;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.step-card-header {
+  padding: 0.7rem 1rem;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #fff;
+}
+.step-card-header.vmware { background: var(--vmware-color); }
+.step-card-header.proxmox { background: var(--proxmox-color); }
+.step-card-body { padding: 1rem 1.2rem; }
+.step-card-body .callout { margin: 0.6rem 0; }
+
+/* ===== CODE ===== */
+pre {
+  background: var(--code-bg);
+  color: var(--code-text);
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius);
+  overflow-x: auto;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin: 0.6rem 0;
+}
+code {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.88em;
+}
+p code, li code {
+  background: #e8e8e4;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+}
+
+/* ===== TABLES ===== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+  background: var(--bg-card);
+  box-shadow: var(--shadow);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+th {
+  background: var(--accent);
+  color: #fff;
+  padding: 0.7rem 0.8rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+td {
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+tr:nth-child(even) { background: #f9f9f6; }
+
+/* ===== A RETENIR ===== */
+.retenir {
+  background: linear-gradient(135deg, #1b4965, #2d6a8f);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 1rem 1.2rem;
+  margin: 1rem 0;
+}
+.retenir strong { color: #f9d56e; }
+.retenir-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.4rem; }
+
+/* ===== SVG DIAGRAMS ===== */
+.diagram-container {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin: 1rem 0;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+.diagram-container svg { max-width: 100%; height: auto; }
+.diagram-caption {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin-top: 0.4rem;
+}
+
+/* ===== MICRO-TP ===== */
+.micro-tp {
+  background: #f0f7f4;
+  border: 1px dashed var(--action-border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1.1rem;
+  margin: 0.8rem 0;
+}
+.micro-tp-title { font-weight: 700; color: var(--action-border); font-size: 0.9rem; margin-bottom: 0.3rem; }
+
+/* ===== CHECKLIST ===== */
+.checklist { list-style: none; padding: 0; }
+.checklist li { padding: 0.3rem 0 0.3rem 1.6rem; position: relative; }
+.checklist li::before {
+  content: '☐';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-size: 1.1rem;
+}
+/* ===== PRINT ===== */
+@media print {
+  body { font-size: 11pt; background: #fff; }
+  .toc-wrapper { position: static; border: 1px solid #ccc; page-break-after: always; }
+  .cover { page-break-after: always; min-height: auto; padding: 3rem 2rem; }
+  .step-card, .callout, .retenir, .diagram-container, table { page-break-inside: avoid; }
+  h2.section-title { page-break-before: always; }
+  pre { white-space: pre-wrap; word-wrap: break-word; }
+  .toc-content { columns: 2; }
+  .legend { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .step-card-header, th, .retenir { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
+p { margin: 0.5rem 0; }
+ul, ol { margin: 0.3rem 0 0.3rem 1.4rem; }
+a { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- PAGE DE GARDE                                                 -->
+<!-- ============================================================ -->
+<div class="cover">
+  <p class="meta">Module : Virtualisation &amp; Cloud — Cybersécurité</p>
+  <p class="meta">Niveau : Licence 3 / Master 1 — Spécialité Cybersécurité</p>
+  <h1>TP 2 — Administration centralisée</h1>
+  <h2>vCenter Server &amp; Proxmox Datacenter</h2>
+  <p class="meta">Durée estimée : 6 à 8 heures (2 séances) &nbsp;|&nbsp; Environnement : Nested Virtualization sur VMware Workstation</p>
+  <div class="obj-box">
+    <h3>Objectifs pédagogiques</h3>
+    <ul>
+      <li>Expliquer le rôle de vCenter par rapport à un ESXi autonome</li>
+      <li>Maîtriser la hiérarchie Datacenter / Cluster / Host / VM / Folder / Resource Pool dans vCenter</li>
+      <li>Maîtriser la couche Datacenter dans Proxmox : Node, Storage, Pools, Permissions, Firewall, Jobs</li>
+      <li>Mettre en place une administration sécurisée : RBAC, comptes, logs, NTP, certificats, segmentation</li>
+      <li>Concevoir un mini-lab (2–3 VMs) avec réseau isolé, snapshots, backup, restauration et preuves de vérification</li>
+      <li>Comparer vCenter et Proxmox sous l'angle de la cybersécurité</li>
+    </ul>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ============================================================ -->
+<!-- LÉGENDE                                                       -->
+<!-- ============================================================ -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--info-border)"></div> INFO — concept théorique</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--action-border)"></div> ACTION — manipulation</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--verif-border)"></div> VÉRIFICATION — contrôle attendu</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--secu-border)"></div> SÉCURITÉ — durcissement / risque</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--error-border)"></div> ERREUR FRÉQUENTE — diagnostic</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SOMMAIRE                                                      -->
+<!-- ============================================================ -->
+
+<!-- ============================================================ -->
+<!-- A — INTRODUCTION                                              -->
+<!-- ============================================================ -->
+<h2 class="section-title" id="partA">A — Introduction</h2>
+
+<h3 id="a1">Résumé du TP précédent et continuité</h3>
+<p>Lors du premier TP, vous avez mis en place un environnement de virtualisation imbriquée (<em>nested virtualization</em>) sur VMware Workstation. Vous avez installé deux hyperviseurs de type 1 en tant que machines virtuelles : <strong>VMware ESXi</strong> (hyperviseur propriétaire VMware) et <strong>Proxmox VE</strong> (hyperviseur libre basé sur KVM/QEMU). Chaque hyperviseur a été configuré avec son réseau de management, un datastore local et un accès à l'interface web d'administration.</p>
+<p>Ce second TP constitue la <strong>suite logique</strong> : vous allez maintenant passer de l'administration d'un hôte isolé à une <strong>administration centralisée</strong>. Côté VMware, cela signifie déployer et utiliser <strong>vCenter Server</strong> pour fédérer votre hôte ESXi dans une structure Datacenter/Cluster. Côté Proxmox, cela signifie explorer en profondeur la <strong>vue Datacenter</strong> qui offre des fonctionnalités équivalentes (gestion centralisée des nœuds, du stockage, des permissions, du firewall et des sauvegardes).</p>
+<p>L'angle <strong>cybersécurité</strong> sera omniprésent : chaque manipulation intégrera des considérations de durcissement, de contrôle d'accès (RBAC), de journalisation et de segmentation réseau.</p>
+
+<h3 id="a2">Prérequis et check-list</h3>
+<table>
+<tr><th>Élément</th><th>Exigence minimale</th><th>Vérifié</th></tr>
+<tr><td>Processeur</td><td>Intel VT-x / AMD-V activé dans le BIOS, support nested (VT-x exposé aux VMs)</td><td>☐</td></tr>
+<tr><td>RAM physique</td><td>32 Go recommandés (16 Go minimum serré : 8 Go ESXi+VCSA, 4 Go Proxmox, 4 Go hôte)</td><td>☐</td></tr>
+<tr><td>Disque libre</td><td>100 Go minimum sur SSD</td><td>☐</td></tr>
+<tr><td>VMware Workstation</td><td>Version 16+ avec nested VT-x activé par VM</td><td>☐</td></tr>
+<tr><td>ESXi</td><td>Installé, accessible via <code>https://&lt;IP_ESXi&gt;</code></td><td>☐</td></tr>
+<tr><td>Proxmox VE</td><td>Installé, accessible via <code>https://&lt;IP_Proxmox&gt;:8006</code></td><td>☐</td></tr>
+<tr><td>ISO vCenter (VCSA)</td><td>ISO <code>VMware-VCSA-all-*.iso</code> téléchargé (version d'évaluation)</td><td>☐</td></tr>
+<tr><td>ISO Linux léger</td><td>Debian Netinst, Alpine Linux, ou TinyCore (pour VMs de test)</td><td>☐</td></tr>
+<tr><td>Réseau</td><td>Réseau NAT ou Host-Only dans Workstation, IPs statiques documentées</td><td>☐</td></tr>
+<tr><td>DNS</td><td>Entrée DNS pour VCSA ou fichier <code>hosts</code> local configuré</td><td>☐</td></tr>
+</table>
+
+<h3 id="a3">Livrables attendus</h3>
+<div class="callout info">
+<div class="callout-label">Info — Livrables</div>
+<p>À rendre en fin de TP sous forme d'un dossier compressé (.zip) contenant :</p>
+<ul>
+  <li><strong>Captures d'écran annotées</strong> (chaque étape clé, nommées selon la convention <code>VC-XX_description.png</code> ou <code>PX-XX_description.png</code>)</li>
+  <li><strong>Tableau comparatif</strong> vCenter vs Proxmox Datacenter (section F complétée)</li>
+  <li><strong>Schéma réseau</strong> du mini-lab (management vs VM network) — dessiné ou capture du SVG</li>
+  <li><strong>Réponses aux questions</strong> d'analyse (section G)</li>
+  <li><strong>Fichier de logs / événements</strong> : extrait de 5 événements significatifs par plateforme</li>
+</ul>
+</div>
+
+<!-- ============================================================ -->
+<!-- B — PARTIE THÉORIQUE                                          -->
+<!-- ============================================================ -->
+<h2 class="section-title" id="partB">B — Partie théorique (Cours détaillé)</h2>
+
+<!-- B.1 --------------------------------------------------------- -->
+<h3 id="b1">B.1 — Hyperviseur et couche management : ESXi seul vs vCenter</h3>
+
+<p>Un hyperviseur de type 1 comme ESXi fonctionne de manière autonome : il gère les VMs, le réseau virtuel et le stockage sur un seul hôte physique. L'interface web du <em>Host Client</em> ESXi permet d'administrer cet hôte unique. Cependant, dans un environnement de production, on déploie généralement plusieurs hôtes ESXi. Les administrer un par un devient rapidement ingérable : pas de vue consolidée, pas de migration de VMs entre hôtes, pas de politiques de sécurité cohérentes.</p>
+
+<p><strong>vCenter Server</strong> est la couche de management centralisée de VMware. C'est une appliance (VCSA — vCenter Server Appliance) qui se connecte à un ou plusieurs hôtes ESXi et fournit un point d'administration unique. vCenter apporte des fonctionnalités impossibles sans lui : vMotion (migration à chaud), DRS (répartition automatique de charge), HA (haute disponibilité), gestion centralisée des permissions et des réseaux distribués.</p>
+
+<div class="diagram-container">
+<svg viewBox="0 0 700 320" xmlns="http://www.w3.org/2000/svg" style="font-family:'Segoe UI',Arial,sans-serif;font-size:13px">
+  <!-- Admin -->
+  <rect x="280" y="10" width="140" height="40" rx="5" fill="#1b4965" stroke="#0d2f42" stroke-width="1.5"/>
+  <text x="350" y="35" fill="#fff" text-anchor="middle" font-weight="600">Administrateur</text>
+  <!-- vCenter -->
+  <rect x="250" y="80" width="200" height="50" rx="6" fill="#4a8fb5" stroke="#1b4965" stroke-width="2"/>
+  <text x="350" y="110" fill="#fff" text-anchor="middle" font-weight="700">vCenter Server</text>
+  <!-- ligne admin -> vc -->
+  <line x1="350" y1="50" x2="350" y2="80" stroke="#1b4965" stroke-width="2" marker-end="url(#arrow)"/>
+  <!-- DC box -->
+  <rect x="80" y="165" width="540" height="140" rx="6" fill="none" stroke="#c8c8c0" stroke-width="1.5" stroke-dasharray="6,3"/>
+  <text x="100" y="185" fill="#4a4a4a" font-size="12" font-style="italic">Datacenter « CYBER-DC »</text>
+  <!-- Cluster box -->
+  <rect x="100" y="195" width="500" height="95" rx="5" fill="#e8f0fe" stroke="#4285f4" stroke-width="1"/>
+  <text x="120" y="215" fill="#1b4965" font-size="12" font-weight="600">Cluster « CYBER-CLUSTER »</text>
+  <!-- ESXi hosts -->
+  <rect x="120" y="228" width="140" height="50" rx="4" fill="#fff" stroke="#696969" stroke-width="1.5"/>
+  <text x="190" y="248" text-anchor="middle" fill="#696969" font-weight="600" font-size="12">ESXi Host 1</text>
+  <text x="190" y="268" text-anchor="middle" fill="#999" font-size="10">192.168.x.10</text>
+  <rect x="290" y="228" width="140" height="50" rx="4" fill="#fff" stroke="#696969" stroke-width="1.5"/>
+  <text x="360" y="248" text-anchor="middle" fill="#696969" font-weight="600" font-size="12">ESXi Host 2</text>
+  <text x="360" y="268" text-anchor="middle" fill="#999" font-size="10">(optionnel)</text>
+  <rect x="460" y="228" width="120" height="50" rx="4" fill="#f5f5f0" stroke="#c8c8c0" stroke-width="1" stroke-dasharray="4,2"/>
+  <text x="520" y="253" text-anchor="middle" fill="#999" font-size="11">… Host N</text>
+  <!-- lignes vc -> hosts -->
+  <line x1="350" y1="130" x2="190" y2="228" stroke="#4a8fb5" stroke-width="1.5"/>
+  <line x1="350" y1="130" x2="360" y2="228" stroke="#4a8fb5" stroke-width="1.5"/>
+  <defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#1b4965"/></marker></defs>
+</svg>
+<div class="diagram-caption">Figure B.1 — Architecture vCenter : administration centralisée de plusieurs hôtes ESXi</div>
+</div>
+
+<div class="retenir">
+<div class="retenir-title">A retenir</div>
+<strong>ESXi seul</strong> = gestion d'un hôte unique. <strong>vCenter</strong> = gestion centralisée de N hôtes avec fonctionnalités avancées (HA, DRS, vMotion, RBAC global, réseaux distribués). Même avec un seul hôte, vCenter apporte la structure organisationnelle (Datacenter, Cluster, Folders) et un RBAC granulaire indispensable en cybersécurité.
+</div>
+
+<div class="micro-tp">
+<div class="micro-tp-title">Micro-TP (5 min) — Réflexion</div>
+<p>Connectez-vous à l'interface web de votre ESXi (<code>https://&lt;IP_ESXi&gt;</code>). Identifiez dans le menu de gauche les objets gérables (VMs, stockage, réseau). Notez trois limitations par rapport à ce que vous attendez d'une gestion multi-hôtes (permissions fines, migration, vue consolidée…).</p>
+</div>
+
+<!-- B.2 --------------------------------------------------------- -->
+<h3 id="b2">B.2 — Modèle objet vCenter</h3>
+
+<p>vCenter organise l'infrastructure en une hiérarchie d'objets logiques. Comprendre cette hiérarchie est fondamental pour structurer un environnement et appliquer des permissions de sécurité de manière cohérente.</p>
+
+<div class="diagram-container">
+<svg viewBox="0 0 700 380" xmlns="http://www.w3.org/2000/svg" style="font-family:'Segoe UI',Arial,sans-serif;font-size:12px">
+  <!-- vCenter root -->
+  <rect x="270" y="10" width="160" height="36" rx="5" fill="#1b4965" stroke="#0d2f42" stroke-width="1.5"/>
+  <text x="350" y="33" fill="#fff" text-anchor="middle" font-weight="700">vCenter Server</text>
+  <!-- Datacenter -->
+  <rect x="260" y="70" width="180" height="36" rx="5" fill="#2d6a8f" stroke="#1b4965" stroke-width="1.5"/>
+  <text x="350" y="93" fill="#fff" text-anchor="middle" font-weight="600">Datacenter</text>
+  <line x1="350" y1="46" x2="350" y2="70" stroke="#1b4965" stroke-width="1.5"/>
+  <!-- Cluster -->
+  <rect x="120" y="135" width="150" height="36" rx="5" fill="#4a8fb5" stroke="#2d6a8f" stroke-width="1.5"/>
+  <text x="195" y="158" fill="#fff" text-anchor="middle" font-weight="600">Cluster</text>
+  <line x1="320" y1="106" x2="195" y2="135" stroke="#2d6a8f" stroke-width="1.2"/>
+  <!-- Folder -->
+  <rect x="430" y="135" width="150" height="36" rx="5" fill="#7ab8d4" stroke="#4a8fb5" stroke-width="1.5"/>
+  <text x="505" y="158" fill="#fff" text-anchor="middle" font-weight="600">Folders (VM/Host)</text>
+  <line x1="380" y1="106" x2="505" y2="135" stroke="#2d6a8f" stroke-width="1.2"/>
+  <!-- Host -->
+  <rect x="40" y="200" width="130" height="36" rx="4" fill="#e8f0fe" stroke="#4285f4" stroke-width="1"/>
+  <text x="105" y="222" fill="#1b4965" text-anchor="middle" font-weight="600">Host (ESXi)</text>
+  <line x1="165" y1="171" x2="105" y2="200" stroke="#4a8fb5" stroke-width="1.2"/>
+  <!-- Resource Pool -->
+  <rect x="200" y="200" width="140" height="36" rx="4" fill="#e8f0fe" stroke="#4285f4" stroke-width="1"/>
+  <text x="270" y="222" fill="#1b4965" text-anchor="middle" font-weight="600">Resource Pool</text>
+  <line x1="220" y1="171" x2="270" y2="200" stroke="#4a8fb5" stroke-width="1.2"/>
+  <!-- VM -->
+  <rect x="60" y="268" width="110" height="34" rx="4" fill="#fff" stroke="#34a853" stroke-width="1.5"/>
+  <text x="115" y="289" fill="#34a853" text-anchor="middle" font-weight="600">VM</text>
+  <line x1="105" y1="236" x2="115" y2="268" stroke="#4285f4" stroke-width="1"/>
+  <!-- Datastore -->
+  <rect x="380" y="268" width="130" height="34" rx="4" fill="#fef7e0" stroke="#f9ab00" stroke-width="1.5"/>
+  <text x="445" y="289" fill="#996600" text-anchor="middle" font-weight="600">Datastore</text>
+  <!-- Network -->
+  <rect x="540" y="268" width="130" height="34" rx="4" fill="#fce8e6" stroke="#ea4335" stroke-width="1.5"/>
+  <text x="605" y="289" fill="#c62828" text-anchor="middle" font-weight="600">Network</text>
+  <!-- Template -->
+  <rect x="200" y="268" width="110" height="34" rx="4" fill="#f3e8fd" stroke="#9334e6" stroke-width="1.5"/>
+  <text x="255" y="289" fill="#6a1b9a" text-anchor="middle" font-weight="600">Template</text>
+  <!-- Legend -->
+  <text x="40" y="340" fill="#4a4a4a" font-size="11">Hiérarchie : vCenter → Datacenter → Cluster → Host → VM</text>
+  <text x="40" y="358" fill="#4a4a4a" font-size="11">Objets transversaux : Folders, Datastores, Networks, Resource Pools, Templates</text>
+</svg>
+<div class="diagram-caption">Figure B.2 — Hiérarchie des objets dans vCenter</div>
+</div>
+
+<table>
+<tr><th>Objet</th><th>Rôle</th><th>Intérêt cybersécurité</th></tr>
+<tr><td><strong>Datacenter</strong></td><td>Conteneur logique de plus haut niveau regroupant clusters, hôtes, réseaux et stockage</td><td>Périmètre d'application des permissions globales</td></tr>
+<tr><td><strong>Cluster</strong></td><td>Groupement d'hôtes ESXi partageant des ressources (HA, DRS)</td><td>Isolation de charge, politiques de disponibilité</td></tr>
+<tr><td><strong>Host</strong></td><td>Serveur ESXi physique (ou nested)</td><td>Surface d'attaque : accès SSH, interface management</td></tr>
+<tr><td><strong>VM</strong></td><td>Machine virtuelle</td><td>Objet à protéger : snapshot, chiffrement, isolation réseau</td></tr>
+<tr><td><strong>Folder</strong></td><td>Dossier logique pour organiser VMs, hôtes, réseaux</td><td>Application ciblée de permissions (RBAC par dossier)</td></tr>
+<tr><td><strong>Resource Pool</strong></td><td>Allocation de CPU/RAM à un sous-ensemble de VMs</td><td>Prévention du déni de service entre projets</td></tr>
+<tr><td><strong>Datastore</strong></td><td>Stockage des fichiers VM (VMDK, ISO, swap)</td><td>Chiffrement au repos, contrôle d'accès aux données</td></tr>
+<tr><td><strong>Network (Port Group)</strong></td><td>Réseau virtuel assignable aux VMs</td><td>Segmentation, isolation, VLAN tagging</td></tr>
+</table>
+
+<div class="retenir">
+<div class="retenir-title">A retenir</div>
+Les permissions dans vCenter <strong>se propagent</strong> du parent vers les enfants dans la hiérarchie. Un rôle attribué au Datacenter s'applique à tous les clusters, hôtes et VMs en dessous — sauf si explicitement remplacé. Cette propagation est un levier puissant mais aussi un <strong>risque</strong> si mal maîtrisée.
+</div>
+
+<div class="micro-tp">
+<div class="micro-tp-title">Micro-TP (5 min) — Schématisation</div>
+<p>Sur papier ou outil de dessin, esquissez la hiérarchie vCenter que vous allez créer dans ce TP : un Datacenter nommé <code>CYBER-DC</code>, un Cluster <code>CYBER-CLUSTER</code>, votre hôte ESXi, deux folders (<code>Lab-VMs</code> et <code>Templates</code>). Annotez où vous appliqueriez des permissions différenciées.</p>
+</div>
+
+<!-- B.3 --------------------------------------------------------- -->
+<h3 id="b3">B.3 — Réseau vSphere</h3>
+
+<p>Le réseau virtuel dans vSphere repose sur des <strong>commutateurs virtuels</strong> (vSwitch). Chaque hôte ESXi possède au moins un vSwitch standard (vSS) créé à l'installation, relié à une carte réseau physique (ou virtuelle en nested). Les <strong>Port Groups</strong> sont des groupes de ports sur un vSwitch auxquels on assigne des VMs — chaque Port Group peut être associé à un VLAN ID pour segmenter le trafic.</p>
+
+<div class="diagram-container">
+<svg viewBox="0 0 680 280" xmlns="http://www.w3.org/2000/svg" style="font-family:'Segoe UI',Arial,sans-serif;font-size:12px">
+  <!-- vSwitch -->
+  <rect x="180" y="20" width="320" height="240" rx="8" fill="#f5f5f0" stroke="#696969" stroke-width="2"/>
+  <text x="340" y="45" text-anchor="middle" fill="#696969" font-weight="700" font-size="14">vSwitch0 (Standard)</text>
+  <!-- Port Groups -->
+  <rect x="200" y="60" width="130" height="55" rx="4" fill="#e6f4ea" stroke="#34a853" stroke-width="1.5"/>
+  <text x="265" y="80" text-anchor="middle" fill="#1b4965" font-weight="600" font-size="11">Port Group</text>
+  <text x="265" y="96" text-anchor="middle" fill="#34a853" font-weight="700" font-size="11">« VM Network »</text>
+  <text x="265" y="110" text-anchor="middle" fill="#999" font-size="10">VLAN 0 (untagged)</text>
+  <rect x="350" y="60" width="130" height="55" rx="4" fill="#fef7e0" stroke="#f9ab00" stroke-width="1.5"/>
+  <text x="415" y="80" text-anchor="middle" fill="#1b4965" font-weight="600" font-size="11">Port Group</text>
+  <text x="415" y="96" text-anchor="middle" fill="#f9ab00" font-weight="700" font-size="11">« Management »</text>
+  <text x="415" y="110" text-anchor="middle" fill="#999" font-size="10">VMkernel (mgmt)</text>
+  <!-- VMs -->
+  <rect x="205" y="140" width="55" height="35" rx="3" fill="#fff" stroke="#34a853" stroke-width="1"/>
+  <text x="232" y="162" text-anchor="middle" fill="#333" font-size="10">VM-A</text>
+  <rect x="270" y="140" width="55" height="35" rx="3" fill="#fff" stroke="#34a853" stroke-width="1"/>
+  <text x="297" y="162" text-anchor="middle" fill="#333" font-size="10">VM-B</text>
+  <!-- vmkernel -->
+  <rect x="370" y="140" width="90" height="35" rx="3" fill="#fff" stroke="#f9ab00" stroke-width="1"/>
+  <text x="415" y="162" text-anchor="middle" fill="#333" font-size="10">VMkernel0</text>
+  <!-- pNIC -->
+  <rect x="280" y="200" width="120" height="35" rx="4" fill="#1b4965" stroke="#0d2f42" stroke-width="1.5"/>
+  <text x="340" y="222" text-anchor="middle" fill="#fff" font-weight="600" font-size="11">vmnic0 (pNIC)</text>
+  <line x1="265" y1="175" x2="310" y2="200" stroke="#696969" stroke-width="1"/>
+  <line x1="415" y1="175" x2="370" y2="200" stroke="#696969" stroke-width="1"/>
+  <!-- réseau physique -->
+  <text x="340" y="260" text-anchor="middle" fill="#4a4a4a" font-size="11">↓ Réseau physique / VMware Workstation vNIC</text>
+</svg>
+<div class="diagram-caption">Figure B.3 — Architecture d'un vSwitch standard avec Port Groups</div>
+</div>
+
+<div class="callout info">
+<div class="callout-label">Info — vSwitch Standard vs Distribué (vDS)</div>
+<p>Le <strong>vSwitch Standard (vSS)</strong> est configuré individuellement sur chaque hôte. Le <strong>vSwitch Distribué (vDS)</strong>, disponible uniquement via vCenter (licence Enterprise Plus), offre une configuration réseau centralisée sur plusieurs hôtes. Dans ce TP nested, nous utiliserons le vSS, mais il est important de connaître le vDS pour les environnements de production.</p>
+</div>
+
+<table>
+<tr><th>Concept</th><th>Description</th></tr>
+<tr><td><strong>Port Group</strong></td><td>Groupe de ports assignable aux VMs ou VMkernel, avec VLAN ID optionnel</td></tr>
+<tr><td><strong>VMkernel</strong></td><td>Interface réseau de l'hôte ESXi lui-même (management, vMotion, stockage IP)</td></tr>
+<tr><td><strong>VLAN tagging</strong></td><td>Le Port Group peut étiqueter le trafic avec un VLAN ID (802.1Q) pour la segmentation</td></tr>
+<tr><td><strong>Uplink</strong></td><td>Carte réseau physique (vmnic) reliant le vSwitch au réseau externe</td></tr>
+</table>
+
+<div class="callout secu">
+<div class="callout-label">Sécurité — Segmentation réseau</div>
+<p>En cybersécurité, séparer le réseau de management (accès admin ESXi/vCenter) du réseau des VMs est une mesure fondamentale. Un attaquant compromettant une VM ne doit pas pouvoir atteindre l'interface de management de l'hyperviseur. Utilisez des Port Groups distincts et, idéalement, des VLANs séparés.</p>
+</div>
+
+<div class="micro-tp">
+<div class="micro-tp-title">Micro-TP (5 min) — Inventaire réseau ESXi</div>
+<p>Dans l'interface ESXi Host Client, naviguez vers <code>Networking → Virtual switches</code>. Identifiez le vSwitch existant, ses port groups et la carte réseau associée (vmnic0). Notez ces informations — elles serviront dans la partie TP.</p>
+</div>
+
+<!-- B.4 --------------------------------------------------------- -->
+<h3 id="b4">B.4 — Stockage vSphere</h3>
+
+<p>Le stockage dans vSphere s'organise autour du concept de <strong>Datastore</strong> : un volume de stockage présenté aux hôtes ESXi, sur lequel sont stockés les fichiers des VMs (disques VMDK, fichiers de configuration, swap, snapshots), les images ISO et les templates. Un datastore peut reposer sur un stockage local (disque de l'hôte), NFS, iSCSI ou Fibre Channel.</p>
+
+<table>
+<tr><th>Type de provisionnement</th><th>Description</th><th>Implications</th></tr>
+<tr><td><strong>Thick Provisioned (Eager Zeroed)</strong></td><td>Espace disque entièrement alloué et initialisé à zéro immédiatement</td><td>Meilleures performances, espace réservé — recommandé en production sécurisée (pas de données résiduelles)</td></tr>
+<tr><td><strong>Thick Provisioned (Lazy Zeroed)</strong></td><td>Espace alloué mais initialisé à la demande</td><td>Risque théorique de lecture de données résiduelles sur le stockage</td></tr>
+<tr><td><strong>Thin Provisioned</strong></td><td>Espace alloué à la demande (le fichier VMDK grossit)</td><td>Économie d'espace, mais risque de surprovisionnement — inadapté si le datastore se remplit</td></tr>
+</table>
+
+<div class="callout secu">
+<div class="callout-label">Sécurité — Stockage</div>
+<p>Le provisionnement <em>Eager Zeroed</em> est préféré dans les environnements sensibles car il élimine le risque de fuite de données résiduelles sur le disque. Dans un lab, le <em>Thin Provisioning</em> est acceptable pour économiser de l'espace, mais il faut en comprendre les implications.</p>
+</div>
+
+<div class="retenir">
+<div class="retenir-title">A retenir</div>
+Un <strong>Datastore</strong> est l'abstraction de stockage dans vSphere. Les VMs y stockent leurs fichiers. En cybersécurité, le stockage doit être contrôlé : chiffrement au repos (VM Encryption avec vCenter + KMS), accès restreint aux datastores, surveillance de l'espace disponible.
+</div>
+
+<!-- B.5 --------------------------------------------------------- -->
+<h3 id="b5">B.5 — Sécurité vSphere / vCenter</h3>
+
+<p>La sécurisation d'un environnement vSphere repose sur plusieurs axes complémentaires :</p>
+
+<h4>RBAC — Roles-Based Access Control</h4>
+<p>vCenter intègre un système de permissions à trois éléments : <strong>Utilisateur</strong> (ou groupe), <strong>Rôle</strong> (ensemble de privilèges), <strong>Objet</strong> (Datacenter, Cluster, VM, folder…). Un rôle est assigné à un utilisateur sur un objet spécifique, avec ou sans propagation aux enfants. vCenter fournit des rôles prédéfinis (Administrator, Read-Only, VM Power User, etc.) et permet d'en créer des personnalisés.</p>
+
+<div class="diagram-container">
+<svg viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg" style="font-family:'Segoe UI',Arial,sans-serif;font-size:12px">
+  <rect x="30" y="50" width="140" height="60" rx="5" fill="#e8f0fe" stroke="#4285f4" stroke-width="1.5"/>
+  <text x="100" y="75" text-anchor="middle" fill="#1b4965" font-weight="700">Utilisateur</text>
+  <text x="100" y="95" text-anchor="middle" fill="#4a4a4a" font-size="11">student-ops</text>
+  <rect x="230" y="50" width="140" height="60" rx="5" fill="#fef7e0" stroke="#f9ab00" stroke-width="1.5"/>
+  <text x="300" y="75" text-anchor="middle" fill="#996600" font-weight="700">Rôle</text>
+  <text x="300" y="95" text-anchor="middle" fill="#4a4a4a" font-size="11">VM Power User</text>
+  <rect x="430" y="50" width="140" height="60" rx="5" fill="#e6f4ea" stroke="#34a853" stroke-width="1.5"/>
+  <text x="500" y="75" text-anchor="middle" fill="#1b4965" font-weight="700">Objet</text>
+  <text x="500" y="95" text-anchor="middle" fill="#4a4a4a" font-size="11">Folder « Lab-VMs »</text>
+  <!-- arrows -->
+  <line x1="170" y1="80" x2="230" y2="80" stroke="#1b4965" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="370" y1="80" x2="430" y2="80" stroke="#1b4965" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="200" y="72" text-anchor="middle" fill="#999" font-size="10">a le</text>
+  <text x="400" y="72" text-anchor="middle" fill="#999" font-size="10">sur</text>
+  <text x="300" y="160" text-anchor="middle" fill="#4a4a4a" font-size="12" font-style="italic">Permission = Utilisateur + Rôle + Objet (± propagation)</text>
+</svg>
+<div class="diagram-caption">Figure B.5a — Modèle de permission vCenter (triplet)</div>
+</div>
+
+<h4>Surface d'attaque et durcissement</h4>
+<table>
+<tr><th>Surface</th><th>Risque</th><th>Mesure de durcissement</th></tr>
+<tr><td>Interface web vCenter (443)</td><td>Accès non autorisé, brute-force</td><td>Mots de passe robustes, restriction IP, certificats TLS valides</td></tr>
+<tr><td>SSH sur ESXi</td><td>Accès shell = contrôle total de l'hôte</td><td>Désactiver SSH en production, activer uniquement pour debug</td></tr>
+<tr><td>Comptes par défaut</td><td>Mot de passe admin connu ou faible</td><td>Changer immédiatement, principe du moindre privilège</td></tr>
+<tr><td>NTP non configuré</td><td>Logs incohérents, certificats invalides, Kerberos cassé</td><td>Configurer NTP sur tous les composants</td></tr>
+<tr><td>Certificats auto-signés</td><td>Vulnérabilité MITM</td><td>Remplacer par des certificats d'une CA interne si possible</td></tr>
+<tr><td>Syslog non configuré</td><td>Pas de traçabilité, perte de preuves</td><td>Configurer syslog vers un serveur centralisé (SIEM)</td></tr>
+</table>
+
+<div class="retenir">
+<div class="retenir-title">A retenir</div>
+La sécurité de vCenter/vSphere repose sur le <strong>moindre privilège</strong> (RBAC fin), la <strong>segmentation réseau</strong> (management isolé), la <strong>journalisation</strong> (syslog centralisé), la <strong>synchronisation temporelle</strong> (NTP) et la <strong>gestion des certificats</strong>. Ce sont des fondamentaux applicables à toute infrastructure.
+</div>
+
+<div class="micro-tp">
+<div class="micro-tp-title">Micro-TP (5 min) — Audit rapide ESXi</div>
+<p>Sur votre ESXi, vérifiez : le service SSH est-il activé ? (Menu <code>Host → Manage → Services</code>). Si oui, notez-le comme un point à durcir. Vérifiez aussi la configuration NTP (<code>Manage → System → Time &amp; Date</code>).</p>
+</div>
+
+<!-- B.6 --------------------------------------------------------- -->
+<h3 id="b6">B.6 — Modèle objet Proxmox « Datacenter »</h3>
+
+<p>Dans Proxmox VE, la <strong>vue Datacenter</strong> est le niveau le plus élevé de l'interface d'administration. Même avec un seul nœud, cette vue centralise la configuration des éléments partagés : utilisateurs, rôles, ACL, stockage, firewall, sauvegardes planifiées et réplication.</p>
+
+<div class="diagram-container">
+<svg viewBox="0 0 700 350" xmlns="http://www.w3.org/2000/svg" style="font-family:'Segoe UI',Arial,sans-serif;font-size:12px">
+  <!-- Datacenter -->
+  <rect x="250" y="10" width="200" height="40" rx="6" fill="#e57000" stroke="#b35600" stroke-width="2"/>
+  <text x="350" y="35" fill="#fff" text-anchor="middle" font-weight="700" font-size="14">Datacenter</text>
+  <!-- Branches -->
+  <!-- Node -->
+  <rect x="40" y="90" width="120" height="36" rx="4" fill="#fff" stroke="#e57000" stroke-width="1.5"/>
+  <text x="100" y="112" text-anchor="middle" fill="#e57000" font-weight="600">Node (pve1)</text>
+  <line x1="300" y1="50" x2="100" y2="90" stroke="#e57000" stroke-width="1.2"/>
+  <!-- Storage -->
+  <rect x="180" y="90" width="120" height="36" rx="4" fill="#fef7e0" stroke="#f9ab00" stroke-width="1.5"/>
+  <text x="240" y="112" text-anchor="middle" fill="#996600" font-weight="600">Storage</text>
+  <line x1="320" y1="50" x2="240" y2="90" stroke="#e57000" stroke-width="1.2"/>
+  <!-- Users/ACL -->
+  <rect x="320" y="90" width="130" height="36" rx="4" fill="#e8f0fe" stroke="#4285f4" stroke-width="1.5"/>
+  <text x="385" y="112" text-anchor="middle" fill="#1b4965" font-weight="600">Users / Roles / ACL</text>
+  <line x1="360" y1="50" x2="385" y2="90" stroke="#e57000" stroke-width="1.2"/>
+  <!-- Firewall -->
+  <rect x="470" y="90" width="110" height="36" rx="4" fill="#fce8e6" stroke="#ea4335" stroke-width="1.5"/>
+  <text x="525" y="112" text-anchor="middle" fill="#c62828" font-weight="600">Firewall</text>
+  <line x1="390" y1="50" x2="525" y2="90" stroke="#e57000" stroke-width="1.2"/>
+  <!-- Backup -->
+  <rect x="600" y="90" width="90" height="36" rx="4" fill="#e6f4ea" stroke="#34a853" stroke-width="1.5"/>
+  <text x="645" y="112" text-anchor="middle" fill="#1b4965" font-weight="600">Backup</text>
+  <line x1="410" y1="50" x2="645" y2="90" stroke="#e57000" stroke-width="1.2"/>
+  <!-- Sous-node -->
+  <rect x="15" y="160" width="70" height="30" rx="3" fill="#fff" stroke="#34a853" stroke-width="1"/>
+  <text x="50" y="179" text-anchor="middle" fill="#333" font-size="10">VM 100</text>
+  <rect x="95" y="160" width="70" height="30" rx="3" fill="#fff" stroke="#9334e6" stroke-width="1"/>
+  <text x="130" y="179" text-anchor="middle" fill="#333" font-size="10">CT 101</text>
+  <line x1="80" y1="126" x2="50" y2="160" stroke="#ccc" stroke-width="1"/>
+  <line x1="120" y1="126" x2="130" y2="160" stroke="#ccc" stroke-width="1"/>
+  <!-- Pools -->
+  <rect x="320" y="160" width="130" height="30" rx="3" fill="#f3e8fd" stroke="#9334e6" stroke-width="1"/>
+  <text x="385" y="179" text-anchor="middle" fill="#6a1b9a" font-weight="600" font-size="11">Pool « CYBER-LAB »</text>
+  <!-- Storage details -->
+  <rect x="175" y="155" width="60" height="26" rx="3" fill="#fff" stroke="#f9ab00" stroke-width="1"/>
+  <text x="205" y="172" text-anchor="middle" fill="#333" font-size="9">local</text>
+  <rect x="245" y="155" width="60" height="26" rx="3" fill="#fff" stroke="#f9ab00" stroke-width="1"/>
+  <text x="275" y="172" text-anchor="middle" fill="#333" font-size="9">local-lvm</text>
+  <line x1="220" y1="126" x2="205" y2="155" stroke="#ccc" stroke-width="1"/>
+  <line x1="260" y1="126" x2="275" y2="155" stroke="#ccc" stroke-width="1"/>
+  <!-- Firewall levels -->
+  <text x="470" y="155" fill="#c62828" font-size="10" font-weight="600">Niveaux :</text>
+  <text x="470" y="170" fill="#4a4a4a" font-size="10">→ Datacenter</text>
+  <text x="470" y="185" fill="#4a4a4a" font-size="10">→ Node</text>
+  <text x="470" y="200" fill="#4a4a4a" font-size="10">→ VM / CT</text>
+  <!-- Legend -->
+  <text x="40" y="230" fill="#4a4a4a" font-size="11">La vue Datacenter centralise : nœuds, stockage, permissions, firewall multi-niveaux et jobs de sauvegarde.</text>
+</svg>
+<div class="diagram-caption">Figure B.6 — Vue Datacenter Proxmox : objets et sous-menus principaux</div>
+</div>
+
+<table>
+<tr><th>Élément</th><th>Rôle</th><th>Intérêt cybersécurité</th></tr>
+<tr><td><strong>Node</strong></td><td>Serveur Proxmox physique (ou nested) exécutant VMs et conteneurs</td><td>Surface d'attaque : SSH, interface web, accès console</td></tr>
+<tr><td><strong>Storage</strong></td><td>Configuration centralisée des espaces de stockage partagés ou locaux</td><td>Contrôle de qui peut stocker quoi, chiffrement</td></tr>
+<tr><td><strong>Users / Roles / ACL</strong></td><td>Gestion centralisée des accès (realms PAM/PVE/LDAP)</td><td>RBAC granulaire, tokens API, moindre privilège</td></tr>
+<tr><td><strong>Pool</strong></td><td>Regroupement logique de VMs/CT et stockage pour appliquer des permissions</td><td>Isolation de projets, délégation d'accès ciblée</td></tr>
+<tr><td><strong>Firewall</strong></td><td>Pare-feu intégré configurable à 3 niveaux (DC, Node, VM)</td><td>Microsegmentation, protection management</td></tr>
+<tr><td><strong>Backup Jobs</strong></td><td>Planification de sauvegardes automatiques</td><td>Résilience, capacité de restauration après incident</td></tr>
+</table>
+
+<div class="retenir">
+<div class="retenir-title">A retenir</div>
+Proxmox offre une <strong>vue Datacenter intégrée</strong> sans composant supplémentaire (contrairement à vCenter qui est un produit séparé). La gestion centralisée des permissions, du firewall et des sauvegardes se fait directement depuis cette vue, même avec un seul nœud.
+</div>
+
+<div class="micro-tp">
+<div class="micro-tp-title">Micro-TP (5 min) — Exploration Datacenter</div>
+<p>Connectez-vous à votre Proxmox (<code>https://&lt;IP_Proxmox&gt;:8006</code>). Cliquez sur « Datacenter » dans l'arbre de gauche. Parcourez chaque sous-menu (Search, Summary, Cluster, Options, Storage, Backup, Replication, Permissions, Firewall). Notez le nombre de sous-menus disponibles.</p>
+</div>
+
+<!-- B.7 --------------------------------------------------------- -->
+<h3 id="b7">B.7 — Réseau Proxmox</h3>
+
+<p>Proxmox utilise le modèle réseau natif de Linux. Par défaut, un <strong>bridge Linux</strong> nommé <code>vmbr0</code> est créé à l'installation, relié à l'interface réseau physique. Les VMs et conteneurs se connectent à ce bridge. C'est l'équivalent fonctionnel d'un vSwitch dans vSphere.</p>
+
+<div class="diagram-container">
+<svg viewBox="0 0 600 240" xmlns="http://www.w3.org/2000/svg" style="font-family:'Segoe UI',Arial,sans-serif;font-size:12px">
+  <!-- Bridge -->
+  <rect x="140" y="20" width="320" height="180" rx="8" fill="#f5f5f0" stroke="#e57000" stroke-width="2"/>
+  <text x="300" y="45" text-anchor="middle" fill="#e57000" font-weight="700" font-size="14">vmbr0 (Linux Bridge)</text>
+  <!-- VMs -->
+  <rect x="160" y="65" width="80" height="40" rx="4" fill="#fff" stroke="#34a853" stroke-width="1.5"/>
+  <text x="200" y="89" text-anchor="middle" fill="#333" font-size="11">VM 100</text>
+  <rect x="260" y="65" width="80" height="40" rx="4" fill="#fff" stroke="#34a853" stroke-width="1.5"/>
+  <text x="300" y="89" text-anchor="middle" fill="#333" font-size="11">VM 101</text>
+  <rect x="360" y="65" width="80" height="40" rx="4" fill="#fff" stroke="#9334e6" stroke-width="1.5"/>
+  <text x="400" y="89" text-anchor="middle" fill="#333" font-size="11">CT 102</text>
+  <!-- Management IP -->
+  <rect x="180" y="125" width="240" height="30" rx="4" fill="#fef7e0" stroke="#f9ab00" stroke-width="1"/>
+  <text x="300" y="145" text-anchor="middle" fill="#996600" font-weight="600" font-size="11">Proxmox Management (IP du nœud)</text>
+  <!-- eth0 -->
+  <rect x="240" y="165" width="120" height="30" rx="4" fill="#1b4965" stroke="#0d2f42" stroke-width="1.5"/>
+  <text x="300" y="184" text-anchor="middle" fill="#fff" font-weight="600" font-size="11">ens18 / eth0</text>
+  <text x="300" y="220" text-anchor="middle" fill="#4a4a4a" font-size="11">↓ Réseau physique / Workstation</text>
+</svg>
+<div class="diagram-caption">Figure B.7 — Réseau Proxmox : bridge Linux vmbr0</div>
+</div>
+
+<div class="callout secu">
+<div class="callout-label">Sécurité — Isolation réseau Proxmox</div>
+<p>Par défaut, le trafic management et le trafic VM partagent le même bridge <code>vmbr0</code>. Pour durcir l'environnement, créez un second bridge <code>vmbr1</code> (sans adresse IP, sans uplink physique) dédié aux VMs de lab. Cela isole les VMs du réseau de management — principe de segmentation fondamental.</p>
+</div>
+
+<div class="retenir">
+<div class="retenir-title">A retenir</div>
+Proxmox utilise des <strong>bridges Linux</strong> au lieu de vSwitches propriétaires. Le concept est identique : connecter des VMs à un réseau virtuel. Pour le VLAN tagging, Proxmox supporte la configuration native Linux (<code>bridge-vlan-aware</code>). La segmentation management / VMs passe par la création de bridges séparés.
+</div>
+
+<!-- B.8 --------------------------------------------------------- -->
+<h3 id="b8">B.8 — Stockage Proxmox</h3>
+
+<p>Proxmox gère le stockage via deux types principaux par défaut :</p>
+
+<table>
+<tr><th>Stockage</th><th>Type</th><th>Contenu</th><th>Usage</th></tr>
+<tr><td><code>local</code></td><td>Directory (/var/lib/vz)</td><td>ISO, templates CT, backups, snippets</td><td>Stockage de fichiers (non-VM)</td></tr>
+<tr><td><code>local-lvm</code></td><td>LVM-Thin</td><td>Disques VM (images), rootfs CT</td><td>Stockage des machines virtuelles</td></tr>
+</table>
+
+<p>Cette séparation est importante : les ISOs vont dans <code>local</code>, les disques VM dans <code>local-lvm</code>. On peut ajouter d'autres stockages (NFS, CIFS, Ceph, ZFS) via la vue Datacenter → Storage.</p>
+
+<div class="callout info">
+<div class="callout-label">Info — LVM-Thin</div>
+<p>LVM-Thin (Thin Provisioning) est l'équivalent Proxmox du Thin Provisioning VMware : l'espace disque n'est alloué que lorsqu'il est réellement écrit. Cela permet de surprovisonner le stockage, mais nécessite une surveillance de l'espace réel utilisé.</p>
+</div>
+
+<div class="retenir">
+<div class="retenir-title">A retenir</div>
+Proxmox sépare les stockages par <strong>type de contenu</strong> : ISO/backups dans <code>local</code>, disques VM dans <code>local-lvm</code>. Cette séparation facilite le contrôle d'accès et la gestion de l'espace.
+</div>
+
+<!-- B.9 --------------------------------------------------------- -->
+<h3 id="b9">B.9 — Sécurité Proxmox</h3>
+
+<h4>Realms d'authentification</h4>
+<p>Proxmox supporte plusieurs sources d'authentification (<em>realms</em>) :</p>
+<table>
+<tr><th>Realm</th><th>Description</th><th>Usage typique</th></tr>
+<tr><td><strong>PAM</strong></td><td>Utilisateurs Linux locaux du nœud Proxmox</td><td>Compte <code>root@pam</code> (administrateur par défaut)</td></tr>
+<tr><td><strong>PVE</strong></td><td>Base d'utilisateurs interne à Proxmox (indépendante de Linux)</td><td>Comptes étudiants, opérateurs — sans accès shell Linux</td></tr>
+<tr><td><strong>LDAP / AD</strong></td><td>Authentification externe (Active Directory, OpenLDAP)</td><td>Environnement d'entreprise, SSO</td></tr>
+</table>
+
+<h4>RBAC Proxmox</h4>
+<p>Le modèle RBAC de Proxmox est similaire à celui de vCenter : on attribue un <strong>rôle</strong> (ensemble de privilèges) à un <strong>utilisateur</strong> (ou groupe) sur un <strong>chemin d'objet</strong> (ex: <code>/pool/CYBER-LAB</code>, <code>/vms/100</code>, <code>/</code> pour tout). Proxmox fournit des rôles prédéfinis : Administrator, PVEVMAdmin, PVEVMUser, PVEAuditor, etc.</p>
+
+<h4>API Tokens</h4>
+<p>Proxmox permet de créer des <strong>tokens API</strong> pour l'automatisation, avec des privilèges potentiellement restreints par rapport au compte parent. Chaque token possède un identifiant et un secret, et peut être limité à un sous-ensemble des permissions du compte.</p>
+
+<h4>Firewall intégré multi-niveaux</h4>
+<p>Le pare-feu Proxmox opère à trois niveaux indépendants, chacun avec ses propres règles :</p>
+<table>
+<tr><th>Niveau</th><th>Portée</th><th>Configuration</th></tr>
+<tr><td><strong>Datacenter</strong></td><td>Règles globales appliquées à tous les nœuds</td><td>Datacenter → Firewall</td></tr>
+<tr><td><strong>Node</strong></td><td>Règles spécifiques à un nœud (trafic entrant vers le nœud)</td><td>Node → Firewall</td></tr>
+<tr><td><strong>VM / CT</strong></td><td>Règles par machine virtuelle ou conteneur</td><td>VM → Firewall</td></tr>
+</table>
+
+<div class="callout secu">
+<div class="callout-label">Sécurité — Firewall Proxmox : prudence en lab</div>
+<p>Le firewall Proxmox est désactivé par défaut. L'activer sans avoir configuré de règle autorisant le management (port 8006, SSH 22) vous <strong>bloquera l'accès</strong> à votre nœud. Ajoutez toujours les règles d'accès management AVANT d'activer le firewall.</p>
+</div>
+
+<div class="retenir">
+<div class="retenir-title">A retenir</div>
+Proxmox offre un écosystème de sécurité complet : <strong>realms</strong> multiples (PAM/PVE/LDAP), <strong>RBAC</strong> fin (utilisateurs/groupes/rôles/ACL sur chemins), <strong>API tokens</strong> pour l'automatisation sécurisée, <strong>firewall multi-niveaux</strong> intégré, et <strong>journaux</strong> consultables dans l'interface.
+</div>
+
+<div class="micro-tp">
+<div class="micro-tp-title">Micro-TP (5 min) — Permissions Proxmox</div>
+<p>Dans Proxmox, allez dans <code>Datacenter → Permissions → Roles</code>. Listez les rôles prédéfinis et notez les privilèges du rôle <code>PVEVMUser</code>. Comparez avec <code>PVEAdmin</code>. Quelle est la différence principale ?</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- C — TP GUIDÉ vCENTER                                          -->
+<!-- ============================================================ -->
+<h2 class="section-title" id="partC">C — TP guidé : vCenter Server</h2>
+
+<div class="callout info">
+<div class="callout-label">Info — Objectif de cette section</div>
+<p>Déployer vCenter Server Appliance (VCSA), connecter votre hôte ESXi, construire une hiérarchie Datacenter/Cluster/Folders, créer une VM, manipuler snapshots, configurer le RBAC et vérifier les logs. Chaque étape intègre un volet cybersécurité.</p>
+</div>
+
+<!-- VC-1 -->
+<div class="step-card" id="vc1">
+<div class="step-card-header vmware">Étape VC-1 — Déployer vCenter Server Appliance (VCSA)</div>
+<div class="step-card-body">
+
+<div class="callout action">
+<div class="callout-label">Action</div>
+<p>Le déploiement de VCSA se fait depuis un poste Windows/Linux/Mac disposant de l'ISO VCSA monté :</p>
+<ul>
+  <li>Montez l'ISO <code>VMware-VCSA-all-*.iso</code> sur votre machine hôte (Windows : double-clic sur l'ISO)</li>
+  <li>Naviguez vers <code>vcsa-ui-installer/win32/</code> (ou <code>lin64/</code>) et lancez <code>installer.exe</code></li>
+  <li>Choisissez <strong>Install</strong> → sélectionnez le type <strong>Embedded Platform Services Controller</strong></li>
+  <li>Cible ESXi : entrez l'IP de votre hôte ESXi et les identifiants root</li>
+  <li>Nom de la VM VCSA : <code>vcsa-cyber-lab</code></li>
+  <li>Taille : <strong>Tiny</strong> (2 vCPU, 12 Go RAM) — c'est le minimum, exigeant en nested</li>
+  <li>Datastore : sélectionnez le datastore local de l'ESXi, cochez <strong>Thin Disk Mode</strong></li>
+  <li>Réseau : Port Group <code>VM Network</code> (ou votre port group de management)</li>
+  <li>Configurez : IP statique pour VCSA, masque, passerelle, DNS, NTP, mot de passe root VCSA</li>
+  <li>Phase 2 (configuration SSO) : domaine SSO <code>vsphere.local</code>, mot de passe admin SSO</li>
+</ul>
+</div>
+
+<div class="callout info">
+<div class="callout-label">Info — Explication</div>
+<p>VCSA est une appliance Linux (Photon OS) qui embarque vCenter Server, le SSO (Single Sign-On) et la base de données PostgreSQL. Le déploiement en deux phases installe d'abord la VM, puis configure les services internes. Avec 12 Go de RAM, c'est un composant gourmand — d'où la nécessité d'avoir suffisamment de RAM sur l'hôte Workstation.</p>
+</div>
+
+<div class="callout verif">
+<div class="callout-label">Vérification</div>
+<p>Après déploiement (30–60 minutes), accédez à <code>https://&lt;IP_VCSA&gt;:443</code> dans un navigateur. Vous devez voir la page de connexion <strong>vSphere Client</strong>. Connectez-vous avec <code>administrator@vsphere.local</code> et le mot de passe SSO défini. Capture exigée : page d'accueil vSphere Client.</p>
+</div>
+
+<div class="callout secu">
+<div class="callout-label">Sécurité</div>
+<p>Le mot de passe SSO doit être robuste (12+ caractères, complexité). Notez que VCSA utilise un certificat auto-signé par défaut — le navigateur affichera un avertissement. En production, remplacez ce certificat. Limitez l'accès réseau au port 443 de VCSA aux seuls postes d'administration.</p>
+</div>
+
+<div class="callout error">
+<div class="callout-label">Erreur fréquente — VCSA inaccessible après déploiement</div>
+<p><strong>Symptôme :</strong> La page <code>https://IP_VCSA</code> ne répond pas. <strong>Causes possibles :</strong> les services VCSA mettent 10–15 min à démarrer après le premier boot ; le DNS ne résout pas le FQDN configuré ; l'IP est en conflit. <strong>Solution :</strong> attendez, vérifiez la console VCSA dans ESXi (touche F2 pour voir l'IP), vérifiez les entrées DNS/hosts.</p>
+</div>
+
+</div>
+</div>
+
+<!-- VC-2 -->
+<div class="step-card" id="vc2">
+<div class="step-card-header vmware">Étape VC-2 — Se connecter à vCenter et comprendre l'interface</div>
+<div class="step-card-body">
+
+<div class="callout action">
+<div class="callout-label">Action</div>
+<p>Ouvrez <code>https://&lt;IP_VCSA&gt;</code> dans un navigateur. Connectez-vous avec <code>administrator@vsphere.local</code>. Explorez l'interface :</p>
+<ul>
+  <li><strong>Menu hamburger</strong> (en haut à gauche) : accès aux vues (Hosts &amp; Clusters, VMs &amp; Templates, Storage, Networking)</li>
+  <li><strong>Inventaire</strong> (panneau gauche) : arborescence des objets</li>
+  <li><strong>Panneau central</strong> : détails de l'objet sélectionné (Summary, Monitor, Configure, Permissions…)</li>
+  <li><strong>Recent Tasks</strong> (en bas) : historique des opérations</li>
+</ul>
+</div>
+
+<div class="callout verif">
+<div class="callout-label">Vérification</div>
+<p>L'inventaire doit être vide (aucun datacenter encore créé). Le menu « Hosts and Clusters » ne montre que le nœud vCenter lui-même. Capture : vue d'inventaire vide.</p>
+</div>
+
+</div>
+</div>
+
+<!-- VC-3 -->
+<div class="step-card" id="vc3">
+<div class="step-card-header vmware">Étape VC-3 — Créer un Datacenter</div>
+<div class="step-card-body">
+
+<div class="callout action">
+<div class="callout-label">Action</div>
+<p>Dans la vue « Hosts and Clusters » : clic droit sur l'icône vCenter (racine) → <strong>New Datacenter</strong>. Nommez-le <code>CYBER-DC</code>. Validez.</p>
+</div>
+
+<div class="callout info">
+<div class="callout-label">Info — Explication</div>
+<p>Le Datacenter est le conteneur logique de plus haut niveau. Il regroupe clusters, hôtes, réseaux et datastores. Dans un environnement réel, on peut avoir plusieurs Datacenters (un par site géographique, par exemple). Les permissions appliquées au Datacenter se propagent à tous les objets enfants.</p>
+</div>
+
+<div class="callout verif">
+<div class="callout-label">Vérification</div>
+<p>Le Datacenter <code>CYBER-DC</code> apparaît dans l'inventaire. En le sélectionnant, l'onglet « Summary » affiche 0 cluster, 0 host. Capture exigée.</p>
+</div>
+
+</div>
+</div>
+
+<!-- VC-4 -->
+<div class="step-card" id="vc4">
+<div class="step-card-header vmware">Étape VC-4 — Créer un Cluster</div>
+<div class="step-card-body">
+
+<div class="callout action">
+<div class="callout-label">Action</div>
+<p>Clic droit sur <code>CYBER-DC</code> → <strong>New Cluster</strong>. Nommez-le <code>CYBER-CLUSTER</code>. Options :</p>
+<ul>
+  <li><strong>vSphere DRS</strong> : laisser désactivé (un seul hôte, pas de migration possible)</li>
+  <li><strong>vSphere HA</strong> : laisser désactivé (nécessite 2+ hôtes)</li>
+</ul>
+<p>Validez la création.</p>
+</div>
+
+<div class="callout info">
+<div class="callout-label">Info — Pourquoi un cluster à 1 hôte ?</div>
+<p>Même avec un seul hôte, le cluster fournit un cadre organisationnel. Il sera prêt à accueillir un second hôte si vous étendez le lab. De plus, certaines fonctionnalités (Resource Pools, règles d'affinité) ne sont disponibles qu'au sein d'un cluster.</p>
+</div>
+
+<div class="callout verif">
+<div class="callout-label">Vérification</div>
+<p>Le cluster <code>CYBER-CLUSTER</code> apparaît sous <code>CYBER-DC</code> dans l'inventaire, avec un triangle d'avertissement (aucun hôte membre). Normal à ce stade.</p>
+</div>
+
+</div>
+</div>
+
+<!-- VC-5 -->
+<div class="step-card" id="vc5">
+<div class="step-card-header vmware">Étape VC-5 — Ajouter l'hôte ESXi au cluster</div>
+<div class="step-card-body">
+
+<div class="callout action">
+<div class="callout-label">Action</div>
+<p>Clic droit sur <code>CYBER-CLUSTER</code> → <strong>Add Host</strong>. Entrez :</p>
+<ul>
+  <li>IP ou FQDN de votre ESXi : <code>192.168.x.10</code> (adaptez)</li>
+  <li>Identifiant : <code>root</code></li>
+  <li>Mot de passe : celui défini lors de l'installation ESXi</li>
+</ul>
+<p>Acceptez l'alerte de certificat (thumbprint SHA-1). Validez l'assistant.</p>
+</div>
+
+<div class="callout info">
+<div class="callout-label">Info — Explication</div>
+<p>Lorsqu'un hôte rejoint vCenter, il délègue une partie de sa gestion à vCenter (permissions, réseau distribué, etc.). L'hôte reste accessible directement (Host Client) mais les modifications centralisées passent désormais par vCenter. C'est un changement fondamental de paradigme d'administration.</p>
+</div>
+
+<div class="callout verif">
+<div class="callout-label">Vérification</div>
+<p>L'hôte ESXi apparaît sous <code>CYBER-CLUSTER</code> avec un statut « Connected » (icône verte). L'onglet « Summary » de l'hôte affiche CPU, RAM, datastores. Les VMs éventuellement déjà présentes sur l'hôte sont visibles dans l'inventaire. Capture exigée.</p>
+</div>
+
+<div class="callout secu">
+<div class="callout-label">Sécurité — Vérification du thumbprint</div>
+<p>L'alerte de certificat lors de l'ajout d'un hôte est une protection contre le MITM. En production, vérifiez le thumbprint SHA-256 de l'hôte via la console directe avant de l'accepter dans vCenter.</p>
+</div>
+
+<div class="callout error">
+<div class="callout-label">Erreur fréquente — ESXi non ajoutable</div>
+<p><strong>Symptôme :</strong> erreur « Cannot contact the specified host » ou timeout. <strong>Causes :</strong> IP incorrecte, ESXi non démarré, pare-feu hôte bloquant vCenter, DNS ne résolvant pas. <strong>Solution :</strong> vérifiez la connectivité (<code>ping</code> depuis VCSA), vérifiez que le port 443 de l'ESXi est accessible, vérifiez que le firewall ESXi n'est pas restrictif.</p>
+</div>
+
+</div>
+</div>
+
+<!-- VC-6 -->
+<div class="step-card" id="vc6">
+<div class="step-card-header vmware">Étape VC-6 — Organiser l'inventaire (Folders et nommage)</div>
+<div class="step-card-body">
+
+<div class="callout action">
+<div class="callout-label">Action</div>
+<p>Passez en vue « VMs and Templates » (menu hamburger). Clic droit sur <code>CYBER-DC</code> → <strong>New Folder</strong> → <strong>New VM and Template Folder</strong> :</p>
+<ul>
+  <li>Créez un folder <code>Lab-VMs</code> (contiendra les VMs de travail)</li>
+  <li>Créez un folder <code>Templates</code> (contiendra les templates/golden images)</li>
+  <li>Créez un folder <code>Quarantine</code> (pour les VMs suspectes à isoler)</li>
+</ul>
+</div>
+
+<div class="callout info">
+<div class="callout-label">Info — Conventions de nommage</div>
+<p>Adoptez une convention cohérente dès le départ : <code>CYBER-DC</code>, <code>CYBER-CLUSTER</code>, <code>Lab-VMs</code>. Les noms doivent refléter la fonction et être lisibles. Cela facilite l'application des permissions par folder et l'audit de l'environnement.</p>
+</div>
+
+<div class="callout verif">
+<div class="callout-label">Vérification</div>
+<p>Les trois folders apparaissent sous <code>CYBER-DC</code> dans la vue « VMs and Templates ». Capture exigée.</p>
+</div>
+
+</div>
+</div>
+
+<!-- VC-7 -->
+<div class="step-card" id="vc7">
+<div class="step-card-header vmware">Étape VC-7 — Créer une VM de test</div>
+<div class="step-card-body">
+
+<div class="callout action">
+<div class="callout-label">Action</div>
+<p>Clic droit sur le folder <code>Lab-VMs</code> → <strong>New Virtual Machine</strong> → <strong>Create a new virtual machine</strong> :</p>
+<ul>
+  <li>Nom : <code>cyber-test-01</code></li>
+  <li>Emplacement : folder <code>Lab-VMs</code></li>
+  <li>Compute resource : <code>CYBER-CLUSTER</code></li>
+  <li>Storage : datastore local de l'ESXi, <strong>Thin Provision</strong></li>
+  <li>Compatibilité : valeur par défaut</li>
+  <li>Guest OS : Linux → Debian 11/12 (64-bit) ou autre selon votre ISO</li>
+  <li>Hardware : 1 vCPU, 1 Go RAM, 10 Go disque, connectée au Port Group <code>VM Network</code></li>
+  <li>Montez l'ISO d'installation via le CD/DVD drive (datastore ISO file)</li>
+</ul>
+</div>
+
+<div class="callout info">
+<div class="callout-label">Info — Explication</div>
+<p>Créer une VM via vCenter (et non directement sur l'ESXi) permet de la placer dans la hiérarchie organisationnelle (folder), de lui appliquer des permissions héritées et de la gérer centralement. Notez que l'ISO doit être uploadée sur le datastore ESXi au préalable.</p>
+</div>
+
+<div class="callout verif">
+<div class="callout-label">Vérification</div>
+<p>La VM <code>cyber-test-01</code> apparaît dans le folder <code>Lab-VMs</code>. Son état est « Powered Off ». Démarrez-la et vérifiez que la console affiche le boot sur l'ISO. Capture exigée : VM visible dans l'inventaire + console.</p>
+</div>
+
+<div class="callout secu">
+<div class="callout-label">Sécurité — ISO et intégrité</div>
+<p>Avant d'utiliser un ISO, vérifiez toujours son hash (SHA-256) par rapport au site officiel. Un ISO compromis est un vecteur d'attaque par supply chain.</p>
+</div>
+
+</div>
+</div>
+
+<!-- VC-8 -->
+<div class="step-card" id="vc8">
+<div class="step-card-header vmware">Étape VC-8 — Snapshots : créer et restaurer</div>
+<div class="step-card-body">
+
+<div class="callout action">
+<div class="callout-label">Action</div>
+<p>Sélectionnez <code>cyber-test-01</code> → menu <strong>Snapshots</strong> → <strong>Take Snapshot</strong> :</p>
+<ul>
+  <li>Nom : <code>baseline-clean</code></li>
+  <li>Description : « État propre avant tests de sécurité »</li>
+  <li>Option « Snapshot the virtual machine's memory » : décochez (pour un snapshot plus léger)</li>
+</ul>
+<p>Effectuez ensuite une modification dans la VM (créez un fichier, modifiez une config). Puis restaurez le snapshot : <strong>Snapshots</strong> → <strong>Manage Snapshots</strong> → sélectionnez <code>baseline-clean</code> → <strong>Revert to</strong>.</p>
+</div>
+
+<div class="callout info">
+<div class="callout-label">Info — Cas d'usage cybersécurité</div>
+<p>Les snapshots sont essentiels en cybersécurité : avant un test d'intrusion, une analyse de malware ou une modification système risquée, on crée un snapshot. En cas de compromission ou d'erreur, on restaure l'état sain en secondes. Attention : les snapshots ne sont PAS des sauvegardes — ils dépendent du datastore original et dégradent les performances s'ils s'accumulent.</p>
+</div>
+
+<div class="callout verif">
+<div class="callout-label">Vérification</div>
+<p>Après restauration du snapshot, la modification effectuée a disparu. Le gestionnaire de snapshots montre le snapshot <code>baseline-clean</code> comme état actuel. Capture exigée : avant/après restauration + gestionnaire de snapshots.</p>
+</div>
+
+</div>
+</div>
+
+<!-- VC-9 -->
+<div class="step-card" id="vc9">
+<div class="step-card-header vmware">Étape VC-9 — Permissions et rôles (RBAC)</div>
+<div class="step-card-body">
+
+<div class="callout action">
+<div class="callout-label">Action</div>
+<p>Créez un utilisateur local SSO puis attribuez-lui des permissions limitées :</p>
+<ul>
+  <li>Allez dans <strong>Menu → Administration → Single Sign-On → Users and Groups</strong></li>
+  <li>Domaine : <code>vsphere.local</code> → <strong>Add User</strong> : <code>student-ops</code> avec un mot de passe robuste</li>
+  <li>Revenez à la vue « Hosts and Clusters ». Sélectionnez le folder <code>Lab-VMs</code> → onglet <strong>Permissions</strong></li>
+  <li>Cliquez <strong>+</strong> (Add Permission) : utilisateur <code>student-ops@vsphere.local</code>, rôle <strong>Virtual Machine Power User</strong>, cochez « Propagate to children »</li>
+</ul>
+<p>Testez : ouvrez un navigateur privé, connectez-vous à vCenter avec <code>student-ops@vsphere.local</code>. Vérifiez que cet utilisateur peut démarrer/arrêter la VM dans <code>Lab-VMs</code> mais ne peut PAS supprimer un host ou modifier le cluster.</p>
+</div>
+
+<div class="callout info">
+<div class="callout-label">Info — Principe du moindre privilège</div>
+<p>Le rôle « Virtual Machine Power User » permet les opérations VM courantes (power on/off, console, snapshot) mais pas les opérations d'infrastructure (ajout d'hôtes, modification réseau, suppression de datastores). C'est une illustration directe du <strong>principe du moindre privilège</strong> : chaque utilisateur ne reçoit que les permissions nécessaires à sa mission.</p>
+</div>
+
+<div class="callout verif">
+<div class="callout-label">Vérification</div>
+<p>Connecté en tant que <code>student-ops</code> : la VM <code>cyber-test-01</code> est visible et manipulable. Tentez une action interdite (ex : ajouter un host) → message « Permission denied ». Capture des deux situations (action autorisée + action refusée).</p>
+</div>
+
+<div class="callout secu">
+<div class="callout-label">Sécurité — Audit des permissions</div>
+<p>Auditez régulièrement les permissions dans <code>Administration → Access Control → Global Permissions</code>. Tout utilisateur avec le rôle « Administrator » sur la racine a un contrôle total. En environnement réel, ce rôle doit être limité à 2–3 comptes nominatifs documentés.</p>
+</div>
+
+</div>
+</div>
+
+<!-- VC-10 -->
+<div class="step-card" id="vc10">
+<div class="step-card-header vmware">Étape VC-10 — Logs et événements</div>
+<div class="step-card-body">
+
+<div class="callout action">
+<div class="callout-label">Action</div>
+<p>Explorez les sources de journalisation dans vCenter :</p>
+<ul>
+  <li>Sélectionnez un objet (VM, Host, Datacenter) → onglet <strong>Monitor</strong> → <strong>Events</strong> : historique des actions (création, modification, login, erreurs)</li>
+  <li>Onglet <strong>Tasks</strong> : liste des tâches en cours et terminées avec statut</li>
+  <li>Pour la configuration syslog (conceptuel) : <strong>Host → Configure → System → Advanced System Settings</strong> → paramètre <code>Syslog.global.logHost</code> permettrait d'envoyer les logs vers un serveur syslog externe (ex : <code>udp://192.168.x.50:514</code>)</li>
+  <li>Vérifiez NTP : <strong>Host → Configure → System → Time Configuration</strong> — un serveur NTP doit être configuré pour des timestamps de logs cohérents</li>
+</ul>
+</div>
+
+<div class="callout verif">
+<div class="callout-label">Vérification</div>
+<p>Dans les événements, retrouvez les traces de vos actions précédentes : création du datacenter, ajout de l'hôte, création de la VM, prise de snapshot, connexion de <code>student-ops</code>. Notez 5 événements significatifs avec leur timestamp. Capture exigée.</p>
+</div>
+
+<div class="callout secu">
+<div class="callout-label">Sécurité — Centralisation des logs</div>
+<p>En environnement de production, les logs doivent être envoyés vers un SIEM (Splunk, ELK, Wazuh) pour corrélation, alertes et conservation. Sans centralisation, un attaquant ayant compromis l'hôte peut effacer les logs locaux.</p>
+</div>
+
+</div>
+</div>
+
+<!-- VC-11 -->
+<div class="step-card" id="vc11">
+<div class="step-card-header vmware">Étape VC-11 — Mini-check de sécurité vCenter</div>
+<div class="step-card-body">
+
+<div class="callout action">
+<div class="callout-label">Action</div>
+<p>Réalisez un audit rapide de votre environnement vCenter en vérifiant les points suivants :</p>
+</div>
+
+<table>
+<tr><th>Point de contrôle</th><th>Où vérifier</th><th>État attendu</th><th>Votre constat</th></tr>
+<tr><td>Mot de passe admin SSO robuste</td><td>Politique SSO : Administration → Configuration</td><td>12+ chars, complexité activée</td><td>☐</td></tr>
+<tr><td>SSH désactivé sur ESXi</td><td>Host → Configure → System → Services → SSH</td><td>Stopped</td><td>☐</td></tr>
+<tr><td>NTP configuré</td><td>Host → Configure → System → Time Configuration</td><td>Serveur NTP défini, synchronisé</td><td>☐</td></tr>
+<tr><td>Lockdown Mode (concept)</td><td>Host → Configure → System → Security Profile</td><td>Connaître l'option (désactivé en lab)</td><td>☐</td></tr>
+<tr><td>Certificat VCSA</td><td>Navigateur : vérifier le certificat sur https://VCSA</td><td>Certificat présent (auto-signé en lab)</td><td>☐</td></tr>
+<tr><td>Permissions non excessives</td><td>Datacenter → Permissions</td><td>Seuls admin et student-ops présents</td><td>☐</td></tr>
+<tr><td>Logs accessibles</td><td>Monitor → Events</td><td>Événements récents visibles</td><td>☐</td></tr>
+</table>
+
+</div>
+</div>
+
+<!-- Erreurs fréquentes vCenter -->
+<h3 id="vc-err">Erreurs fréquentes — vCenter</h3>
+
+<table>
+<tr><th>Problème</th><th>Symptôme</th><th>Diagnostic</th><th>Solution</th></tr>
+<tr><td>VCSA inaccessible</td><td>Page ne charge pas</td><td>Services en cours de démarrage (10–15 min) ; IP incorrecte ; DNS non résolu</td><td>Patienter ; vérifier IP via console VCSA (F2) ; ajouter entrée dans <code>/etc/hosts</code> ou DNS</td></tr>
+<tr><td>ESXi non ajoutable</td><td>Erreur « Cannot contact host »</td><td>Connectivité réseau ; port 443 bloqué ; identifiants incorrects</td><td>Ping test ; vérifier firewall ; vérifier identifiants root ESXi</td></tr>
+<tr><td>Problème DNS/NTP</td><td>Avertissements divers, certificat invalide</td><td>VCSA ne résout pas son propre FQDN ; horloge décalée</td><td>Configurer DNS correctement ou utiliser fichier hosts ; configurer NTP</td></tr>
+<tr><td>Certificat / alerte navigateur</td><td>« Your connection is not private »</td><td>Certificat auto-signé (normal en lab)</td><td>Accepter l'exception ; en production : déployer un certificat signé par une CA</td></tr>
+<tr><td>VM sans connectivité réseau</td><td>VM ne ping rien</td><td>Port Group incorrect ; VLAN mal configuré ; câble virtuel « déconnecté »</td><td>Vérifier le Port Group assigné ; cocher « Connected » sur l'adaptateur réseau VM</td></tr>
+<tr><td>Datastore plein</td><td>Impossible de créer VM ou snapshot</td><td>Snapshots accumulés ; fichiers orphelins</td><td>Supprimer les snapshots obsolètes ; nettoyer le datastore</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<!-- D — TP GUIDÉ PROXMOX                                          -->
+<!-- ============================================================ -->
+<h2 class="section-title" id="partD">D — TP guidé : Proxmox Datacenter</h2>
+
+<div class="callout info">
+<div class="callout-label">Info — Objectif de cette section</div>
+<p>Explorer en profondeur la vue Datacenter de Proxmox, configurer le stockage, créer des pools, déployer une VM, manipuler snapshots et sauvegardes, configurer le RBAC et le firewall, et consulter les logs. Chaque étape intègre un volet cybersécurité.</p>
+</div>
+
+<!-- PX-1 -->
+<div class="step-card" id="px1">
+<div class="step-card-header proxmox">Étape PX-1 — Comprendre la vue Datacenter</div>
+<div class="step-card-body">
+
+<div class="callout action">
+<div class="callout-label">Action</div>
+<p>Connectez-vous à <code>https://&lt;IP_Proxmox&gt;:8006</code> avec <code>root@pam</code>. Dans l'arbre de gauche, cliquez sur <strong>Datacenter</strong>. Parcourez systématiquement chaque sous-menu :</p>
+<ul>
+  <li><strong>Summary</strong> : vue d'ensemble des ressources (CPU, RAM, stockage) de tous les nœuds</li>
+  <li><strong>Cluster</strong> : informations et gestion du cluster (vide si un seul nœud non-clusterisé)</li>
+  <li><strong>Options</strong> : paramètres globaux (console, keyboard layout, migration settings)</li>
+  <li><strong>Storage</strong> : configuration des espaces de stockage partagés/locaux</li>
+  <li><strong>Backup</strong> : planification de jobs de sauvegarde automatiques</li>
+  <li><strong>Replication</strong> : réplication de VMs entre nœuds (nécessite ZFS + cluster)</li>
+  <li><strong>Permissions</strong> : Users, Groups, API Tokens, Roles, Realms, ACL</li>
+  <li><strong>Firewall</strong> : règles pare-feu au niveau Datacenter</li>
+</ul>
+</div>
+
+<div class="callout verif">
+<div class="callout-label">Vérification</div>
+<p>Vous avez identifié au moins 8 sous-menus dans la vue Datacenter. Le Summary montre les ressources de votre nœud. Notez la quantité de RAM et de stockage disponibles. Capture exigée : vue Summary du Datacenter.</p>
+</div>
+
+</div>
+</div>
+
+<!-- PX-2 -->
+<div class="step-card" id="px2">
+<div class="step-card-header proxmox">Étape PX-2 — Cluster Proxmox (concept et optionnel)</div>
+<div class="step-card-body">
+
+<div class="callout info">
+<div class="callout-label">Info — Cluster à 1 nœud vs multi-nœuds</div>
+<p>Un cluster Proxmox permet de fédérer plusieurs nœuds sous une même vue Datacenter. Avec un seul nœud, le clustering n'est pas strictement nécessaire, mais la vue Datacenter fonctionne déjà comme un mini-cluster. En production, le cluster Proxmox utilise Corosync pour la communication inter-nœuds et permet la migration de VMs (live migration avec stockage partagé).</p>
+<p>Dans ce TP, nous travaillons avec un seul nœud. La création d'un cluster à 1 nœud est possible (<code>pvecm create CYBER-CLUSTER</code>) mais optionnelle — elle ne change pas les fonctionnalités accessibles dans la vue Datacenter pour notre lab.</p>
+</div>
+
+<div class="callout action">
+<div class="callout-label">Action (optionnelle)</div>
+<p>Si vous souhaitez expérimenter, connectez-vous en SSH au nœud Proxmox et exécutez :</p>
+<pre><code>pvecm create CYBER-PVE-CLUSTER</code></pre>
+<p>Puis vérifiez dans l'interface web : Datacenter → Cluster devrait afficher les informations du cluster.</p>
+</div>
+
+</div>
+</div>
+
+<!-- PX-3 -->
+<div class="step-card" id="px3">
+<div class="step-card-header proxmox">Étape PX-3 — Créer un Pool</div>
+<div class="step-card-body">
+
+<div class="callout action">
+<div class="callout-label">Action</div>
+<p>Allez dans <strong>Datacenter → Permissions → Pools</strong> → <strong>Create</strong> :</p>
+<ul>
+  <li>Pool ID : <code>CYBER-LAB</code></li>
+  <li>Comment : « Pool pour les VMs et ressources du lab cybersécurité »</li>
+</ul>
+<p>Validez. Ce pool sera utilisé pour regrouper vos VMs et y appliquer des permissions spécifiques.</p>
+</div>
+
+<div class="callout info">
+<div class="callout-label">Info — Pools Proxmox</div>
+<p>Un pool est un regroupement logique de VMs, conteneurs et stockages. Il est l'équivalent fonctionnel d'un Folder ou Resource Pool dans vCenter. L'intérêt principal est de pouvoir attribuer des permissions sur un pool entier plutôt que sur chaque VM individuellement.</p>
+</div>
+
+<div class="callout verif">
+<div class="callout-label">Vérification</div>
+<p>Le pool <code>CYBER-LAB</code> apparaît dans la liste des pools. Il est vide pour l'instant (aucune VM assignée). Capture exigée.</p>
+</div>
+
+</div>
+</div>
+
+<!-- PX-4 -->
+<div class="step-card" id="px4">
+<div class="step-card-header proxmox">Étape PX-4 — Stockage : vérifier et comprendre</div>
+<div class="step-card-body">
+
+<div class="callout action">
+<div class="callout-label">Action</div>
+<p>Allez dans <strong>Datacenter → Storage</strong>. Vérifiez les storages existants :</p>
+<ul>
+  <li><code>local</code> : type « Directory » — contenu autorisé : ISO images, CT Templates, VZDump backup files, Snippets</li>
+  <li><code>local-lvm</code> : type « LVM-Thin » — contenu autorisé : Disk image, Container</li>
+</ul>
+<p>Vérifiez qu'un ISO est présent : sélectionnez votre nœud → <code>local</code> → <strong>ISO Images</strong>. Si aucun ISO n'est présent, uploadez-en un :</p>
+<ul>
+  <li>Cliquez <strong>Upload</strong> → sélectionnez un fichier ISO (Debian, Alpine, etc.)</li>
+  <li>Ou utilisez l'option <strong>Download from URL</strong> si vous avez un lien direct</li>
+</ul>
+</div>
+
+<div class="callout verif">
+<div class="callout-label">Vérification</div>
+<p>Le stockage <code>local</code> contient au moins un fichier ISO. Le stockage <code>local-lvm</code> affiche l'espace total et utilisé. Notez ces valeurs. Capture exigée : vue Storage avec les deux storages et leur utilisation.</p>
+</div>
+
+<div class="callout error">
+<div class="callout-label">Erreur fréquente — ISO non visible lors de la création de VM</div>
+<p><strong>Symptôme :</strong> lors de la création de VM, aucun ISO n'apparaît dans la liste. <strong>Cause :</strong> l'ISO a été uploadé sur un stockage qui n'autorise pas le contenu « ISO image », ou le stockage n'est pas sélectionné. <strong>Solution :</strong> vérifiez que l'ISO est dans <code>local</code> (qui autorise les ISO), pas dans <code>local-lvm</code>.</p>
+</div>
+
+</div>
+</div>
+
+<!-- PX-5 -->
+<div class="step-card" id="px5">
+<div class="step-card-header proxmox">Étape PX-5 — Créer une VM (et notion de conteneur LXC)</div>
+<div class="step-card-body">
+
+<div class="callout action">
+<div class="callout-label">Action</div>
+<p>Cliquez sur <strong>Create VM</strong> (bouton en haut à droite). Remplissez l'assistant :</p>
+<ul>
+  <li><strong>General</strong> : Node = votre nœud, VM ID = <code>100</code>, Name = <code>cyber-srv-01</code>, Resource Pool = <code>CYBER-LAB</code></li>
+  <li><strong>OS</strong> : ISO image = sélectionnez l'ISO uploadé, Type = Linux, Version = 6.x (ou adaptez)</li>
+  <li><strong>System</strong> : valeurs par défaut (BIOS SeaBIOS, Machine i440fx)</li>
+  <li><strong>Disks</strong> : Storage = <code>local-lvm</code>, Disk size = <code>10</code> Go</li>
+  <li><strong>CPU</strong> : Cores = <code>1</code></li>
+  <li><strong>Memory</strong> : <code>1024</code> Mo</li>
+  <li><strong>Network</strong> : Bridge = <code>vmbr0</code>, Model = VirtIO</li>
+  <li><strong>Confirm</strong> : vérifiez le résumé → <strong>Finish</strong></li>
+</ul>
+</div>
+
+<div class="callout info">
+<div class="callout-label">Info — VM vs Conteneur (LXC)</div>
+<p>Proxmox supporte deux types de virtualisation : les <strong>VMs KVM</strong> (virtualisation complète, isolation forte, tout OS supporté) et les <strong>conteneurs LXC</strong> (virtualisation légère au niveau OS, Linux uniquement, partage du noyau hôte). Pour un lab cybersécurité nécessitant une isolation forte, les VMs KVM sont préférées. Les conteneurs sont utiles pour des services légers (DNS, monitoring) où la performance prime sur l'isolation.</p>
+</div>
+
+<div class="callout verif">
+<div class="callout-label">Vérification</div>
+<p>La VM <code>cyber-srv-01</code> (ID 100) apparaît sous votre nœud ET dans le pool <code>CYBER-LAB</code> (vue Pools). Démarrez-la et ouvrez la console (bouton « Console ») — l'ISO doit booter. Capture exigée : VM dans l'inventaire + console au boot.</p>
+</div>
+
+</div>
+</div>
+
+<!-- PX-6 -->
+<div class="step-card" id="px6">
+<div class="step-card-header proxmox">Étape PX-6 — Snapshots et sauvegarde</div>
+<div class="step-card-body">
+
+<div class="callout action">
+<div class="callout-label">Action — Snapshot</div>
+<p>Sélectionnez la VM <code>cyber-srv-01</code> → onglet <strong>Snapshots</strong> → <strong>Take Snapshot</strong> :</p>
+<ul>
+  <li>Name : <code>baseline-clean</code></li>
+  <li>Description : « État initial propre »</li>
+  <li>Include RAM : non (snapshot disque uniquement)</li>
+</ul>
+<p>Faites une modification dans la VM, puis restaurez : sélectionnez le snapshot → <strong>Rollback</strong>.</p>
+</div>
+
+<div class="callout action">
+<div class="callout-label">Action — Sauvegarde manuelle</div>
+<p>Sélectionnez la VM → onglet <strong>Backup</strong> → <strong>Backup now</strong> :</p>
+<ul>
+  <li>Storage : <code>local</code> (qui accepte les fichiers VZDump)</li>
+  <li>Mode : <code>Snapshot</code> (sauvegarde à chaud, sans arrêt de la VM)</li>
+  <li>Compression : <code>ZSTD</code></li>
+</ul>
+<p>Lancez la sauvegarde et suivez la progression dans la fenêtre de tâche.</p>
+</div>
+
+<div class="callout info">
+<div class="callout-label">Info — Snapshot vs Backup</div>
+<p>Un <strong>snapshot</strong> est un point de retour rapide stocké sur le même storage que la VM — il est rapide mais ne protège pas contre une panne du stockage. Une <strong>sauvegarde</strong> (backup) est une copie complète exportable, stockée séparément — elle protège contre la perte de données mais prend plus de temps et d'espace.</p>
+</div>
+
+<div class="callout verif">
+<div class="callout-label">Vérification</div>
+<p>Le snapshot <code>baseline-clean</code> apparaît dans l'onglet Snapshots. Après rollback, la modification a disparu. La sauvegarde apparaît dans <code>local</code> → <strong>Backups</strong> avec un fichier nommé <code>vzdump-qemu-100-*.vma.zst</code>. Capture exigée : liste des snapshots + backup visible dans le storage.</p>
+</div>
+
+</div>
+</div>
+
+<!-- PX-7 -->
+<div class="step-card" id="px7">
+<div class="step-card-header proxmox">Étape PX-7 — RBAC : utilisateurs et rôles</div>
+<div class="step-card-body">
+
+<div class="callout action">
+<div class="callout-label">Action</div>
+<p>Créez un utilisateur à privilèges limités et assignez-le au pool :</p>
+<ul>
+  <li><strong>Datacenter → Permissions → Users → Add</strong> : User name = <code>student-ops</code>, Realm = <code>Proxmox VE authentication server</code> (pve), Password = (robuste), Expire = never</li>
+  <li><strong>Datacenter → Permissions → Add → User Permission</strong> : Path = <code>/pool/CYBER-LAB</code>, User = <code>student-ops@pve</code>, Role = <code>PVEVMUser</code></li>
+</ul>
+<p>Testez : ouvrez un navigateur privé, connectez-vous à Proxmox avec <code>student-ops@pve</code>. Vérifiez les accès.</p>
+</div>
+
+<div class="callout info">
+<div class="callout-label">Info — Realm PVE vs PAM</div>
+<p>Le realm <strong>PVE</strong> crée des utilisateurs internes à Proxmox, sans compte Linux associé. L'utilisateur ne peut pas se connecter en SSH — il n'existe que dans le contexte Proxmox. C'est le choix le plus sûr pour des comptes opérateurs qui n'ont pas besoin d'accès shell au nœud.</p>
+</div>
+
+<div class="callout verif">
+<div class="callout-label">Vérification</div>
+<p>Connecté en tant que <code>student-ops@pve</code>, l'utilisateur voit uniquement les VMs du pool <code>CYBER-LAB</code>. Il peut démarrer/arrêter la VM, ouvrir la console, mais ne peut PAS modifier la configuration du nœud, ajouter du stockage ou modifier le firewall. Tentez une action interdite et constatez le refus. Capture exigée : vue restreinte + message de refus.</p>
+</div>
+
+<div class="callout secu">
+<div class="callout-label">Sécurité — Bonnes pratiques RBAC</div>
+<p>Ne jamais partager le compte <code>root@pam</code>. Créer des comptes nominatifs dans le realm PVE pour chaque opérateur. Utiliser des groupes pour simplifier la gestion des permissions à grande échelle. Auditer régulièrement les ACL dans <code>Datacenter → Permissions</code>.</p>
+</div>
+
+</div>
+</div>
+
+<!-- PX-8 -->
+<div class="step-card" id="px8">
+<div class="step-card-header proxmox">Étape PX-8 — Firewall intégré</div>
+<div class="step-card-body">
+
+<div class="callout secu">
+<div class="callout-label">Sécurité — Avertissement critique</div>
+<p>Activer le firewall Proxmox sans règles d'accès management vous BLOQUERA hors de l'interface web. Suivez les étapes dans l'ordre strict ci-dessous.</p>
+</div>
+
+<div class="callout action">
+<div class="callout-label">Action — Comprendre les niveaux</div>
+<p>Le firewall Proxmox agit à trois niveaux hiérarchiques :</p>
+</div>
+
+<div class="diagram-container">
+<svg viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" style="font-family:'Segoe UI',Arial,sans-serif;font-size:12px">
+  <rect x="50" y="10" width="400" height="55" rx="5" fill="#fce8e6" stroke="#ea4335" stroke-width="1.5"/>
+  <text x="250" y="30" text-anchor="middle" fill="#c62828" font-weight="700">Niveau 1 — Datacenter</text>
+  <text x="250" y="50" text-anchor="middle" fill="#4a4a4a" font-size="11">Security Groups, IP Sets, règles globales, activation master switch</text>
+  <rect x="80" y="75" width="340" height="50" rx="5" fill="#fef7e0" stroke="#f9ab00" stroke-width="1.5"/>
+  <text x="250" y="95" text-anchor="middle" fill="#996600" font-weight="700">Niveau 2 — Node</text>
+  <text x="250" y="112" text-anchor="middle" fill="#4a4a4a" font-size="11">Règles pour le trafic entrant/sortant du nœud lui-même</text>
+  <rect x="110" y="135" width="280" height="50" rx="5" fill="#e6f4ea" stroke="#34a853" stroke-width="1.5"/>
+  <text x="250" y="155" text-anchor="middle" fill="#1b4965" font-weight="700">Niveau 3 — VM / CT</text>
+  <text x="250" y="172" text-anchor="middle" fill="#4a4a4a" font-size="11">Règles par interface réseau de chaque machine virtuelle</text>
+</svg>
+<div class="diagram-caption">Figure D.8 — Niveaux du firewall Proxmox</div>
+</div>
+
+<div class="callout action">
+<div class="callout-label">Action — Configuration conceptuelle (prudence)</div>
+<p>Pour comprendre le firewall sans risquer de se bloquer, procédez ainsi :</p>
+<ul>
+  <li>Allez dans <strong>Datacenter → Firewall → Options</strong> : notez que le firewall est désactivé (<code>Enable Firewall: No</code>)</li>
+  <li>Allez dans <strong>Datacenter → Firewall → Rules</strong> : ajoutez une règle <code>ACCEPT</code> en entrée (Direction: IN) pour le port <code>8006</code> (TCP) — source : votre réseau de management</li>
+  <li>Ajoutez une règle <code>ACCEPT</code> en entrée pour le port <code>22</code> (TCP) — pour SSH de secours</li>
+  <li><strong>Ne pas activer le firewall dans ce lab</strong> (sauf si vous êtes confiant). Documentez simplement les règles que vous auriez activées.</li>
+</ul>
+</div>
+
+<div class="callout verif">
+<div class="callout-label">Vérification</div>
+<p>Les deux règles (port 8006 et 22 en ACCEPT) sont visibles dans <code>Datacenter → Firewall → Rules</code>. Le firewall reste désactivé en mode « test ». Capture exigée : liste des règles configurées.</p>
+</div>
+
+</div>
+</div>
+
+<!-- PX-9 -->
+<div class="step-card" id="px9">
+<div class="step-card-header proxmox">Étape PX-9 — Logs et tâches</div>
+<div class="step-card-body">
+
+<div class="callout action">
+<div class="callout-label">Action</div>
+<p>Explorez les différentes sources de journalisation dans Proxmox :</p>
+<ul>
+  <li>Sélectionnez votre nœud → <strong>System → Syslog</strong> : messages système en temps réel</li>
+  <li>Nœud → <strong>System → Tasks</strong> : historique des tâches (création VM, backup, snapshot…)</li>
+  <li>Depuis le shell Proxmox (via Console ou SSH) : <code>journalctl -u pveproxy --since "1 hour ago"</code> pour les logs du proxy web</li>
+  <li>Fichier d'authentification : <code>/var/log/auth.log</code> — trace toutes les connexions</li>
+</ul>
+</div>
+
+<div class="callout verif">
+<div class="callout-label">Vérification</div>
+<p>Dans les Tasks, retrouvez les traces de vos actions : création de VM, snapshot, backup, connexion de <code>student-ops</code>. Dans le Syslog ou <code>auth.log</code>, identifiez une ligne de connexion. Notez 5 événements significatifs. Capture exigée.</p>
+</div>
+
+<div class="callout secu">
+<div class="callout-label">Sécurité — Conservation des logs</div>
+<p>Par défaut, les logs sont stockés localement sur le nœud et soumis à la rotation logrotate. En production, configurez l'envoi des logs vers un serveur syslog distant (ex : <code>rsyslog</code> vers un SIEM) pour garantir la non-répudiation et la conservation en cas de compromission du nœud.</p>
+</div>
+
+</div>
+</div>
+
+<!-- Erreurs fréquentes Proxmox -->
+<h3 id="px-err">Erreurs fréquentes — Proxmox Datacenter</h3>
+
+<table>
+<tr><th>Problème</th><th>Symptôme</th><th>Diagnostic</th><th>Solution</th></tr>
+<tr><td>ISO non visible</td><td>Liste vide lors de la création de VM</td><td>ISO uploadé sur mauvais storage ou storage qui n'accepte pas les ISO</td><td>Vérifier que l'ISO est dans <code>local</code> (type Directory, content=iso)</td></tr>
+<tr><td>Storage plein</td><td>Erreur « no space left on device »</td><td>Backups ou snapshots accumulés ; LVM-Thin saturé</td><td>Supprimer backups/snapshots obsolètes ; vérifier <code>lvs</code> et <code>df -h</code></td></tr>
+<tr><td>Bridge mal configuré</td><td>VM n'a pas de réseau</td><td>Bridge sans interface physique associée, ou VM sur mauvais bridge</td><td>Vérifier <code>/etc/network/interfaces</code> ; assigner le bon bridge à la VM</td></tr>
+<tr><td>Firewall bloque accès</td><td>Interface web 8006 inaccessible après activation firewall</td><td>Pas de règle ACCEPT pour 8006 avant activation</td><td>Accéder via console Workstation, désactiver le FW : <code>pve-firewall stop</code></td></tr>
+<tr><td>Time sync incorrect</td><td>Timestamps de logs décalés, problèmes de certificats</td><td>NTP non configuré ou serveur NTP inaccessible</td><td>Configurer <code>chrony</code> ou <code>systemd-timesyncd</code> avec un serveur NTP accessible</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<!-- E — SCÉNARIO CAPSTONE                                         -->
+<!-- ============================================================ -->
+<h2 class="section-title" id="partE">E — Scénario final (Capstone) — Mini-lab comparatif cybersécurité</h2>
+
+<div class="callout info">
+<div class="callout-label">Info — Objectif</div>
+<p>Mettre en pratique l'ensemble des compétences acquises en réalisant un mini-lab identique sur les deux plateformes (vCenter et Proxmox), en appliquant des mesures de sécurité et en documentant le tout.</p>
+</div>
+
+<h3>Scénario</h3>
+<p>Vous êtes chargé de déployer un environnement de test pour une équipe de sécurité. Cet environnement comprend deux VMs (un « serveur » et un « client ») sur un réseau isolé, avec des mesures de sécurité appliquées (RBAC, snapshots de référence, segmentation réseau). Vous devez le réaliser sur les DEUX plateformes et comparer.</p>
+
+<h3>Architecture cible</h3>
+
+<div class="diagram-container">
+<svg viewBox="0 0 700 340" xmlns="http://www.w3.org/2000/svg" style="font-family:'Segoe UI',Arial,sans-serif;font-size:12px">
+  <!-- Management Network -->
+  <rect x="30" y="10" width="640" height="70" rx="6" fill="#fef7e0" stroke="#f9ab00" stroke-width="1.5"/>
+  <text x="350" y="32" text-anchor="middle" fill="#996600" font-weight="700" font-size="13">Réseau Management (accès admin uniquement)</text>
+  <text x="350" y="52" text-anchor="middle" fill="#4a4a4a" font-size="11">vCenter (443) — ESXi mgmt (443) — Proxmox (8006) — Poste admin</text>
+  <!-- Hyperviseurs -->
+  <rect x="50" y="110" width="280" height="210" rx="6" fill="#f5f5f0" stroke="#696969" stroke-width="2"/>
+  <text x="190" y="132" text-anchor="middle" fill="#696969" font-weight="700" font-size="13">vCenter / ESXi</text>
+  <rect x="370" y="110" width="280" height="210" rx="6" fill="#f5f5f0" stroke="#e57000" stroke-width="2"/>
+  <text x="510" y="132" text-anchor="middle" fill="#e57000" font-weight="700" font-size="13">Proxmox VE</text>
+  <!-- VM Network isolé vCenter -->
+  <rect x="70" y="145" width="240" height="60" rx="4" fill="#e6f4ea" stroke="#34a853" stroke-width="1" stroke-dasharray="4,2"/>
+  <text x="190" y="163" text-anchor="middle" fill="#34a853" font-weight="600" font-size="11">Réseau isolé VM (Port Group Lab-Net)</text>
+  <rect x="85" y="172" width="90" height="28" rx="3" fill="#fff" stroke="#34a853" stroke-width="1"/>
+  <text x="130" y="190" text-anchor="middle" fill="#333" font-size="10">cyber-srv</text>
+  <rect x="200" y="172" width="90" height="28" rx="3" fill="#fff" stroke="#34a853" stroke-width="1"/>
+  <text x="245" y="190" text-anchor="middle" fill="#333" font-size="10">cyber-client</text>
+  <!-- VM Network isolé Proxmox -->
+  <rect x="390" y="145" width="240" height="60" rx="4" fill="#e6f4ea" stroke="#34a853" stroke-width="1" stroke-dasharray="4,2"/>
+  <text x="510" y="163" text-anchor="middle" fill="#34a853" font-weight="600" font-size="11">Réseau isolé VM (vmbr1 — pas d'uplink)</text>
+  <rect x="405" y="172" width="90" height="28" rx="3" fill="#fff" stroke="#34a853" stroke-width="1"/>
+  <text x="450" y="190" text-anchor="middle" fill="#333" font-size="10">cyber-srv</text>
+  <rect x="520" y="172" width="90" height="28" rx="3" fill="#fff" stroke="#34a853" stroke-width="1"/>
+  <text x="565" y="190" text-anchor="middle" fill="#333" font-size="10">cyber-client</text>
+  <!-- Mesures sécurité -->
+  <rect x="70" y="225" width="240" height="80" rx="4" fill="#fce8e6" stroke="#ea4335" stroke-width="1"/>
+  <text x="190" y="245" text-anchor="middle" fill="#c62828" font-weight="600" font-size="11">Mesures sécurité :</text>
+  <text x="190" y="262" text-anchor="middle" fill="#4a4a4a" font-size="10">1. RBAC student-ops (lecture + VM power)</text>
+  <text x="190" y="277" text-anchor="middle" fill="#4a4a4a" font-size="10">2. Snapshots baseline sur chaque VM</text>
+  <text x="190" y="292" text-anchor="middle" fill="#4a4a4a" font-size="10">3. Réseau isolé (pas de route vers mgmt)</text>
+  <rect x="390" y="225" width="240" height="80" rx="4" fill="#fce8e6" stroke="#ea4335" stroke-width="1"/>
+  <text x="510" y="245" text-anchor="middle" fill="#c62828" font-weight="600" font-size="11">Mesures sécurité :</text>
+  <text x="510" y="262" text-anchor="middle" fill="#4a4a4a" font-size="10">1. RBAC student-ops@pve (PVEVMUser)</text>
+  <text x="510" y="277" text-anchor="middle" fill="#4a4a4a" font-size="10">2. Snapshots baseline sur chaque VM</text>
+  <text x="510" y="292" text-anchor="middle" fill="#4a4a4a" font-size="10">3. Bridge vmbr1 isolé (pas d'uplink)</text>
+</svg>
+<div class="diagram-caption">Figure E — Architecture du mini-lab capstone : management isolé des VMs</div>
+</div>
+
+<h3>Étapes détaillées</h3>
+
+<div class="step-card">
+<div class="step-card-header" style="background:#1b4965">Capstone — Étape 1 : Réseau isolé</div>
+<div class="step-card-body">
+<p><strong>vCenter/ESXi :</strong> Créez un nouveau Port Group nommé <code>Lab-Net-Isolated</code> sur le vSwitch existant, sans VLAN et sans uplink physique dédié (en nested lab, l'isolation sera logique). Assignez vos VMs de lab à ce port group.</p>
+<p><strong>Proxmox :</strong> Créez un nouveau bridge <code>vmbr1</code> dans la configuration réseau du nœud (<code>Node → Network → Create → Linux Bridge</code>), sans associer d'interface physique (pas d'uplink = réseau isolé). Assignez vos VMs de lab à <code>vmbr1</code>.</p>
+<div class="callout verif">
+<div class="callout-label">Vérification</div>
+<p>Les VMs sur le réseau isolé peuvent communiquer entre elles (ping serveur ↔ client) mais ne peuvent PAS atteindre le réseau de management ni Internet. Prouvez-le par capture.</p>
+</div>
+</div>
+</div>
+
+<div class="step-card">
+<div class="step-card-header" style="background:#1b4965">Capstone — Étape 2 : Déploiement des VMs</div>
+<div class="step-card-body">
+<p>Sur chaque plateforme, créez deux VMs minimales :</p>
+<table>
+<tr><th>VM</th><th>Nom</th><th>Config</th><th>Réseau</th></tr>
+<tr><td>Serveur</td><td><code>cyber-srv-cap</code></td><td>1 vCPU, 512 Mo RAM, 8 Go disque</td><td>Lab-Net-Isolated / vmbr1</td></tr>
+<tr><td>Client</td><td><code>cyber-cli-cap</code></td><td>1 vCPU, 512 Mo RAM, 8 Go disque</td><td>Lab-Net-Isolated / vmbr1</td></tr>
+</table>
+<p>Installez un OS minimal (Alpine Linux recommandé pour sa légèreté). Configurez des IPs statiques dans le réseau isolé (ex : 10.10.10.1/24 et 10.10.10.2/24).</p>
+</div>
+</div>
+
+<div class="step-card">
+<div class="step-card-header" style="background:#1b4965">Capstone — Étape 3 : Snapshots de référence</div>
+<div class="step-card-body">
+<p>Sur chaque plateforme, prenez un snapshot <code>baseline-capstone</code> de chaque VM après installation et configuration réseau. Ce snapshot représente l'état « sain » de référence.</p>
+</div>
+</div>
+
+<div class="step-card">
+<div class="step-card-header" style="background:#1b4965">Capstone — Étape 4 : Provoquer une mauvaise configuration et restaurer</div>
+<div class="step-card-body">
+<p>Sur le serveur (<code>cyber-srv-cap</code>), effectuez une modification risquée simulant une erreur ou une compromission :</p>
+<ul>
+  <li>Supprimez un fichier système non critique (ex : <code>rm /etc/motd</code>) ou modifiez la configuration réseau</li>
+  <li>Documentez la modification effectuée</li>
+  <li>Restaurez le snapshot <code>baseline-capstone</code></li>
+  <li>Vérifiez que l'état est revenu à la normale</li>
+</ul>
+<div class="callout verif">
+<div class="callout-label">Vérification</div>
+<p>Capture avant modification, après modification, après restauration. Les trois captures montrent clairement le cycle : état sain → état altéré → retour à l'état sain.</p>
+</div>
+</div>
+</div>
+
+<div class="step-card">
+<div class="step-card-header" style="background:#1b4965">Capstone — Étape 5 : Collecte de preuves</div>
+<div class="step-card-body">
+<p>Sur chaque plateforme, collectez :</p>
+<ul>
+  <li>5 événements/logs significatifs (connexions, création VM, snapshot, erreurs)</li>
+  <li>Preuve que le RBAC fonctionne (action autorisée + action refusée pour <code>student-ops</code>)</li>
+  <li>Preuve de l'isolation réseau (ping réussi entre VMs, ping échoué vers management)</li>
+</ul>
+</div>
+</div>
+
+<h3>Questions d'analyse (à rendre)</h3>
+<div class="callout info">
+<div class="callout-label">Info — Questions</div>
+<ul>
+  <li><strong>Q1 :</strong> Quelle est la surface d'attaque de votre environnement de management ? Listez les ports et services exposés sur chaque plateforme.</li>
+  <li><strong>Q2 :</strong> Un attaquant compromet la VM <code>cyber-srv-cap</code>. Peut-il atteindre l'interface de management de l'hyperviseur ? Justifiez en référençant votre configuration réseau.</li>
+  <li><strong>Q3 :</strong> Le compte <code>student-ops</code> est compromis. Quel est l'impact maximal sur chaque plateforme ? Comment le limiter davantage ?</li>
+  <li><strong>Q4 :</strong> Comparez la procédure de restauration par snapshot entre vCenter et Proxmox : similitudes, différences, temps de restauration observé.</li>
+  <li><strong>Q5 :</strong> Quels logs permettraient de détecter une activité suspecte (connexion non autorisée, modification de permission) sur chaque plateforme ?</li>
+</ul>
+</div>
+
+<!-- ============================================================ -->
+<!-- F — COMPARAISON                                               -->
+<!-- ============================================================ -->
+<h2 class="section-title" id="partF">F — Comparaison structurée : vCenter vs Proxmox Datacenter</h2>
+
+<table>
+<tr><th>Critère</th><th>vCenter Server</th><th>Proxmox VE (vue Datacenter)</th></tr>
+<tr><td><strong>Éditeur / licence</strong></td><td>VMware (Broadcom) — licence payante (sauf évaluation)</td><td>Proxmox Server Solutions — open source (GPL), support payant optionnel</td></tr>
+<tr><td><strong>Déploiement management</strong></td><td>Appliance séparée (VCSA) à installer sur un ESXi</td><td>Intégré nativement dans chaque nœud Proxmox</td></tr>
+<tr><td><strong>Ressources management</strong></td><td>Lourd : 12+ Go RAM, 2+ vCPU minimum (VCSA Tiny)</td><td>Léger : interface web directement sur le nœud, pas de VM supplémentaire</td></tr>
+<tr><td><strong>Hiérarchie d'objets</strong></td><td>vCenter → Datacenter → Cluster → Host → VM + Folders + Resource Pools</td><td>Datacenter → Node → VM/CT + Pools</td></tr>
+<tr><td><strong>RBAC</strong></td><td>SSO + rôles + permissions par objet avec propagation</td><td>Realms (PAM/PVE/LDAP) + rôles + ACL par chemin</td></tr>
+<tr><td><strong>Réseau virtuel</strong></td><td>vSwitch Standard / vSwitch Distribué (vDS) + Port Groups</td><td>Bridges Linux (vmbr) + VLANs natifs + OVS optionnel</td></tr>
+<tr><td><strong>Stockage</strong></td><td>Datastores (VMFS, NFS, vSAN)</td><td>local, LVM-Thin, ZFS, NFS, CIFS, Ceph, GlusterFS</td></tr>
+<tr><td><strong>Snapshots</strong></td><td>Snapshots VMDK (attention à la chaîne)</td><td>Snapshots QEMU (ou ZFS snapshots si ZFS)</td></tr>
+<tr><td><strong>Backup intégré</strong></td><td>Nécessite un outil tiers (Veeam, etc.) ou VADP</td><td>Intégré : vzdump, jobs planifiables depuis la GUI</td></tr>
+<tr><td><strong>Firewall intégré</strong></td><td>Non (firewall ESXi basique, NSX pour micro-segmentation)</td><td>Oui : 3 niveaux (Datacenter, Node, VM)</td></tr>
+<tr><td><strong>API / Automatisation</strong></td><td>vSphere API, PowerCLI, REST API</td><td>REST API complète, API Tokens, CLI (pvesh, qm, pct)</td></tr>
+<tr><td><strong>HA / Migration</strong></td><td>vMotion, HA, DRS (licences requises)</td><td>Live migration (stockage partagé requis), HA manager</td></tr>
+<tr><td><strong>Logs / Audit</strong></td><td>Events, Tasks, syslog configurable</td><td>Syslog, Tasks, journalctl, auth.log</td></tr>
+<tr><td><strong>Coût</strong></td><td>Élevé (licences par CPU/VM)</td><td>Gratuit (support payant optionnel)</td></tr>
+</table>
+
+<h3>Discussion orientée cybersécurité</h3>
+
+<div class="callout secu">
+<div class="callout-label">Sécurité — Recommandations par contexte</div>
+<p><strong>Lab cybersécurité / Pentest lab :</strong> Proxmox est avantageux — gratuit, backup intégré, firewall intégré, déploiement léger. Les snapshots et la restauration rapide sont essentiels pour les tests offensifs.</p>
+<p><strong>PME :</strong> Proxmox offre un excellent rapport fonctionnalités/coût. vCenter est pertinent si l'entreprise utilise déjà l'écosystème VMware et dispose du budget licences.</p>
+<p><strong>SOC / Entreprise :</strong> vCenter avec NSX apporte une micro-segmentation avancée et une intégration profonde avec les outils de sécurité VMware (Carbon Black, etc.). Proxmox peut alimenter un SOC via ses API et syslog.</p>
+<p><strong>Audit / Conformité :</strong> vCenter dispose d'outils de conformité matures (vSphere Security Configuration Guide). Proxmox nécessite plus de configuration manuelle mais est tout aussi auditable via logs et API.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- G — ÉVALUATION                                                -->
+<!-- ============================================================ -->
+<h2 class="section-title" id="partG">G — Évaluation et livrables</h2>
+
+<h3>Livrables exigés</h3>
+<table>
+<tr><th>Livrable</th><th>Format</th><th>Points</th></tr>
+<tr><td>Captures d'écran annotées (VC-1 à VC-11, PX-1 à PX-9)</td><td>PNG nommés selon convention</td><td>/8</td></tr>
+<tr><td>Tableau comparatif vCenter vs Proxmox (section F complété)</td><td>Document texte ou tableur</td><td>/3</td></tr>
+<tr><td>Schéma réseau du capstone (management vs VM network)</td><td>Image ou SVG</td><td>/2</td></tr>
+<tr><td>Réponses aux questions Q1–Q5 (section E)</td><td>Document texte</td><td>/4</td></tr>
+<tr><td>Extrait de 5 événements significatifs par plateforme</td><td>Captures ou texte</td><td>/2</td></tr>
+<tr><td>Preuve RBAC (action autorisée + refusée, 2 plateformes)</td><td>Captures</td><td>/1</td></tr>
+<tr><td colspan="2" style="text-align:right;font-weight:700">Total</td><td><strong>/20</strong></td></tr>
+</table>
+
+<h3>Questions techniques complémentaires</h3>
+<div class="callout info">
+<div class="callout-label">Info — Questions à rendre (bonus ou intégrées au barème selon l'enseignant)</div>
+<ul>
+  <li><strong>QT1 :</strong> Expliquez la différence entre un vSwitch Standard et un vSwitch Distribué. Dans quel scénario le vDS est-il indispensable ?</li>
+  <li><strong>QT2 :</strong> Quel est l'avantage d'utiliser le realm PVE plutôt que PAM pour les comptes opérateurs dans Proxmox ?</li>
+  <li><strong>QT3 :</strong> Pourquoi la synchronisation NTP est-elle critique pour la sécurité dans un environnement virtualisé ? Citez au moins trois conséquences d'un décalage horaire.</li>
+  <li><strong>QT4 :</strong> Décrivez le scénario de compromission suivant : un attaquant obtient les credentials du compte <code>administrator@vsphere.local</code>. Quelles actions peut-il mener ? Quelles mesures préventives auraient pu limiter l'impact ?</li>
+  <li><strong>QT5 :</strong> Comparez la granularité du firewall intégré de Proxmox avec les capacités réseau natives d'ESXi (sans NSX). Lequel offre plus de contrôle par défaut ?</li>
+</ul>
+</div>
+
+<!-- ============================================================ -->
+<!-- H — RÉCAPITULATIF                                             -->
+<!-- ============================================================ -->
+<h2 class="section-title" id="partH">H — Récapitulatif final</h2>
+
+<h3>Compétences acquises</h3>
+<table>
+<tr><th>Domaine</th><th>Compétence</th><th>Maîtrisé</th></tr>
+<tr><td rowspan="5">vCenter</td><td>Déployer et accéder à vCenter Server Appliance</td><td>☐</td></tr>
+<tr><td>Créer la hiérarchie Datacenter / Cluster / Folders</td><td>☐</td></tr>
+<tr><td>Ajouter un hôte ESXi et gérer des VMs via vCenter</td><td>☐</td></tr>
+<tr><td>Configurer le RBAC (utilisateurs, rôles, permissions)</td><td>☐</td></tr>
+<tr><td>Consulter et interpréter les logs et événements</td><td>☐</td></tr>
+<tr><td rowspan="5">Proxmox Datacenter</td><td>Naviguer et comprendre la vue Datacenter complète</td><td>☐</td></tr>
+<tr><td>Gérer le stockage (local, local-lvm, ISO, backups)</td><td>☐</td></tr>
+<tr><td>Créer des Pools et y organiser les VMs</td><td>☐</td></tr>
+<tr><td>Configurer le RBAC (realms, users, rôles, ACL)</td><td>☐</td></tr>
+<tr><td>Comprendre et configurer le firewall multi-niveaux</td><td>☐</td></tr>
+<tr><td rowspan="4">Cybersécurité transversale</td><td>Appliquer le principe du moindre privilège (RBAC)</td><td>☐</td></tr>
+<tr><td>Segmenter les réseaux (management vs VMs)</td><td>☐</td></tr>
+<tr><td>Utiliser les snapshots pour la résilience et les tests</td><td>☐</td></tr>
+<tr><td>Identifier et durcir la surface d'attaque d'un hyperviseur</td><td>☐</td></tr>
+</table>
+
+<h3>Checklist de maîtrise</h3>
+<ul class="checklist">
+  <li>Je sais expliquer pourquoi vCenter est nécessaire au-delà d'un ESXi autonome</li>
+  <li>Je sais créer et organiser un inventaire vCenter (DC, Cluster, Folders, VMs)</li>
+  <li>Je sais attribuer des permissions RBAC ciblées dans vCenter et Proxmox</li>
+  <li>Je sais créer et restaurer des snapshots sur les deux plateformes</li>
+  <li>Je sais configurer un backup dans Proxmox</li>
+  <li>Je sais expliquer les niveaux du firewall Proxmox et configurer des règles de base</li>
+  <li>Je sais identifier les sources de logs sur les deux plateformes</li>
+  <li>Je sais segmenter le réseau management du réseau des VMs</li>
+  <li>Je sais comparer vCenter et Proxmox Datacenter d'un point de vue cybersécurité</li>
+  <li>Je sais documenter un environnement virtualisé avec captures et schémas</li>
+</ul>
+
+<div class="retenir" style="margin-top:2rem">
+<div class="retenir-title">Conclusion</div>
+Ce TP vous a permis de passer de l'administration d'un hôte isolé à une <strong>gestion centralisée</strong> sur deux plateformes majeures de virtualisation. Que ce soit avec vCenter (écosystème VMware propriétaire) ou la vue Datacenter de Proxmox (écosystème open source), les concepts fondamentaux sont les mêmes : <strong>hiérarchie d'objets</strong>, <strong>contrôle d'accès</strong>, <strong>segmentation réseau</strong>, <strong>journalisation</strong> et <strong>résilience</strong> (snapshots/backups). Ces compétences sont directement applicables dans tout contexte professionnel de cybersécurité, que ce soit pour administrer un SOC, construire un lab de pentest ou auditer une infrastructure virtualisée.
+</div>
+
+</div><!-- .container -->
+</body>
+</html>

@@ -1,0 +1,2256 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TP — Cloud & Virtualisation : ESXi vs Proxmox VE</title>
+<style>
+  :root {
+    --primary: #1a237e;
+    --primary-light: #3949ab;
+    --secondary: #0d47a1;
+    --accent: #00796b;
+    --accent-light: #e0f2f1;
+    --danger: #c62828;
+    --danger-light: #ffebee;
+    --warning: #e65100;
+    --warning-light: #fff3e0;
+    --success: #2e7d32;
+    --success-light: #e8f5e9;
+    --info: #01579b;
+    --info-light: #e1f5fe;
+    --security: #4a148c;
+    --security-light: #f3e5f5;
+    --gray-50: #fafafa;
+    --gray-100: #f5f5f5;
+    --gray-200: #eeeeee;
+    --gray-300: #e0e0e0;
+    --gray-600: #757575;
+    --gray-800: #424242;
+    --gray-900: #212121;
+    --radius: 8px;
+    --shadow: 0 2px 8px rgba(0,0,0,0.1);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    background: var(--gray-100);
+    color: var(--gray-900);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  /* ── Cover Page ── */
+  .cover-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--accent) 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    text-align: center;
+    padding: 40px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover-page::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 40%, rgba(255,255,255,0.05) 0%, transparent 50%),
+                radial-gradient(circle at 70% 60%, rgba(255,255,255,0.03) 0%, transparent 50%);
+    animation: floatBg 20s ease-in-out infinite;
+  }
+  @keyframes floatBg { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-20px)} }
+  .cover-content { position: relative; z-index: 1; max-width: 700px; }
+  .cover-logo {
+    width: 100px; height: 100px; margin: 0 auto 30px;
+    background: rgba(255,255,255,0.15); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 48px; backdrop-filter: blur(10px);
+    border: 2px solid rgba(255,255,255,0.3);
+  }
+  .cover-content h1 { font-size: 2.4em; margin-bottom: 10px; font-weight: 700; letter-spacing: -0.5px; }
+  .cover-content h2 { font-size: 1.3em; font-weight: 400; opacity: 0.9; margin-bottom: 30px; }
+  .cover-meta {
+    display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin-top: 20px;
+  }
+  .cover-meta span {
+    background: rgba(255,255,255,0.15); padding: 8px 20px; border-radius: 30px;
+    font-size: 0.9em; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.2);
+  }
+
+  /* ── Layout ── */
+  .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+
+  /* ── TOC ── */
+  .toc {
+    background: #fff; border-radius: var(--radius); padding: 30px 35px;
+    margin: 30px 0; box-shadow: var(--shadow);
+    page-break-after: always;
+  }
+  .toc h2 { color: var(--primary); margin-bottom: 15px; font-size: 1.5em; border-bottom: 2px solid var(--primary); padding-bottom: 8px; }
+  .toc ol { padding-left: 22px; }
+  .toc li { margin: 6px 0; }
+  .toc a { color: var(--secondary); text-decoration: none; transition: color 0.2s; }
+  .toc a:hover { color: var(--accent); text-decoration: underline; }
+  .toc ol ol { margin-top: 4px; }
+
+  /* ── Legend ── */
+  .legend {
+    background: #fff; border-radius: var(--radius); padding: 25px 30px;
+    margin-bottom: 30px; box-shadow: var(--shadow);
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 10px; font-size: 0.9em; }
+  .legend-icon {
+    width: 36px; height: 36px; border-radius: 8px; display: flex;
+    align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+  }
+
+  /* ── Sections ── */
+  .section {
+    background: #fff; border-radius: var(--radius); padding: 35px;
+    margin-bottom: 25px; box-shadow: var(--shadow);
+    page-break-inside: avoid;
+  }
+  .section h2 {
+    color: var(--primary); font-size: 1.6em; margin-bottom: 20px;
+    padding-bottom: 10px; border-bottom: 3px solid var(--primary);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section h3 { color: var(--primary-light); font-size: 1.25em; margin: 25px 0 12px; }
+  .section h4 { color: var(--gray-800); font-size: 1.05em; margin: 18px 0 8px; }
+  .section p { margin-bottom: 12px; }
+
+  /* ── Callout boxes ── */
+  .callout {
+    border-left: 4px solid; border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 16px 20px; margin: 18px 0; position: relative;
+  }
+  .callout-title {
+    font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; font-size: 0.95em;
+  }
+  .callout-body { font-size: 0.93em; }
+  .callout-body ul { padding-left: 20px; margin-top: 6px; }
+  .callout-body li { margin: 3px 0; }
+
+  .callout.objectif   { border-color: var(--info);     background: var(--info-light); }
+  .callout.objectif .callout-title { color: var(--info); }
+  .callout.attention   { border-color: var(--warning);  background: var(--warning-light); }
+  .callout.attention .callout-title { color: var(--warning); }
+  .callout.securite    { border-color: var(--security); background: var(--security-light); }
+  .callout.securite .callout-title { color: var(--security); }
+  .callout.verification{ border-color: var(--success);  background: var(--success-light); }
+  .callout.verification .callout-title { color: var(--success); }
+  .callout.danger      { border-color: var(--danger);   background: var(--danger-light); }
+  .callout.danger .callout-title { color: var(--danger); }
+  .callout.resultat    { border-color: var(--accent);   background: var(--accent-light); }
+  .callout.resultat .callout-title { color: var(--accent); }
+  .callout.info        { border-color: #546e7a; background: #eceff1; }
+  .callout.info .callout-title { color: #37474f; }
+
+  /* ── Steps ── */
+  .step {
+    background: var(--gray-50); border: 1px solid var(--gray-300);
+    border-radius: var(--radius); padding: 18px 22px; margin: 14px 0;
+    position: relative; padding-left: 60px;
+  }
+  .step-num {
+    position: absolute; left: 14px; top: 16px;
+    width: 34px; height: 34px; background: var(--primary);
+    color: #fff; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.95em;
+  }
+  .step-title { font-weight: 700; margin-bottom: 6px; color: var(--primary); }
+
+  /* ── Code blocks ── */
+  pre {
+    background: #263238; color: #eeffff; padding: 16px 20px;
+    border-radius: var(--radius); overflow-x: auto; margin: 12px 0;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.88em; line-height: 1.6; position: relative;
+  }
+  pre .comment { color: #546e7a; }
+  pre .cmd { color: #82aaff; }
+  pre .flag { color: #c792ea; }
+  pre .string { color: #c3e88d; }
+  pre .output { color: #ffcb6b; }
+  code {
+    background: var(--gray-200); padding: 2px 6px; border-radius: 4px;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.9em; color: var(--danger);
+  }
+
+  /* ── Tables ── */
+  table {
+    width: 100%; border-collapse: collapse; margin: 16px 0;
+    font-size: 0.92em; background: #fff;
+  }
+  table th {
+    background: var(--primary); color: #fff; padding: 12px 14px;
+    text-align: left; font-weight: 600;
+  }
+  table td { padding: 10px 14px; border-bottom: 1px solid var(--gray-300); }
+  table tr:nth-child(even) td { background: var(--gray-50); }
+  table tr:hover td { background: #e8eaf6; }
+
+  /* ── SVG diagrams ── */
+  .diagram-container {
+    background: var(--gray-50); border: 1px solid var(--gray-300);
+    border-radius: var(--radius); padding: 20px; margin: 20px 0;
+    text-align: center; overflow-x: auto;
+  }
+  .diagram-container figcaption {
+    margin-top: 10px; font-style: italic; color: var(--gray-600); font-size: 0.9em;
+  }
+  .diagram-container svg text { font-family: 'Segoe UI', Arial, sans-serif; }
+
+  /* ── UI Mockups ── */
+  .mockup {
+    border: 2px solid var(--gray-300); border-radius: var(--radius);
+    overflow: hidden; margin: 16px 0; box-shadow: var(--shadow);
+  }
+  .mockup-titlebar {
+    background: var(--gray-800); color: #fff; padding: 8px 14px;
+    font-size: 0.85em; display: flex; align-items: center; gap: 8px;
+  }
+  .mockup-dots { display: flex; gap: 5px; }
+  .mockup-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .mockup-dots .r { background: #ef5350; }
+  .mockup-dots .y { background: #ffc107; }
+  .mockup-dots .g { background: #66bb6a; }
+  .mockup-body { padding: 20px; background: #fff; font-size: 0.9em; }
+  .mockup-body .sidebar { background: var(--gray-100); padding: 12px; border-radius: 6px; margin-bottom: 12px; }
+  .mockup-body .sidebar-item { padding: 6px 10px; border-radius: 4px; margin: 3px 0; cursor: default; }
+  .mockup-body .sidebar-item:hover { background: var(--gray-200); }
+  .mockup-body .sidebar-item.active { background: var(--primary); color: #fff; }
+
+  /* ── Questions ── */
+  .question-block {
+    background: #fff8e1; border: 1px solid #ffe082; border-radius: var(--radius);
+    padding: 16px 20px; margin: 12px 0;
+  }
+  .question-block strong { color: var(--warning); }
+
+  /* ── Grid layout ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 16px 0; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin: 16px 0; }
+
+  /* ── Cards ── */
+  .card {
+    background: #fff; border: 1px solid var(--gray-300); border-radius: var(--radius);
+    padding: 20px; box-shadow: var(--shadow);
+  }
+  .card h4 { color: var(--primary); margin-bottom: 8px; }
+
+  /* ── Print styles ── */
+  @media print {
+    body { background: #fff; font-size: 11pt; }
+    .cover-page { min-height: auto; padding: 60px 20px; page-break-after: always; }
+    .section { box-shadow: none; border: 1px solid #ddd; page-break-inside: avoid; }
+    .toc { page-break-after: always; }
+    pre { font-size: 9pt; }
+    .no-print { display: none; }
+    a { color: inherit; text-decoration: none; }
+    table { font-size: 9pt; }
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 768px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .section { padding: 20px; }
+    .cover-content h1 { font-size: 1.8em; }
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--gray-200); }
+  ::-webkit-scrollbar-thumb { background: var(--gray-600); border-radius: 4px; }
+
+  /* ── Evaluation grid ── */
+  .eval-grid td:first-child { font-weight: 600; }
+  .eval-grid td:last-child { text-align: center; font-weight: 700; color: var(--primary); }
+
+  /* smooth scroll */
+  html { scroll-behavior: smooth; }
+
+  /* Troubleshoot cards */
+  .trouble-card {
+    border-left: 4px solid var(--danger);
+    background: #fff; border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 18px; margin: 14px 0; box-shadow: var(--shadow);
+  }
+  .trouble-card h4 { color: var(--danger); margin-bottom: 6px; }
+  .trouble-card .label { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600; margin-right: 6px; }
+  .trouble-card .label.symptom { background: #ffcdd2; color: #b71c1c; }
+  .trouble-card .label.cause { background: #fff9c4; color: #f57f17; }
+  .trouble-card .label.fix { background: #c8e6c9; color: #1b5e20; }
+</style>
+</head>
+<body>
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║                   PAGE DE GARDE                             ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="cover-page">
+  <div class="cover-content">
+    <div class="cover-logo">☁️</div>
+    <h1>TP — Cloud & Virtualisation</h1>
+    <h2>Exploration, Administration & Sécurisation<br>VMware ESXi vs Proxmox VE</h2>
+    <div style="width:80px;height:3px;background:rgba(255,255,255,0.5);margin:20px auto;border-radius:2px;"></div>
+    <div class="cover-meta">
+      <span>📚 Module : Cloud & Infrastructure</span>
+      <span>🎓 1<sup>ère</sup> année Cybersécurité</span>
+      <span>📅 Année universitaire 2025 – 2026</span>
+    </div>
+    <div class="cover-meta" style="margin-top:12px;">
+      <span>⏱️ Durée estimée : 4 – 6 heures</span>
+      <span>🖥️ Environnement : VMware Workstation (Nested)</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║                   LÉGENDE VISUELLE                          ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="legend" id="legende">
+  <div class="legend-item">
+    <div class="legend-icon" style="background:var(--info-light);color:var(--info);">🎯</div>
+    <span><strong>Objectif</strong> — Ce que vous allez apprendre</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-icon" style="background:var(--warning-light);color:var(--warning);">⚠️</div>
+    <span><strong>Attention</strong> — Piège ou erreur fréquente</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-icon" style="background:var(--security-light);color:var(--security);">🔒</div>
+    <span><strong>Sécurité</strong> — Point de cybersécurité</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-icon" style="background:var(--success-light);color:var(--success);">✅</div>
+    <span><strong>Vérification</strong> — Contrôle à effectuer</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-icon" style="background:var(--accent-light);color:var(--accent);">📋</div>
+    <span><strong>Résultat attendu</strong> — Ce que vous devez observer</span>
+  </div>
+  <div class="legend-item">
+    <div class="legend-icon" style="background:var(--danger-light);color:var(--danger);">🚫</div>
+    <span><strong>Danger</strong> — Action à éviter absolument</span>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║                   SOMMAIRE CLIQUABLE                        ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="toc" id="sommaire">
+  <h2>📑 Sommaire</h2>
+  <ol>
+    <li><a href="#sec1">Introduction</a></li>
+    <li><a href="#sec2">Rappels d'architecture & concepts</a>
+      <ol>
+        <li><a href="#sec2-1">Hyperviseur Type 1 vs Type 2</a></li>
+        <li><a href="#sec2-2">VM, Templates, Snapshots</a></li>
+        <li><a href="#sec2-3">Stockage : Datastore, ISO, Thin/Thick</a></li>
+        <li><a href="#sec2-4">Réseau : vSwitch, Bridge, VLAN</a></li>
+      </ol>
+    </li>
+    <li><a href="#sec3">Partie A — VMware ESXi : Exploration & Maîtrise</a>
+      <ol>
+        <li><a href="#sec3-1">Connexion à l'interface</a></li>
+        <li><a href="#sec3-2">Dashboard & navigation</a></li>
+        <li><a href="#sec3-3">Réseau : vSwitch & Port Groups</a></li>
+        <li><a href="#sec3-4">Création d'une VM de test</a></li>
+        <li><a href="#sec3-5">Snapshots & clonage</a></li>
+        <li><a href="#sec3-6">Monitoring & logs</a></li>
+        <li><a href="#sec3-7">Comptes, permissions & durcissement</a></li>
+        <li><a href="#sec3-8">Commandes CLI ESXi</a></li>
+      </ol>
+    </li>
+    <li><a href="#sec4">Partie B — Proxmox VE : Exploration & Maîtrise</a>
+      <ol>
+        <li><a href="#sec4-1">Connexion à l'interface web</a></li>
+        <li><a href="#sec4-2">Arborescence & navigation</a></li>
+        <li><a href="#sec4-3">Réseau : bridges Linux</a></li>
+        <li><a href="#sec4-4">Stockage</a></li>
+        <li><a href="#sec4-5">Création d'une VM de test</a></li>
+        <li><a href="#sec4-6">Conteneurs LXC (optionnel)</a></li>
+        <li><a href="#sec4-7">Snapshots & sauvegardes</a></li>
+        <li><a href="#sec4-8">Monitoring & journaux</a></li>
+        <li><a href="#sec4-9">RBAC : Utilisateurs, rôles, permissions</a></li>
+        <li><a href="#sec4-10">Commandes CLI Proxmox</a></li>
+      </ol>
+    </li>
+    <li><a href="#sec5">Partie C — Comparaison ESXi vs Proxmox (Cybersécurité)</a></li>
+    <li><a href="#sec6">Partie D — Mini-lab guidé cybersécurité</a></li>
+    <li><a href="#sec7">Partie E — Troubleshooting guidé</a></li>
+    <li><a href="#sec8">Partie F — Questions, livrables & évaluation</a></li>
+    <li><a href="#sec9">Récapitulatif final</a></li>
+  </ol>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║              SECTION 1 — INTRODUCTION                       ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="section" id="sec1">
+  <h2>1. Introduction</h2>
+
+  <h3>Présentation du TP</h3>
+  <p>
+    Ce travail pratique constitue la <strong>suite logique</strong> de vos installations de VMware ESXi et Proxmox VE réalisées lors des séances précédentes. Vous disposez désormais de deux hyperviseurs fonctionnels, déployés en <em>nested virtualization</em> sur VMware Workstation. L'objectif est maintenant de <strong>prendre en main</strong>, <strong>comparer</strong> et <strong>sécuriser</strong> ces deux plateformes dans une perspective de cybersécurité.
+  </p>
+  <p>
+    Vous allez apprendre à administrer concrètement un hyperviseur — créer des machines virtuelles, gérer le réseau, le stockage, les snapshots, les utilisateurs — tout en gardant un <strong>regard critique de professionnel de la sécurité</strong> : surface d'attaque, moindre privilège, journalisation, segmentation réseau.
+  </p>
+
+  <div class="callout objectif">
+    <div class="callout-title">🎯 Objectifs d'apprentissage</div>
+    <div class="callout-body">
+      <ul>
+        <li>Comprendre l'architecture interne de ESXi et Proxmox VE</li>
+        <li>Administrer les ressources (CPU, RAM, stockage, réseau) sur chaque plateforme</li>
+        <li>Créer, configurer et gérer des machines virtuelles</li>
+        <li>Appliquer des mesures de <strong>durcissement sécurité</strong> (hardening)</li>
+        <li>Lire et exploiter les journaux d'événements et d'accès</li>
+        <li>Gérer les utilisateurs, rôles et permissions (RBAC)</li>
+        <li>Comparer les deux plateformes dans un contexte académique, SOC et infrastructure cybersécurité</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Prérequis</h3>
+  <table>
+    <tr><th>Élément</th><th>Détail</th></tr>
+    <tr><td>Installation ESXi</td><td>VM ESXi fonctionnelle sur VMware Workstation (TP précédent validé)</td></tr>
+    <tr><td>Installation Proxmox</td><td>VM Proxmox VE fonctionnelle sur VMware Workstation (TP précédent validé)</td></tr>
+    <tr><td>Nested Virtualization</td><td>Activée dans VMware Workstation (VT-x/AMD-V passthrough)</td></tr>
+    <tr><td>Réseau</td><td>Adaptateur réseau de type NAT ou Host-Only (selon configuration labo)</td></tr>
+    <tr><td>ISO de test</td><td>Une image ISO légère (ex: Debian netinst, Ubuntu Server, Tiny Core Linux)</td></tr>
+    <tr><td>Navigateur web</td><td>Firefox ou Chrome récent (pour les interfaces d'administration)</td></tr>
+    <tr><td>Connaissances</td><td>Bases Linux, bases réseau IP, notions de virtualisation</td></tr>
+  </table>
+
+  <h3>Résultats attendus à la fin du TP</h3>
+  <p>À la fin de ce TP, chaque étudiant devra être capable de :</p>
+  <ul style="padding-left:22px;margin-bottom:12px;">
+    <li>Naviguer aisément dans les interfaces ESXi et Proxmox</li>
+    <li>Créer une VM complète sur chaque plateforme</li>
+    <li>Configurer un réseau virtuel isolé</li>
+    <li>Appliquer au moins 3 mesures de sécurité sur chaque hyperviseur</li>
+    <li>Produire un tableau comparatif argumenté</li>
+    <li>Rédiger un schéma d'architecture de mini-lab</li>
+  </ul>
+
+  <div class="callout attention">
+    <div class="callout-title">⚠️ Rappel — Environnement de travail</div>
+    <div class="callout-body">
+      Vous travaillez en <strong>nested virtualization</strong> : vos hyperviseurs ESXi et Proxmox tournent eux-mêmes dans des VMs VMware Workstation. Cela implique :
+      <ul>
+        <li>Des <strong>performances réduites</strong> (normal en labo)</li>
+        <li>La nécessité de <strong>VT-x/AMD-V exposé</strong> à la VM hôte</li>
+        <li>Des limitations sur certaines fonctionnalités réseau avancées</li>
+        <li>Un besoin de <strong>RAM suffisante</strong> sur le poste physique (minimum 16 Go recommandé)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║       SECTION 2 — RAPPELS ARCHITECTURE & CONCEPTS           ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="section" id="sec2">
+  <h2>2. Rappels d'architecture & concepts</h2>
+
+  <!-- ── 2.1 Type 1 vs Type 2 ── -->
+  <h3 id="sec2-1">2.1 Hyperviseur Type 1 vs Type 2</h3>
+  <p>
+    Un <strong>hyperviseur</strong> est un logiciel (ou firmware) qui permet de créer et d'exécuter des machines virtuelles. On distingue deux types fondamentaux :
+  </p>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4>Type 1 — Bare-metal</h4>
+      <p>S'installe <strong>directement sur le matériel</strong>, sans OS intermédiaire. Il est lui-même le système d'exploitation minimal qui gère l'accès au hardware.</p>
+      <p><strong>Exemples :</strong> VMware ESXi, Proxmox VE, Microsoft Hyper-V (rôle serveur), Citrix Hypervisor.</p>
+      <p><strong>Avantages :</strong> performances optimales, accès direct aux ressources, meilleure isolation.</p>
+    </div>
+    <div class="card">
+      <h4>Type 2 — Hosted</h4>
+      <p>S'installe <strong>par-dessus un système d'exploitation</strong> existant (Windows, Linux, macOS). L'hyperviseur est une application comme une autre.</p>
+      <p><strong>Exemples :</strong> VMware Workstation, VirtualBox, Parallels Desktop.</p>
+      <p><strong>Avantages :</strong> facilité d'installation, idéal pour le développement et le test.</p>
+    </div>
+  </div>
+
+  <div class="diagram-container">
+    <svg viewBox="0 0 800 340" width="100%" style="max-width:780px;">
+      <!-- Type 1 -->
+      <rect x="20" y="10" width="360" height="30" rx="6" fill="#1a237e"/>
+      <text x="200" y="30" fill="#fff" text-anchor="middle" font-size="14" font-weight="bold">Hyperviseur Type 1 (Bare-metal)</text>
+
+      <rect x="20" y="260" width="360" height="50" rx="6" fill="#90a4ae" stroke="#546e7a" stroke-width="1"/>
+      <text x="200" y="290" text-anchor="middle" font-size="13" fill="#263238" font-weight="bold">Matériel physique (CPU, RAM, Disque, NIC)</text>
+
+      <rect x="20" y="200" width="360" height="55" rx="6" fill="#1a237e"/>
+      <text x="200" y="222" fill="#fff" text-anchor="middle" font-size="13" font-weight="bold">Hyperviseur (ESXi / Proxmox)</text>
+      <text x="200" y="242" fill="#bbdefb" text-anchor="middle" font-size="11">Accès direct au hardware</text>
+
+      <rect x="30" y="110" width="100" height="80" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+      <text x="80" y="140" text-anchor="middle" font-size="11" fill="#1565c0" font-weight="bold">VM 1</text>
+      <text x="80" y="158" text-anchor="middle" font-size="10" fill="#546e7a">Guest OS</text>
+      <text x="80" y="175" text-anchor="middle" font-size="10" fill="#546e7a">+ Apps</text>
+
+      <rect x="145" y="110" width="100" height="80" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+      <text x="195" y="140" text-anchor="middle" font-size="11" fill="#1565c0" font-weight="bold">VM 2</text>
+      <text x="195" y="158" text-anchor="middle" font-size="10" fill="#546e7a">Guest OS</text>
+      <text x="195" y="175" text-anchor="middle" font-size="10" fill="#546e7a">+ Apps</text>
+
+      <rect x="260" y="110" width="110" height="80" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+      <text x="315" y="140" text-anchor="middle" font-size="11" fill="#1565c0" font-weight="bold">VM 3</text>
+      <text x="315" y="158" text-anchor="middle" font-size="10" fill="#546e7a">Guest OS</text>
+      <text x="315" y="175" text-anchor="middle" font-size="10" fill="#546e7a">+ Apps</text>
+
+      <line x1="80" y1="190" x2="80" y2="200" stroke="#1a237e" stroke-width="2"/>
+      <line x1="195" y1="190" x2="195" y2="200" stroke="#1a237e" stroke-width="2"/>
+      <line x1="315" y1="190" x2="315" y2="200" stroke="#1a237e" stroke-width="2"/>
+      <line x1="200" y1="255" x2="200" y2="260" stroke="#546e7a" stroke-width="2"/>
+
+      <!-- Type 2 -->
+      <rect x="420" y="10" width="360" height="30" rx="6" fill="#00796b"/>
+      <text x="600" y="30" fill="#fff" text-anchor="middle" font-size="14" font-weight="bold">Hyperviseur Type 2 (Hosted)</text>
+
+      <rect x="420" y="260" width="360" height="50" rx="6" fill="#90a4ae" stroke="#546e7a" stroke-width="1"/>
+      <text x="600" y="290" text-anchor="middle" font-size="13" fill="#263238" font-weight="bold">Matériel physique (CPU, RAM, Disque, NIC)</text>
+
+      <rect x="420" y="210" width="360" height="45" rx="6" fill="#455a64"/>
+      <text x="600" y="237" fill="#fff" text-anchor="middle" font-size="13" font-weight="bold">OS Hôte (Windows / Linux / macOS)</text>
+
+      <rect x="420" y="155" width="360" height="50" rx="6" fill="#00796b"/>
+      <text x="600" y="175" fill="#fff" text-anchor="middle" font-size="12" font-weight="bold">Hyperviseur (Workstation / VirtualBox)</text>
+      <text x="600" y="193" fill="#b2dfdb" text-anchor="middle" font-size="11">Application sur l'OS hôte</text>
+
+      <rect x="435" y="80" width="100" height="65" rx="6" fill="#e0f2f1" stroke="#00695c" stroke-width="1.5"/>
+      <text x="485" y="107" text-anchor="middle" font-size="11" fill="#00695c" font-weight="bold">VM 1</text>
+      <text x="485" y="125" text-anchor="middle" font-size="10" fill="#546e7a">Guest OS</text>
+
+      <rect x="550" y="80" width="100" height="65" rx="6" fill="#e0f2f1" stroke="#00695c" stroke-width="1.5"/>
+      <text x="600" y="107" text-anchor="middle" font-size="11" fill="#00695c" font-weight="bold">VM 2</text>
+      <text x="600" y="125" text-anchor="middle" font-size="10" fill="#546e7a">Guest OS</text>
+
+      <rect x="665" y="80" width="100" height="65" rx="6" fill="#e0f2f1" stroke="#00695c" stroke-width="1.5"/>
+      <text x="715" y="107" text-anchor="middle" font-size="11" fill="#00695c" font-weight="bold">VM 3</text>
+      <text x="715" y="125" text-anchor="middle" font-size="10" fill="#546e7a">Guest OS</text>
+
+      <line x1="485" y1="145" x2="485" y2="155" stroke="#00796b" stroke-width="2"/>
+      <line x1="600" y1="145" x2="600" y2="155" stroke="#00796b" stroke-width="2"/>
+      <line x1="715" y1="145" x2="715" y2="155" stroke="#00796b" stroke-width="2"/>
+      <line x1="600" y1="205" x2="600" y2="210" stroke="#455a64" stroke-width="2"/>
+      <line x1="600" y1="255" x2="600" y2="260" stroke="#546e7a" stroke-width="2"/>
+    </svg>
+    <figcaption>Figure 1 — Comparaison des architectures Type 1 (bare-metal) et Type 2 (hosted)</figcaption>
+  </div>
+
+  <div class="callout securite">
+    <div class="callout-title">🔒 Point sécurité — Isolation</div>
+    <div class="callout-body">
+      Un hyperviseur Type 1 offre une <strong>meilleure isolation</strong> car il n'y a pas d'OS hôte pouvant être compromis. La surface d'attaque est réduite : il n'y a pas de navigateur, pas de services inutiles. C'est pour cette raison que les environnements de production utilisent des hyperviseurs bare-metal.
+    </div>
+  </div>
+
+  <!-- ── 2.2 VM, Templates, Snapshots ── -->
+  <h3 id="sec2-2">2.2 VM, Templates, Snapshots</h3>
+
+  <table>
+    <tr><th>Concept</th><th>Définition</th><th>Analogie</th></tr>
+    <tr>
+      <td><strong>Machine Virtuelle (VM)</strong></td>
+      <td>Un environnement isolé qui simule un ordinateur complet (CPU, RAM, disque, réseau). Elle exécute son propre OS (« guest OS »).</td>
+      <td>Un ordinateur « logiciel » dans un ordinateur physique.</td>
+    </tr>
+    <tr>
+      <td><strong>Template</strong></td>
+      <td>Une VM « modèle » préconfigurée, figée, à partir de laquelle on peut déployer rapidement de nouvelles VMs identiques. La template n'est pas démarrable directement.</td>
+      <td>Un moule à gâteau : on ne le mange pas, mais on s'en sert pour produire des gâteaux identiques.</td>
+    </tr>
+    <tr>
+      <td><strong>Snapshot</strong></td>
+      <td>Une « photographie » de l'état d'une VM à un instant T (disque + mémoire optionnellement). Permet de revenir en arrière en cas d'erreur.</td>
+      <td>Un point de sauvegarde dans un jeu vidéo.</td>
+    </tr>
+  </table>
+
+  <div class="callout attention">
+    <div class="callout-title">⚠️ Attention — Snapshots ≠ Sauvegardes</div>
+    <div class="callout-body">
+      Un snapshot n'est <strong>pas</strong> une sauvegarde ! Il est dépendant du disque original. Si le disque est corrompu, le snapshot est inutilisable. De plus, accumuler des snapshots dégrade les performances. <strong>En production, utilisez des sauvegardes complètes (backup)</strong>.
+    </div>
+  </div>
+
+  <!-- ── 2.3 Stockage ── -->
+  <h3 id="sec2-3">2.3 Stockage : Datastore, ISO, Thin/Thick provisioning</h3>
+
+  <p>Le stockage est un élément critique de toute infrastructure virtualisée. Voici les concepts clés :</p>
+
+  <table>
+    <tr><th>Concept</th><th>ESXi</th><th>Proxmox</th></tr>
+    <tr>
+      <td><strong>Datastore / Storage</strong></td>
+      <td>Espace de stockage formaté en VMFS (ou NFS). Contient les fichiers des VMs (.vmdk, .vmx, etc.)</td>
+      <td>Pools de stockage : <code>local</code> (répertoire), <code>local-lvm</code> (LVM thin), NFS, CIFS, ZFS, Ceph…</td>
+    </tr>
+    <tr>
+      <td><strong>ISO Storage</strong></td>
+      <td>Dossier dans le datastore où sont uploadées les images ISO</td>
+      <td>Storage de type « ISO image » (généralement <code>local</code>)</td>
+    </tr>
+    <tr>
+      <td><strong>Thin provisioning</strong></td>
+      <td>Le fichier .vmdk ne fait que la taille réellement utilisée et grossit à la demande</td>
+      <td>Comportement par défaut avec LVM-thin ou qcow2</td>
+    </tr>
+    <tr>
+      <td><strong>Thick provisioning</strong></td>
+      <td>L'espace disque total est alloué immédiatement (meilleure performance, plus d'espace consommé)</td>
+      <td>Format raw avec allocation fixe</td>
+    </tr>
+  </table>
+
+  <div class="callout securite">
+    <div class="callout-title">🔒 Point sécurité — Thick Eager Zeroed</div>
+    <div class="callout-body">
+      En environnement sensible, le format <strong>Thick Provision Eager Zeroed</strong> (ESXi) est recommandé. Il écrit des zéros sur tout l'espace alloué, empêchant la récupération de données anciennes. Cela protège contre la <strong>fuite de données résiduelles</strong> (data remanence).
+    </div>
+  </div>
+
+  <!-- ── 2.4 Réseau ── -->
+  <h3 id="sec2-4">2.4 Réseau : vSwitch, Bridge, NIC virtuelle, VLAN</h3>
+
+  <p>La virtualisation réseau est fondamentale pour l'isolation et la segmentation.</p>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4>ESXi — Virtual Switch (vSwitch)</h4>
+      <p>ESXi utilise des <strong>vSwitchs</strong> — des commutateurs virtuels internes qui connectent les vNICs des VMs aux NICs physiques (uplinks) de l'hôte.</p>
+      <ul style="padding-left:18px;margin-top:8px;">
+        <li><strong>vSwitch standard</strong> : configuré localement sur chaque hôte</li>
+        <li><strong>Port Group</strong> : groupe de ports sur un vSwitch, avec un label et un VLAN ID optionnel</li>
+        <li><strong>VMkernel port</strong> : port spécial pour le trafic de gestion, vMotion, etc.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Proxmox — Bridge Linux</h4>
+      <p>Proxmox utilise les <strong>bridges Linux</strong> natifs (ex: <code>vmbr0</code>). Un bridge est l'équivalent d'un switch virtuel.</p>
+      <ul style="padding-left:18px;margin-top:8px;">
+        <li><strong>vmbr0</strong> : bridge par défaut, relié à l'interface physique</li>
+        <li>On peut créer des <strong>bridges supplémentaires</strong> (vmbr1, vmbr2…) pour la segmentation</li>
+        <li>Support natif des <strong>VLAN tags</strong> et des bonds</li>
+        <li>Configuration dans <code>/etc/network/interfaces</code></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="diagram-container">
+    <svg viewBox="0 0 800 280" width="100%" style="max-width:780px;">
+      <!-- Admin workstation -->
+      <rect x="310" y="5" width="180" height="45" rx="8" fill="#ffd54f" stroke="#f9a825" stroke-width="1.5"/>
+      <text x="400" y="24" text-anchor="middle" font-size="11" font-weight="bold" fill="#424242">🖥️ Poste Admin</text>
+      <text x="400" y="40" text-anchor="middle" font-size="10" fill="#6d4c00">Navigateur Web</text>
+
+      <line x1="340" y1="50" x2="200" y2="100" stroke="#f9a825" stroke-width="2" stroke-dasharray="6,3"/>
+      <line x1="460" y1="50" x2="600" y2="100" stroke="#f9a825" stroke-width="2" stroke-dasharray="6,3"/>
+
+      <text x="250" y="75" text-anchor="middle" font-size="10" fill="#6d4c00">HTTPS :443</text>
+      <text x="555" y="75" text-anchor="middle" font-size="10" fill="#6d4c00">HTTPS :8006</text>
+
+      <!-- ESXi side -->
+      <rect x="40" y="100" width="320" height="55" rx="8" fill="#1a237e"/>
+      <text x="200" y="123" text-anchor="middle" font-size="13" fill="#fff" font-weight="bold">VMware ESXi</text>
+      <text x="200" y="143" text-anchor="middle" font-size="10" fill="#bbdefb">Interface web (Host Client)</text>
+
+      <rect x="40" y="165" width="100" height="45" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+      <text x="90" y="185" text-anchor="middle" font-size="10" fill="#1565c0" font-weight="bold">vSwitch0</text>
+      <text x="90" y="200" text-anchor="middle" font-size="9" fill="#546e7a">Port Group</text>
+
+      <rect x="60" y="220" width="60" height="35" rx="4" fill="#bbdefb" stroke="#1565c0"/>
+      <text x="90" y="242" text-anchor="middle" font-size="9" fill="#1565c0">VM A</text>
+
+      <rect x="160" y="165" width="100" height="45" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.5"/>
+      <text x="210" y="185" text-anchor="middle" font-size="10" fill="#1565c0" font-weight="bold">vSwitch1</text>
+      <text x="210" y="200" text-anchor="middle" font-size="9" fill="#546e7a">VLAN 10</text>
+
+      <rect x="175" y="220" width="60" height="35" rx="4" fill="#bbdefb" stroke="#1565c0"/>
+      <text x="205" y="242" text-anchor="middle" font-size="9" fill="#1565c0">VM B</text>
+
+      <rect x="280" y="175" width="70" height="30" rx="4" fill="#c5cae9" stroke="#3949ab"/>
+      <text x="315" y="195" text-anchor="middle" font-size="9" fill="#1a237e">Datastore</text>
+
+      <!-- Proxmox side -->
+      <rect x="440" y="100" width="320" height="55" rx="8" fill="#00796b"/>
+      <text x="600" y="123" text-anchor="middle" font-size="13" fill="#fff" font-weight="bold">Proxmox VE</text>
+      <text x="600" y="143" text-anchor="middle" font-size="10" fill="#b2dfdb">Interface web (pveproxy)</text>
+
+      <rect x="450" y="165" width="100" height="45" rx="6" fill="#e0f2f1" stroke="#00695c" stroke-width="1.5"/>
+      <text x="500" y="185" text-anchor="middle" font-size="10" fill="#00695c" font-weight="bold">vmbr0</text>
+      <text x="500" y="200" text-anchor="middle" font-size="9" fill="#546e7a">Bridge principal</text>
+
+      <rect x="465" y="220" width="60" height="35" rx="4" fill="#b2dfdb" stroke="#00695c"/>
+      <text x="495" y="242" text-anchor="middle" font-size="9" fill="#00695c">VM 100</text>
+
+      <rect x="570" y="165" width="100" height="45" rx="6" fill="#e0f2f1" stroke="#00695c" stroke-width="1.5"/>
+      <text x="620" y="185" text-anchor="middle" font-size="10" fill="#00695c" font-weight="bold">vmbr1</text>
+      <text x="620" y="200" text-anchor="middle" font-size="9" fill="#546e7a">Réseau isolé</text>
+
+      <rect x="585" y="220" width="60" height="35" rx="4" fill="#b2dfdb" stroke="#00695c"/>
+      <text x="615" y="242" text-anchor="middle" font-size="9" fill="#00695c">CT 200</text>
+
+      <rect x="690" y="175" width="60" height="30" rx="4" fill="#80cbc4" stroke="#00695c"/>
+      <text x="720" y="195" text-anchor="middle" font-size="9" fill="#004d40">local-lvm</text>
+    </svg>
+    <figcaption>Figure 2 — Flux d'administration : Poste admin → Hyperviseur → VMs & Stockage</figcaption>
+  </div>
+
+  <div class="question-block">
+    <strong>🤔 Questions de réflexion :</strong>
+    <ol style="padding-left:20px;margin-top:8px;">
+      <li>Pourquoi un hyperviseur de Type 1 est-il préféré en production par rapport au Type 2 ?</li>
+      <li>Quel est le risque d'accumuler des snapshots sans les consolider ?</li>
+      <li>Pourquoi est-il important de segmenter le réseau de management de celui des VMs ?</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║         SECTION 3 — PARTIE A : VMware ESXi                  ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="section" id="sec3">
+  <h2>3. Partie A — VMware ESXi : Exploration & Maîtrise</h2>
+
+  <div class="callout objectif">
+    <div class="callout-title">🎯 Objectif de cette partie</div>
+    <div class="callout-body">
+      Explorer l'interface d'administration ESXi, comprendre les composants principaux (hôte, datastore, networking, VMs), créer une VM de test, gérer les snapshots et appliquer des mesures de durcissement de base.
+    </div>
+  </div>
+
+  <!-- 3.1 -->
+  <h3 id="sec3-1">3.1 Connexion à l'interface d'administration ESXi</h3>
+  <p>ESXi expose une interface web appelée <strong>VMware Host Client</strong> accessible via HTTPS.</p>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-title">Identifier l'adresse IP de votre ESXi</div>
+    <p>Sur la console directe (DCUI) de votre VM ESXi dans VMware Workstation, l'adresse IP est affichée sur l'écran principal jaune et gris. Notez-la (ex: <code>192.168.xxx.yyy</code>).</p>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-title">Accéder à l'interface web</div>
+    <p>Ouvrez votre navigateur et accédez à :</p>
+    <pre>https://&lt;IP_ESXi&gt;/</pre>
+    <p>Vous obtiendrez un avertissement de certificat SSL (auto-signé). Acceptez l'exception de sécurité pour continuer.</p>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-title">S'authentifier</div>
+    <p>Connectez-vous avec les identifiants configurés lors de l'installation :</p>
+    <pre><span class="cmd">Utilisateur :</span> root
+<span class="cmd">Mot de passe :</span> (celui défini lors de l'installation)</pre>
+  </div>
+
+  <!-- Mockup ESXi -->
+  <div class="mockup">
+    <div class="mockup-titlebar">
+      <div class="mockup-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <span>🌐 https://192.168.1.100 — VMware ESXi Host Client</span>
+    </div>
+    <div class="mockup-body" style="display:grid;grid-template-columns:200px 1fr;gap:15px;">
+      <div class="sidebar">
+        <div style="font-weight:bold;color:var(--primary);margin-bottom:10px;font-size:0.95em;">📦 Navigator</div>
+        <div class="sidebar-item active">🏠 Host</div>
+        <div class="sidebar-item">💻 Virtual Machines</div>
+        <div class="sidebar-item">💾 Storage</div>
+        <div class="sidebar-item">🌐 Networking</div>
+        <div class="sidebar-item">🔧 Manage</div>
+        <div class="sidebar-item">📊 Monitor</div>
+      </div>
+      <div>
+        <div style="font-size:1.1em;font-weight:bold;color:var(--primary);margin-bottom:12px;">Host — Tableau de bord</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="background:var(--info-light);padding:12px;border-radius:6px;">
+            <div style="font-size:0.8em;color:var(--gray-600);">CPU Usage</div>
+            <div style="font-size:1.5em;font-weight:bold;color:var(--info);">12%</div>
+            <div style="background:#bbdefb;height:6px;border-radius:3px;margin-top:5px;">
+              <div style="background:var(--info);height:100%;width:12%;border-radius:3px;"></div>
+            </div>
+          </div>
+          <div style="background:var(--success-light);padding:12px;border-radius:6px;">
+            <div style="font-size:0.8em;color:var(--gray-600);">Memory Usage</div>
+            <div style="font-size:1.5em;font-weight:bold;color:var(--success);">2.1 / 4 GB</div>
+            <div style="background:#c8e6c9;height:6px;border-radius:3px;margin-top:5px;">
+              <div style="background:var(--success);height:100%;width:52%;border-radius:3px;"></div>
+            </div>
+          </div>
+          <div style="background:var(--warning-light);padding:12px;border-radius:6px;">
+            <div style="font-size:0.8em;color:var(--gray-600);">Storage</div>
+            <div style="font-size:1.5em;font-weight:bold;color:var(--warning);">18 / 40 GB</div>
+            <div style="background:#ffe0b2;height:6px;border-radius:3px;margin-top:5px;">
+              <div style="background:var(--warning);height:100%;width:45%;border-radius:3px;"></div>
+            </div>
+          </div>
+          <div style="background:var(--security-light);padding:12px;border-radius:6px;">
+            <div style="font-size:0.8em;color:var(--gray-600);">VMs Running</div>
+            <div style="font-size:1.5em;font-weight:bold;color:var(--security);">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout verification">
+    <div class="callout-title">✅ Vérification</div>
+    <div class="callout-body">
+      Vous devez voir le tableau de bord ESXi avec les informations sur l'hôte : version ESXi, CPU, mémoire totale, stockage disponible, nombre de VMs. Si la page ne charge pas, vérifiez l'IP et que le service web est actif.
+    </div>
+  </div>
+
+  <!-- 3.2 -->
+  <h3 id="sec3-2">3.2 Dashboard & navigation</h3>
+  <p>Prenez le temps d'explorer chaque section du menu de navigation :</p>
+
+  <table>
+    <tr><th>Section</th><th>Contenu</th><th>Utilité</th></tr>
+    <tr><td><strong>Host</strong></td><td>Vue d'ensemble de l'hôte, matériel, services</td><td>Vérifier l'état général, la version, la licence</td></tr>
+    <tr><td><strong>Virtual Machines</strong></td><td>Liste des VMs, état (running/stopped), actions</td><td>Gérer le cycle de vie des VMs</td></tr>
+    <tr><td><strong>Storage</strong></td><td>Datastores, capacité, fichiers</td><td>Uploader des ISO, vérifier l'espace</td></tr>
+    <tr><td><strong>Networking</strong></td><td>vSwitchs, port groups, NICs physiques</td><td>Configurer la connectivité réseau des VMs</td></tr>
+    <tr><td><strong>Manage</strong></td><td>Services, certificats, licences, avancé</td><td>Configuration système, sécurité</td></tr>
+    <tr><td><strong>Monitor</strong></td><td>Performances, logs, événements, tâches</td><td>Diagnostic, audit de sécurité</td></tr>
+  </table>
+
+  <div class="callout resultat">
+    <div class="callout-title">📋 Résultat attendu</div>
+    <div class="callout-body">
+      Notez dans votre rapport : la version d'ESXi, le nombre de CPU virtuels, la RAM totale, la capacité du datastore, le nombre de vSwitchs.
+    </div>
+  </div>
+
+  <!-- 3.3 -->
+  <h3 id="sec3-3">3.3 Réseau : vSwitch & Port Groups</h3>
+  <p>Le réseau virtuel ESXi repose sur les <strong>Virtual Switches</strong>. Par défaut, un <code>vSwitch0</code> est créé avec un port group <code>VM Network</code> et un port <code>Management Network</code>.</p>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-title">Observer la configuration réseau existante</div>
+    <p>Allez dans <strong>Networking → Virtual switches</strong>. Vous devriez voir <code>vSwitch0</code> avec un uplink (vmnic0). Cliquez dessus pour voir sa configuration : MTU, nombre de ports, politique de sécurité.</p>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-title">Observer les Port Groups</div>
+    <p>Allez dans <strong>Networking → Port groups</strong>. Vous verrez au minimum :</p>
+    <ul style="padding-left:20px;">
+      <li><code>Management Network</code> — utilisé pour l'interface d'administration</li>
+      <li><code>VM Network</code> — port group par défaut pour les VMs</li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-title">Créer un nouveau Port Group (réseau isolé)</div>
+    <p>Cliquez sur <strong>Add port group</strong> :</p>
+    <ul style="padding-left:20px;">
+      <li><strong>Name :</strong> <code>Lab-Isolated</code></li>
+      <li><strong>VLAN ID :</strong> <code>0</code> (aucun, ou choisissez un ID si vous souhaitez tester le tagging)</li>
+      <li><strong>Virtual switch :</strong> <code>vSwitch0</code></li>
+    </ul>
+    <p>Cliquez <strong>Add</strong>. Ce port group servira pour le mini-lab isolé de la Partie D.</p>
+  </div>
+
+  <div class="callout securite">
+    <div class="callout-title">🔒 Sécurité — Politique de sécurité des Port Groups</div>
+    <div class="callout-body">
+      Par défaut, ESXi désactive le <strong>mode promiscuous</strong>, les <strong>MAC address changes</strong> et le <strong>forged transmits</strong> sur chaque port group. Ce sont des mesures de sécurité importantes :
+      <ul>
+        <li><strong>Promiscuous mode = Reject</strong> : empêche une VM de capturer le trafic des autres VMs</li>
+        <li><strong>MAC address changes = Reject</strong> : empêche une VM de changer son adresse MAC (anti-spoofing)</li>
+        <li><strong>Forged transmits = Reject</strong> : bloque les trames avec une MAC source falsifiée</li>
+      </ul>
+      <strong>Ne modifiez ces paramètres qu'avec une raison légitime</strong> (ex: VM de monitoring réseau, nested virtualization).
+    </div>
+  </div>
+
+  <div class="callout verification">
+    <div class="callout-title">✅ Vérification</div>
+    <div class="callout-body">
+      Vérifiez que le port group <code>Lab-Isolated</code> apparaît dans la liste. Capturez l'écran pour votre rapport.
+    </div>
+  </div>
+
+  <!-- 3.4 -->
+  <h3 id="sec3-4">3.4 Création d'une VM de test</h3>
+  <p>C'est l'exercice central : créer une machine virtuelle de A à Z.</p>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-title">Uploader une image ISO</div>
+    <p>Allez dans <strong>Storage → datastore1 → Datastore browser</strong>. Créez un dossier <code>ISOs</code>. Cliquez <strong>Upload</strong> et sélectionnez votre ISO (ex: <code>debian-12-netinst-amd64.iso</code>).</p>
+  </div>
+
+  <div class="callout attention">
+    <div class="callout-title">⚠️ Attention</div>
+    <div class="callout-body">
+      L'upload d'ISO peut être lent en nested virtualization. Préférez une ISO légère (&lt; 500 Mo). Si le datastore est plein, supprimez des fichiers inutiles ou augmentez la taille du disque de la VM ESXi dans VMware Workstation.
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-title">Créer la VM</div>
+    <p>Allez dans <strong>Virtual Machines → Create / Register VM</strong>. Suivez l'assistant :</p>
+  </div>
+
+  <table>
+    <tr><th>Paramètre</th><th>Valeur recommandée</th><th>Explication</th></tr>
+    <tr><td>Creation type</td><td>Create a new virtual machine</td><td>Nouvelle VM vierge</td></tr>
+    <tr><td>Name</td><td><code>Test-Debian-ESXi</code></td><td>Nom descriptif</td></tr>
+    <tr><td>Compatibility</td><td>ESXi 7.0 / 8.0 (selon version)</td><td>Version de matériel virtuel</td></tr>
+    <tr><td>Guest OS family</td><td>Linux</td><td>—</td></tr>
+    <tr><td>Guest OS version</td><td>Debian GNU/Linux 11 (64-bit) ou 12</td><td>Adapté à votre ISO</td></tr>
+    <tr><td>Storage</td><td>datastore1</td><td>Le datastore local</td></tr>
+    <tr><td>CPU</td><td>1 vCPU</td><td>Suffisant pour un test (nested = lent)</td></tr>
+    <tr><td>Memory</td><td>1024 MB (1 GB)</td><td>Minimum pour Debian CLI</td></tr>
+    <tr><td>Hard disk</td><td>8 GB, Thin provisioned</td><td>Économie d'espace</td></tr>
+    <tr><td>Network Adapter</td><td>VM Network (ou Lab-Isolated)</td><td>Selon besoin</td></tr>
+    <tr><td>CD/DVD Drive</td><td>Datastore ISO file → sélectionner l'ISO</td><td>Pour booter sur l'installeur</td></tr>
+  </table>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-title">Vérifier et finaliser</div>
+    <p>Relisez le récapitulatif, puis cliquez <strong>Finish</strong>. La VM apparaît dans la liste.</p>
+  </div>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-title">Démarrer et installer l'OS</div>
+    <p>Sélectionnez la VM → <strong>Power On</strong>. Ouvrez la <strong>Console</strong> (navigateur ou VMRC). Procédez à l'installation minimale de Debian (ou simplement vérifiez que le boot ISO fonctionne).</p>
+  </div>
+
+  <div class="callout resultat">
+    <div class="callout-title">📋 Résultat attendu</div>
+    <div class="callout-body">
+      La VM <code>Test-Debian-ESXi</code> démarre sur l'ISO. Vous voyez l'écran d'installation Debian (ou l'écran de boot de votre ISO). Capturez cette console pour votre rapport.
+    </div>
+  </div>
+
+  <!-- 3.5 -->
+  <h3 id="sec3-5">3.5 Snapshots & clonage</h3>
+
+  <h4>Prendre un snapshot</h4>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-title">Créer un snapshot</div>
+    <p>Sélectionnez votre VM → <strong>Actions → Snapshots → Take snapshot</strong> :</p>
+    <ul style="padding-left:20px;">
+      <li><strong>Name :</strong> <code>Avant-installation</code></li>
+      <li><strong>Description :</strong> <code>État avant installation de l'OS</code></li>
+      <li><strong>Include memory :</strong> Oui (optionnel, consomme plus d'espace)</li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-title">Vérifier le snapshot</div>
+    <p>Allez dans <strong>Actions ��� Snapshots → Manage snapshots</strong>. Vous devez voir votre snapshot dans l'arbre.</p>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-title">Restaurer un snapshot</div>
+    <p>Pour revenir à l'état capturé : <strong>Manage snapshots → sélectionner le snapshot → Revert to</strong>.</p>
+  </div>
+
+  <div class="callout attention">
+    <div class="callout-title">⚠️ Attention — Clonage sur ESXi standalone</div>
+    <div class="callout-body">
+      L'ESXi <strong>sans vCenter</strong> ne dispose pas de fonction de clonage native dans l'interface web. Le clonage nécessite vCenter Server ou l'utilisation de commandes <code>vmkfstools</code> en CLI. En labo, on utilisera les <strong>snapshots</strong> ou l'export/import OVF comme alternative.
+    </div>
+  </div>
+
+  <!-- 3.6 -->
+  <h3 id="sec3-6">3.6 Monitoring & logs</h3>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-title">Observer les performances</div>
+    <p>Allez dans <strong>Monitor → Performance</strong>. Vous verrez des graphiques temps réel de CPU, mémoire, réseau et disque pour l'hôte et chaque VM.</p>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-title">Consulter les événements</div>
+    <p>Allez dans <strong>Monitor → Events</strong>. C'est ici que vous trouvez l'historique : démarrages de VMs, connexions d'utilisateurs, erreurs. C'est un <strong>outil d'audit essentiel</strong>.</p>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-title">Consulter les logs système</div>
+    <p>Allez dans <strong>Monitor → Logs</strong>. Les fichiers importants :</p>
+  </div>
+
+  <table>
+    <tr><th>Fichier log</th><th>Contenu</th><th>Usage sécurité</th></tr>
+    <tr><td><code>/var/log/vmkernel.log</code></td><td>Noyau VMkernel, drivers, matériel</td><td>Diagnostiquer des erreurs hardware ou réseau</td></tr>
+    <tr><td><code>/var/log/hostd.log</code></td><td>Service de gestion hôte</td><td>Tracer les actions d'administration</td></tr>
+    <tr><td><code>/var/log/auth.log</code></td><td>Authentification</td><td>Détecter les tentatives de connexion</td></tr>
+    <tr><td><code>/var/log/shell.log</code></td><td>Commandes shell ESXi</td><td>Audit des commandes exécutées en SSH</td></tr>
+    <tr><td><code>/var/log/vobd.log</code></td><td>VMware Observation Broker</td><td>Événements détaillés, diagnostics avancés</td></tr>
+  </table>
+
+  <div class="callout securite">
+    <div class="callout-title">🔒 Sécurité — Centralisation des logs</div>
+    <div class="callout-body">
+      En environnement de production ou SOC, les logs ESXi doivent être <strong>envoyés vers un serveur syslog distant</strong> (SIEM). Cela empêche un attaquant qui compromet l'hôte de supprimer ses traces. Configuration : <strong>Manage → System → Advanced Settings → Syslog.global.logHost</strong>.
+    </div>
+  </div>
+
+  <!-- 3.7 -->
+  <h3 id="sec3-7">3.7 Comptes, permissions & durcissement</h3>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-title">Gestion des comptes</div>
+    <p>Allez dans <strong>Manage → Security & Users → Users</strong>. Par défaut, seul <code>root</code> existe. Vous pouvez créer un utilisateur supplémentaire avec un rôle limité :</p>
+    <ul style="padding-left:20px;">
+      <li>Cliquez <strong>Add user</strong></li>
+      <li>Username : <code>auditeur</code></li>
+      <li>Password : (complexe, minimum 8 caractères avec majuscule, chiffre, caractère spécial)</li>
+      <li>Role : <code>Read-Only</code></li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-title">Vérifier les services exposés</div>
+    <p>Allez dans <strong>Manage → Services</strong>. Vérifiez quels services sont actifs :</p>
+  </div>
+
+  <table>
+    <tr><th>Service</th><th>Recommandation sécurité</th></tr>
+    <tr><td>SSH (TSM-SSH)</td><td>⚠️ Désactiver sauf besoin ponctuel. Chaque activation doit être justifiée et tracée.</td></tr>
+    <tr><td>ESXi Shell (TSM)</td><td>⚠️ Désactiver. L'accès shell local est un risque si l'accès physique n'est pas contrôlé.</td></tr>
+    <tr><td>DCUI</td><td>Laisser actif (nécessaire pour la console directe).</td></tr>
+    <tr><td>NTP Daemon</td><td>✅ Activer et configurer. La synchronisation temporelle est critique pour les logs et l'audit.</td></tr>
+  </table>
+
+  <div class="callout securite">
+    <div class="callout-title">🔒 Checklist de durcissement ESXi</div>
+    <div class="callout-body">
+      <ul>
+        <li>✅ Mot de passe root complexe (> 12 caractères)</li>
+        <li>✅ Créer des comptes nominatifs avec rôles limités</li>
+        <li>✅ Désactiver SSH et ESXi Shell quand non nécessaires</li>
+        <li>✅ Configurer un timeout pour le shell : <code>UserVars.ESXiShellTimeOut = 600</code></li>
+        <li>✅ Activer le lockdown mode (si vCenter disponible)</li>
+        <li>✅ Configurer un serveur NTP</li>
+        <li>✅ Envoyer les logs vers un syslog distant</li>
+        <li>✅ Limiter l'accès réseau à l'interface de management (firewall hôte)</li>
+        <li>✅ Mettre à jour ESXi régulièrement (patchs de sécurité)</li>
+        <li>✅ Vérifier les politiques de sécurité des port groups (promiscuous, MAC changes, forged transmits)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 3.8 -->
+  <h3 id="sec3-8">3.8 Commandes CLI ESXi</h3>
+  <p>Si vous avez activé SSH (temporairement et pour ce TP uniquement), voici des commandes utiles :</p>
+
+  <pre><span class="comment"># ── Informations système ──</span>
+<span class="cmd">esxcli system version get</span>          <span class="comment"># Version et build d'ESXi</span>
+<span class="cmd">esxcli system hostname get</span>         <span class="comment"># Nom d'hôte</span>
+<span class="cmd">esxcli hardware cpu global get</span>     <span class="comment"># Infos CPU physique</span>
+<span class="cmd">esxcli hardware memory get</span>         <span class="comment"># RAM totale</span>
+
+<span class="comment"># ── Réseau ──</span>
+<span class="cmd">esxcli network nic list</span>            <span class="comment"># Liste des NICs physiques</span>
+<span class="cmd">esxcli network vswitch standard list</span>  <span class="comment"># Détail des vSwitchs</span>
+<span class="cmd">esxcli network ip interface list</span>   <span class="comment"># Interfaces VMkernel</span>
+<span class="cmd">esxcli network firewall ruleset list</span> <span class="comment"># Règles de firewall hôte</span>
+
+<span class="comment"># ── Stockage ──</span>
+<span class="cmd">esxcli storage filesystem list</span>     <span class="comment"># Datastores et espace disponible</span>
+<span class="cmd">esxcli storage vmfs extent list</span>    <span class="comment"># Extents VMFS</span>
+
+<span class="comment"># ── VMs ──</span>
+<span class="cmd">esxcli vm process list</span>             <span class="comment"># VMs en cours d'exécution</span>
+<span class="cmd">vim-cmd vmsvc/getallvms</span>            <span class="comment"># Liste complète des VMs</span>
+<span class="cmd">vim-cmd vmsvc/power.on &lt;vmid&gt;</span>      <span class="comment"># Démarrer une VM par ID</span>
+<span class="cmd">vim-cmd vmsvc/snapshot.create &lt;vmid&gt; "nom" "desc" 0 0</span>  <span class="comment"># Créer un snapshot</span>
+
+<span class="comment"># ── Sécurité ──</span>
+<span class="cmd">esxcli system account list</span>         <span class="comment"># Liste des comptes locaux</span>
+<span class="cmd">esxcli system syslog config get</span>    <span class="comment"># Configuration syslog</span></pre>
+
+  <div class="callout danger">
+    <div class="callout-title">🚫 Danger</div>
+    <div class="callout-body">
+      N'exécutez <strong>jamais</strong> de commandes destructives (<code>vmkfstools -U</code>, suppression de datastores) sans double vérification. En SSH, il n'y a pas de confirmation.
+      <br><strong>Pensez à désactiver SSH dès que vous avez terminé.</strong>
+    </div>
+  </div>
+
+  <div class="callout verification">
+    <div class="callout-title">✅ Vérifications finales — Partie ESXi</div>
+    <div class="callout-body">
+      <ul>
+        <li>☐ Interface web accessible et fonctionnelle</li>
+        <li>☐ Dashboard exploré et informations notées</li>
+        <li>☐ Port group <code>Lab-Isolated</code> créé</li>
+        <li>☐ VM de test créée et bootable sur ISO</li>
+        <li>☐ Au moins 1 snapshot pris et vérifié</li>
+        <li>☐ Logs consultés et compris</li>
+        <li>☐ Utilisateur <code>auditeur</code> créé avec droits limités</li>
+        <li>☐ Checklist de durcissement parcourue</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="question-block">
+    <strong>🤔 Questions de réflexion cybersécurité — Partie A :</strong>
+    <ol style="padding-left:20px;margin-top:8px;">
+      <li>Un attaquant obtient l'accès SSH à votre ESXi. Quels sont les risques ? Quelles mesures auraient pu l'en empêcher ?</li>
+      <li>Pourquoi est-il dangereux de laisser le mode promiscuous activé sur un port group ?</li>
+      <li>Comment un SIEM peut-il exploiter les logs ESXi pour détecter une compromission ?</li>
+      <li>Quel est l'intérêt de créer des comptes nominatifs plutôt que de partager le mot de passe root ?</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║         SECTION 4 — PARTIE B : Proxmox VE                   ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="section" id="sec4">
+  <h2>4. Partie B — Proxmox VE : Exploration & Maîtrise</h2>
+
+  <div class="callout objectif">
+    <div class="callout-title">🎯 Objectif de cette partie</div>
+    <div class="callout-body">
+      Explorer l'interface web Proxmox VE, comprendre son arborescence (Datacenter → Node → VM/CT), gérer le stockage et le réseau, créer une VM et un conteneur LXC, configurer le RBAC et appliquer des mesures de sécurité.
+    </div>
+  </div>
+
+  <!-- 4.1 -->
+  <h3 id="sec4-1">4.1 Connexion à l'interface web Proxmox</h3>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-title">Identifier l'adresse IP de votre Proxmox</div>
+    <p>Sur la console de votre VM Proxmox (dans VMware Workstation), l'IP est affichée après le login. Vous pouvez aussi la retrouver avec <code>ip a</code>.</p>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-title">Accéder à l'interface web</div>
+    <p>Dans votre navigateur :</p>
+    <pre>https://&lt;IP_Proxmox&gt;:8006/</pre>
+    <p>⚠️ Notez le <strong>port 8006</strong> et le <strong>https</strong>. Acceptez l'avertissement de certificat.</p>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-title">S'authentifier</div>
+    <pre><span class="cmd">Utilisateur :</span> root
+<span class="cmd">Mot de passe :</span> (celui défini lors de l'installation)
+<span class="cmd">Realm :</span> Linux PAM standard authentication</pre>
+  </div>
+
+  <div class="callout info">
+    <div class="callout-title">ℹ️ Realms d'authentification</div>
+    <div class="callout-body">
+      Proxmox supporte plusieurs « realms » (domaines d'authentification) :
+      <ul>
+        <li><strong>PAM</strong> : comptes Linux locaux (root, utilisateurs système)</li>
+        <li><strong>PVE</strong> : comptes internes Proxmox (créés dans l'interface)</li>
+        <li><strong>LDAP / AD</strong> : intégration annuaire d'entreprise</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 4.2 -->
+  <h3 id="sec4-2">4.2 Arborescence & navigation</h3>
+
+  <div class="mockup">
+    <div class="mockup-titlebar">
+      <div class="mockup-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <span>🌐 https://192.168.1.200:8006 — Proxmox VE</span>
+    </div>
+    <div class="mockup-body" style="display:grid;grid-template-columns:220px 1fr;gap:15px;">
+      <div class="sidebar">
+        <div style="font-weight:bold;color:var(--accent);margin-bottom:8px;font-size:0.95em;">🗂️ Datacenter</div>
+        <div class="sidebar-item" style="padding-left:20px;">📊 Summary</div>
+        <div class="sidebar-item" style="padding-left:20px;">🔍 Search</div>
+        <div class="sidebar-item" style="padding-left:20px;">💾 Storage</div>
+        <div class="sidebar-item" style="padding-left:20px;">🔐 Permissions</div>
+        <div class="sidebar-item" style="padding-left:20px;">🔥 Firewall</div>
+        <div style="font-weight:bold;color:var(--accent);margin:10px 0 5px;font-size:0.95em;">🖥️ pve-node1</div>
+        <div class="sidebar-item active" style="padding-left:30px;">📊 Summary</div>
+        <div class="sidebar-item" style="padding-left:30px;">📝 Notes</div>
+        <div class="sidebar-item" style="padding-left:30px;">🌐 Network</div>
+        <div class="sidebar-item" style="padding-left:30px;">💾 Disks</div>
+        <div class="sidebar-item" style="padding-left:30px;">📦 Updates</div>
+        <div class="sidebar-item" style="padding-left:30px;">🔥 Firewall</div>
+        <div style="color:var(--gray-600);margin:8px 0 3px;padding-left:30px;font-size:0.85em;">── VMs & CTs ──</div>
+        <div class="sidebar-item" style="padding-left:40px;color:var(--gray-600);">💻 100 (Test-VM)</div>
+        <div class="sidebar-item" style="padding-left:40px;color:var(--gray-600);">📦 200 (CT-test)</div>
+      </div>
+      <div>
+        <div style="font-size:1.1em;font-weight:bold;color:var(--accent);margin-bottom:12px;">Node: pve-node1 — Summary</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="background:var(--accent-light);padding:12px;border-radius:6px;">
+            <div style="font-size:0.8em;color:var(--gray-600);">CPU Usage</div>
+            <div style="font-size:1.4em;font-weight:bold;color:var(--accent);">8.3% (1 CPU)</div>
+            <div style="background:#b2dfdb;height:6px;border-radius:3px;margin-top:5px;">
+              <div style="background:var(--accent);height:100%;width:8%;border-radius:3px;"></div>
+            </div>
+          </div>
+          <div style="background:var(--success-light);padding:12px;border-radius:6px;">
+            <div style="font-size:0.8em;color:var(--gray-600);">Memory</div>
+            <div style="font-size:1.4em;font-weight:bold;color:var(--success);">1.8 / 4.0 GiB</div>
+            <div style="background:#c8e6c9;height:6px;border-radius:3px;margin-top:5px;">
+              <div style="background:var(--success);height:100%;width:45%;border-radius:3px;"></div>
+            </div>
+          </div>
+          <div style="background:var(--warning-light);padding:12px;border-radius:6px;">
+            <div style="font-size:0.8em;color:var(--gray-600);">Root FS</div>
+            <div style="font-size:1.4em;font-weight:bold;color:var(--warning);">5.2 / 19.5 GiB</div>
+          </div>
+          <div style="background:var(--info-light);padding:12px;border-radius:6px;">
+            <div style="font-size:0.8em;color:var(--gray-600);">Uptime</div>
+            <div style="font-size:1.4em;font-weight:bold;color:var(--info);">2h 15m</div>
+          </div>
+        </div>
+        <div style="margin-top:15px;padding:10px;background:var(--gray-50);border-radius:6px;font-size:0.85em;">
+          <strong>Version :</strong> Proxmox VE 8.x | <strong>Kernel :</strong> 6.5.x-pve | <strong>PVE Manager :</strong> 8.x.x
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p>L'interface Proxmox est organisée en <strong>arborescence hiérarchique</strong> :</p>
+  <table>
+    <tr><th>Niveau</th><th>Élément</th><th>Description</th></tr>
+    <tr><td>1</td><td><strong>Datacenter</strong></td><td>Vue globale du cluster (même avec un seul nœud). Gestion des permissions, stockage, firewall.</td></tr>
+    <tr><td>2</td><td><strong>Node</strong></td><td>Chaque serveur physique/VM Proxmox. Gestion du réseau, disques, mises à jour, syslog.</td></tr>
+    <tr><td>3</td><td><strong>VM / CT</strong></td><td>Machines virtuelles (QEMU/KVM) et conteneurs (LXC) avec leur propre configuration.</td></tr>
+  </table>
+
+  <!-- 4.3 -->
+  <h3 id="sec4-3">4.3 Réseau : bridges Linux</h3>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-title">Observer la configuration réseau</div>
+    <p>Allez dans <strong>Node → Network</strong>. Vous verrez :</p>
+    <ul style="padding-left:20px;">
+      <li><code>ens33</code> (ou <code>eth0</code>) : interface physique (liée à la NIC VMware)</li>
+      <li><code>vmbr0</code> : bridge principal, relié à l'interface physique, porte l'IP de gestion</li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-title">Créer un bridge isolé (optionnel mais recommandé)</div>
+    <p>Cliquez <strong>Create → Linux Bridge</strong> :</p>
+    <ul style="padding-left:20px;">
+      <li><strong>Name :</strong> <code>vmbr1</code></li>
+      <li><strong>IPv4/CIDR :</strong> <code>10.10.10.1/24</code> (réseau isolé)</li>
+      <li><strong>Bridge ports :</strong> (laisser vide = pas d'uplink physique = réseau isolé)</li>
+      <li><strong>Comment :</strong> <code>Réseau isolé pour lab cybersécurité</code></li>
+    </ul>
+    <p>Cliquez <strong>Create</strong>, puis <strong>Apply Configuration</strong> (ou redémarrez le service réseau).</p>
+  </div>
+
+  <div class="callout securite">
+    <div class="callout-title">🔒 Sécurité — Segmentation réseau</div>
+    <div class="callout-body">
+      Créer un bridge <strong>sans uplink physique</strong> (bridge ports vide) crée un réseau <strong>totalement isolé</strong> du réseau externe. Les VMs connectées à <code>vmbr1</code> ne pourront communiquer qu'entre elles. C'est <strong>idéal pour un lab de pentest</strong> ou un environnement d'analyse de malware.
+    </div>
+  </div>
+
+  <!-- 4.4 -->
+  <h3 id="sec4-4">4.4 Stockage</h3>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-title">Observer les pools de stockage</div>
+    <p>Allez dans <strong>Datacenter → Storage</strong> ou <strong>Node → Storage</strong>. Par défaut :</p>
+  </div>
+
+  <table>
+    <tr><th>Storage</th><th>Type</th><th>Contenu</th><th>Usage</th></tr>
+    <tr><td><code>local</code></td><td>Directory (/var/lib/vz)</td><td>ISO Images, CT Templates, VZDump Backups</td><td>Stockage des ISO et des sauvegardes</td></tr>
+    <tr><td><code>local-lvm</code></td><td>LVM-Thin</td><td>Disk Images, Root Disks</td><td>Disques des VMs et CTs (performant)</td></tr>
+  </table>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-title">Uploader une image ISO</div>
+    <p>Cliquez sur <strong>local (node) → ISO Images → Upload</strong>. Sélectionnez votre fichier ISO et validez. L'ISO apparaît dans la liste.</p>
+  </div>
+
+  <div class="callout attention">
+    <div class="callout-title">⚠️ Erreur fréquente — ISO non visible</div>
+    <div class="callout-body">
+      Si l'ISO ne s'affiche pas lors de la création d'une VM, vérifiez que :
+      <ul>
+        <li>L'upload est bien terminé (pas d'erreur dans les tâches)</li>
+        <li>Vous avez uploadé sur le storage <code>local</code> (qui accepte les ISO) et non <code>local-lvm</code></li>
+        <li>Le fichier a bien une extension <code>.iso</code></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 4.5 -->
+  <h3 id="sec4-5">4.5 Création d'une VM de test</h3>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-title">Lancer l'assistant de création</div>
+    <p>Cliquez sur <strong>Create VM</strong> (bouton bleu en haut à droite). L'assistant comporte plusieurs onglets :</p>
+  </div>
+
+  <table>
+    <tr><th>Onglet</th><th>Paramètre</th><th>Valeur</th><th>Explication</th></tr>
+    <tr><td rowspan="2"><strong>General</strong></td><td>VM ID</td><td><code>100</code> (auto)</td><td>Identifiant unique de la VM</td></tr>
+    <tr><td>Name</td><td><code>Test-Debian-PVE</code></td><td>Nom descriptif</td></tr>
+    <tr><td rowspan="2"><strong>OS</strong></td><td>ISO image</td><td>Sélectionner l'ISO uploadée</td><td>—</td></tr>
+    <tr><td>Type / Version</td><td>Linux / 6.x - 2.6 Kernel</td><td>Adapté à Debian 12</td></tr>
+    <tr><td rowspan="3"><strong>System</strong></td><td>Machine</td><td><code>q35</code> (recommandé)</td><td>Chipset moderne</td></tr>
+    <tr><td>BIOS</td><td><code>OVMF (UEFI)</code> ou <code>SeaBIOS</code></td><td>UEFI si possible, sinon BIOS legacy</td></tr>
+    <tr><td>SCSI Controller</td><td><code>VirtIO SCSI Single</code></td><td>Meilleure performance I/O</td></tr>
+    <tr><td rowspan="3"><strong>Disks</strong></td><td>Bus</td><td><code>VirtIO Block</code> ou <code>SCSI</code></td><td>VirtIO = meilleure performance</td></tr>
+    <tr><td>Storage</td><td><code>local-lvm</code></td><td>LVM thin provisioning</td></tr>
+    <tr><td>Disk size</td><td><code>8 GiB</code></td><td>Suffisant pour Debian CLI</td></tr>
+    <tr><td rowspan="2"><strong>CPU</strong></td><td>Cores</td><td><code>1</code></td><td>Suffisant pour un test</td></tr>
+    <tr><td>Type</td><td><code>host</code></td><td>Important pour nested virtualization</td></tr>
+    <tr><td><strong>Memory</strong></td><td>Memory (MiB)</td><td><code>1024</code></td><td>1 GiB</td></tr>
+    <tr><td rowspan="2"><strong>Network</strong></td><td>Bridge</td><td><code>vmbr0</code></td><td>Réseau principal (ou <code>vmbr1</code> pour isolé)</td></tr>
+    <tr><td>Model</td><td><code>VirtIO (paravirtualized)</code></td><td>Meilleure performance réseau</td></tr>
+  </table>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-title">Confirmer et créer</div>
+    <p>Vérifiez le récapitulatif dans l'onglet <strong>Confirm</strong>. Cochez éventuellement <strong>Start after created</strong>. Cliquez <strong>Finish</strong>.</p>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-title">Démarrer et accéder à la console</div>
+    <p>Sélectionnez la VM dans l'arborescence → <strong>Start</strong>. Puis ouvrez la <strong>Console</strong> (noVNC intégré). Vous devez voir le boot sur l'ISO.</p>
+  </div>
+
+  <div class="callout resultat">
+    <div class="callout-title">📋 Résultat attendu</div>
+    <div class="callout-body">
+      La VM <code>Test-Debian-PVE</code> (ID 100) est créée, visible dans l'arborescence sous le nœud, et démarre sur l'ISO. La console noVNC affiche l'écran d'installation.
+    </div>
+  </div>
+
+  <!-- 4.6 -->
+  <h3 id="sec4-6">4.6 Conteneurs LXC (optionnel)</h3>
+  <p>
+    Proxmox supporte nativement les <strong>conteneurs Linux (LXC)</strong> en plus des VMs. Un conteneur partage le noyau de l'hôte, consomme moins de ressources, mais offre une <strong>isolation moindre</strong> qu'une VM complète.
+  </p>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4>VM (KVM/QEMU)</h4>
+      <ul style="padding-left:18px;">
+        <li>Noyau propre (guest kernel)</li>
+        <li>Émulation matérielle complète</li>
+        <li>Isolation forte</li>
+        <li>Supporte tout OS</li>
+        <li>Plus de ressources consommées</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Conteneur LXC</h4>
+      <ul style="padding-left:18px;">
+        <li>Partage le noyau de l'hôte</li>
+        <li>Pas d'émulation matérielle</li>
+        <li>Isolation par namespaces/cgroups</li>
+        <li>Linux uniquement</li>
+        <li>Très léger et rapide</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-title">Télécharger un template CT</div>
+    <p>Allez dans <strong>local (storage) → CT Templates → Templates</strong>. Téléchargez un template (ex: <code>debian-12-standard</code>).</p>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-title">Créer le conteneur</div>
+    <p>Cliquez <strong>Create CT</strong>. Paramètres : ID <code>200</code>, hostname <code>ct-test</code>, password, template Debian, 512 MB RAM, 4 GB disk, bridge <code>vmbr0</code> ou <code>vmbr1</code>.</p>
+  </div>
+
+  <div class="callout securite">
+    <div class="callout-title">🔒 Sécurité — Conteneurs non privilégiés</div>
+    <div class="callout-body">
+      Proxmox crée par défaut des conteneurs <strong>non privilégiés</strong> (unprivileged). Cela signifie que le root dans le conteneur est mappé sur un utilisateur non-root de l'hôte, limitant considérablement les risques d'évasion de conteneur. <strong>N'activez jamais le mode « privileged » sans raison impérative.</strong>
+    </div>
+  </div>
+
+  <!-- 4.7 -->
+  <h3 id="sec4-7">4.7 Snapshots & sauvegardes</h3>
+
+  <h4>Snapshots</h4>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-title">Prendre un snapshot</div>
+    <p>Sélectionnez la VM → <strong>Snapshots → Take Snapshot</strong>. Donnez un nom (ex: <code>etat-initial</code>) et une description. Cochez <strong>Include RAM</strong> si souhaité.</p>
+  </div>
+
+  <h4>Sauvegardes (Backup)</h4>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-title">Sauvegarde manuelle</div>
+    <p>Sélectionnez la VM → <strong>Backup → Backup now</strong>. Choisissez :</p>
+    <ul style="padding-left:20px;">
+      <li><strong>Storage :</strong> <code>local</code></li>
+      <li><strong>Mode :</strong> <code>Snapshot</code> (sauvegarde à chaud, sans interruption)</li>
+      <li><strong>Compression :</strong> <code>ZSTD</code> (bon compromis vitesse/taille)</li>
+    </ul>
+  </div>
+
+  <div class="callout info">
+    <div class="callout-title">ℹ️ Difference entre Snapshot et Backup</div>
+    <div class="callout-body">
+      <table>
+        <tr><th></th><th>Snapshot</th><th>Backup (vzdump)</th></tr>
+        <tr><td><strong>Stockage</strong></td><td>Même volume que la VM</td><td>Storage séparé (local, NFS…)</td></tr>
+        <tr><td><strong>Portabilité</strong></td><td>Non portable</td><td>Fichier autonome (.vma.zst)</td></tr>
+        <tr><td><strong>Restauration après crash disque</strong></td><td>❌ Perdu</td><td>✅ Intact si stocké ailleurs</td></tr>
+        <tr><td><strong>Usage</strong></td><td>Retour rapide avant changement</td><td>Vraie sauvegarde / DR</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 4.8 -->
+  <h3 id="sec4-8">4.8 Monitoring & journaux</h3>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-title">Monitoring de la VM</div>
+    <p>Sélectionnez la VM → <strong>Summary</strong>. Observez les graphiques temps réel : CPU, mémoire, réseau, I/O disque.</p>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-title">Journaux système</div>
+    <p>Allez dans <strong>Node → System → Syslog</strong>. Vous y trouvez les logs système Linux classiques. Filtrez par service si besoin.</p>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-title">Tâches et historique</div>
+    <p>En bas de l'interface, l'onglet <strong>Task Log</strong> affiche toutes les opérations effectuées (création VM, snapshot, backup, etc.) avec leur statut et leur durée.</p>
+  </div>
+
+  <!-- 4.9 -->
+  <h3 id="sec4-9">4.9 RBAC : Utilisateurs, rôles, permissions</h3>
+  <p>
+    Proxmox dispose d'un système <strong>RBAC (Role-Based Access Control)</strong> complet, bien plus granulaire que celui d'ESXi standalone.
+  </p>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-title">Créer un utilisateur PVE</div>
+    <p>Allez dans <strong>Datacenter → Permissions → Users → Add</strong> :</p>
+    <ul style="padding-left:20px;">
+      <li><strong>User name :</strong> <code>etudiant1</code></li>
+      <li><strong>Realm :</strong> <code>Proxmox VE authentication server (pve)</code></li>
+      <li><strong>Password :</strong> (complexe)</li>
+      <li><strong>Enable :</strong> ✅</li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-title">Assigner un rôle et des permissions</div>
+    <p>Allez dans <strong>Datacenter → Permissions → Add → User Permission</strong> :</p>
+    <ul style="padding-left:20px;">
+      <li><strong>Path :</strong> <code>/vms/100</code> (accès uniquement à la VM 100)</li>
+      <li><strong>User :</strong> <code>etudiant1@pve</code></li>
+      <li><strong>Role :</strong> <code>PVEVMUser</code> (peut utiliser la VM mais pas la configurer)</li>
+    </ul>
+  </div>
+
+  <p>Rôles prédéfinis principaux :</p>
+  <table>
+    <tr><th>Rôle</th><th>Droits</th></tr>
+    <tr><td><code>PVEAdmin</code></td><td>Presque tous les droits (sauf gestion utilisateurs)</td></tr>
+    <tr><td><code>PVEVMAdmin</code></td><td>Gestion complète des VMs</td></tr>
+    <tr><td><code>PVEVMUser</code></td><td>Utilisation des VMs (console, power on/off)</td></tr>
+    <tr><td><code>PVEAuditor</code></td><td>Lecture seule (audit)</td></tr>
+    <tr><td><code>NoAccess</code></td><td>Aucun accès (pour bloquer explicitement)</td></tr>
+  </table>
+
+  <div class="callout securite">
+    <div class="callout-title">🔒 Sécurité — Principe du moindre privilège</div>
+    <div class="callout-body">
+      Appliquez toujours le <strong>principe du moindre privilège</strong> : donnez à chaque utilisateur uniquement les droits nécessaires à sa tâche. Ne partagez <strong>jamais</strong> le compte root. Créez des comptes nominatifs et des rôles adaptés. En cas d'incident, cela permet de <strong>tracer qui a fait quoi</strong>.
+    </div>
+  </div>
+
+  <!-- 4.10 -->
+  <h3 id="sec4-10">4.10 Commandes CLI Proxmox</h3>
+
+  <pre><span class="comment"># ── Informations système ──</span>
+<span class="cmd">pveversion</span>                         <span class="comment"># Version de Proxmox VE</span>
+<span class="cmd">pveversion --verbose</span>               <span class="comment"># Version détaillée (kernel, qemu, etc.)</span>
+<span class="cmd">hostname</span>                           <span class="comment"># Nom du nœud</span>
+
+<span class="comment"># ── Gestion des VMs (qm = QEMU Manager) ──</span>
+<span class="cmd">qm list</span>                            <span class="comment"># Liste de toutes les VMs</span>
+<span class="cmd">qm status 100</span>                     <span class="comment"># Statut de la VM 100</span>
+<span class="cmd">qm start 100</span>                      <span class="comment"># Démarrer la VM 100</span>
+<span class="cmd">qm stop 100</span>                       <span class="comment"># Arrêter (forcé) la VM 100</span>
+<span class="cmd">qm shutdown 100</span>                   <span class="comment"># Arrêt propre (ACPI) de la VM 100</span>
+<span class="cmd">qm config 100</span>                     <span class="comment"># Afficher la configuration de la VM 100</span>
+<span class="cmd">qm snapshot 100 snap1</span>             <span class="comment"># Créer un snapshot "snap1" de la VM 100</span>
+<span class="cmd">qm rollback 100 snap1</span>             <span class="comment"># Restaurer le snapshot "snap1"</span>
+
+<span class="comment"># ── Gestion des conteneurs (pct = Proxmox Container Toolkit) ──</span>
+<span class="cmd">pct list</span>                           <span class="comment"># Liste de tous les CTs</span>
+<span class="cmd">pct start 200</span>                     <span class="comment"># Démarrer le CT 200</span>
+<span class="cmd">pct enter 200</span>                     <span class="comment"># Entrer dans le shell du CT 200</span>
+<span class="cmd">pct config 200</span>                    <span class="comment"># Configuration du CT 200</span>
+
+<span class="comment"># ── Stockage ──</span>
+<span class="cmd">pvesm status</span>                      <span class="comment"># État de tous les storages</span>
+<span class="cmd">pvesm list local</span>                  <span class="comment"># Contenu du storage "local"</span>
+
+<span class="comment"># ── Sauvegarde ──</span>
+<span class="cmd">vzdump 100 --storage local --mode snapshot --compress zstd</span>
+<span class="comment"># Sauvegarder la VM 100 sur "local" en mode snapshot, compression ZSTD</span>
+
+<span class="comment"># ── API REST ──</span>
+<span class="cmd">pvesh get /nodes</span>                  <span class="comment"># Liste des nœuds via l'API</span>
+<span class="cmd">pvesh get /cluster/resources</span>       <span class="comment"># Toutes les ressources du cluster</span>
+
+<span class="comment"># ── Réseau ──</span>
+<span class="cmd">cat /etc/network/interfaces</span>       <span class="comment"># Configuration réseau complète</span>
+<span class="cmd">ip a</span>                               <span class="comment"># Interfaces et adresses IP</span>
+<span class="cmd">brctl show</span>                         <span class="comment"># Bridges actifs et ports</span></pre>
+
+  <div class="callout verification">
+    <div class="callout-title">✅ Vérifications finales — Partie Proxmox</div>
+    <div class="callout-body">
+      <ul>
+        <li>☐ Interface web accessible sur le port 8006</li>
+        <li>☐ Arborescence explorée (Datacenter → Node → VM/CT)</li>
+        <li>☐ Bridge <code>vmbr1</code> créé (réseau isolé)</li>
+        <li>☐ ISO uploadée avec succès</li>
+        <li>☐ VM de test créée et bootable sur ISO</li>
+        <li>☐ (Optionnel) Conteneur LXC créé</li>
+        <li>☐ Snapshot pris et vérifié</li>
+        <li>☐ Sauvegarde (backup) réalisée</li>
+        <li>☐ Utilisateur <code>etudiant1@pve</code> créé avec rôle limité</li>
+        <li>☐ Monitoring et logs consultés</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="question-block">
+    <strong>🤔 Questions de réflexion cybersécurité — Partie B :</strong>
+    <ol style="padding-left:20px;margin-top:8px;">
+      <li>Quels avantages offre le RBAC de Proxmox par rapport à la gestion des comptes ESXi standalone ?</li>
+      <li>Pourquoi un conteneur LXC offre-t-il une isolation moindre qu'une VM ? Quel risque en cybersécurité ?</li>
+      <li>Pourquoi est-il critique de séparer le stockage des sauvegardes du stockage des VMs ?</li>
+      <li>Comment un attaquant pourrait-il exploiter une interface Proxmox exposée sur Internet ? Quelles protections mettre en place ?</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║      SECTION 5 — PARTIE C : COMPARAISON                     ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="section" id="sec5">
+  <h2>5. Partie C — Comparaison ESXi vs Proxmox VE (orientée Cybersécurité)</h2>
+
+  <div class="callout objectif">
+    <div class="callout-title">🎯 Objectif</div>
+    <div class="callout-body">
+      Comparer objectivement les deux hyperviseurs sur des critères techniques, opérationnels et de sécurité, pour être capable de choisir la solution adaptée à un contexte donné.
+    </div>
+  </div>
+
+  <h3>5.1 Tableau comparatif général</h3>
+
+  <table>
+    <tr><th>Critère</th><th>VMware ESXi</th><th>Proxmox VE</th></tr>
+    <tr><td><strong>Type</strong></td><td>Hyperviseur Type 1 (VMkernel)</td><td>Hyperviseur Type 1 (Linux + KVM/QEMU)</td></tr>
+    <tr><td><strong>Base système</strong></td><td>VMkernel propriétaire</td><td>Debian Linux + noyau personnalisé</td></tr>
+    <tr><td><strong>Licence</strong></td><td>Gratuit (limité) / payant (vSphere)</td><td>Open source (AGPLv3) / support payant</td></tr>
+    <tr><td><strong>Interface web</strong></td><td>Host Client (simple, limité sans vCenter)</td><td>Interface complète (Datacenter, RBAC, Firewall, Cluster)</td></tr>
+    <tr><td><strong>CLI</strong></td><td><code>esxcli</code>, <code>vim-cmd</code></td><td><code>qm</code>, <code>pct</code>, <code>pvesh</code>, commandes Linux standard</td></tr>
+    <tr><td><strong>Virtualisation</strong></td><td>VMs uniquement</td><td>VMs (KVM) + Conteneurs (LXC)</td></tr>
+    <tr><td><strong>Réseau virtuel</strong></td><td>vSwitch standard / distribué (vCenter)</td><td>Bridges Linux, Open vSwitch (optionnel)</td></tr>
+    <tr><td><strong>Stockage</strong></td><td>VMFS, NFS, vSAN</td><td>LVM, LVM-thin, ZFS, Ceph, NFS, CIFS, GlusterFS</td></tr>
+    <tr><td><strong>Snapshots</strong></td><td>Oui (base VMDK delta)</td><td>Oui (qcow2 ou LVM snapshot)</td></tr>
+    <tr><td><strong>Sauvegarde intégrée</strong></td><td>Non (nécessite Veeam, ghettoVCB…)</td><td>Oui (<code>vzdump</code> intégré, scheduling)</td></tr>
+    <tr><td><strong>RBAC</strong></td><td>Basique sur ESXi standalone / complet avec vCenter</td><td>Complet natif (users, groups, roles, paths)</td></tr>
+    <tr><td><strong>Firewall intégré</strong></td><td>Firewall hôte basique</td><td>Firewall complet (Datacenter, node, VM level)</td></tr>
+    <tr><td><strong>Clustering</strong></td><td>Nécessite vCenter (payant)</td><td>Natif et gratuit (Proxmox Cluster)</td></tr>
+    <tr><td><strong>API</strong></td><td>REST API (avec vCenter)</td><td>REST API complète (<code>pvesh</code>)</td></tr>
+    <tr><td><strong>Logs</strong></td><td>Fichiers locaux, syslog configurable</td><td>journald + syslog Linux standard</td></tr>
+    <tr><td><strong>Mises à jour</strong></td><td>VMware Update Manager (vCenter) ou CLI</td><td><code>apt update && apt upgrade</code> (Debian standard)</td></tr>
+    <tr><td><strong>Écosystème</strong></td><td>Large (VMware est le standard entreprise)</td><td>Croissant (communauté active, PME, labos)</td></tr>
+  </table>
+
+  <h3>5.2 Contextes d'utilisation</h3>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4>🎓 Labo académique</h4>
+      <table>
+        <tr><th></th><th>ESXi</th><th>Proxmox</th></tr>
+        <tr><td>Coût</td><td>Gratuit (limité)</td><td style="color:var(--success);">✅ Gratuit (complet)</td></tr>
+        <tr><td>Simplicité</td><td>Simple</td><td style="color:var(--success);">✅ Très riche</td></tr>
+        <tr><td>Conteneurs</td><td>❌</td><td style="color:var(--success);">✅ LXC</td></tr>
+        <tr><td>Sauvegarde</td><td>Externe</td><td style="color:var(--success);">✅ Intégrée</td></tr>
+      </table>
+      <p style="margin-top:8px;font-size:0.9em;"><strong>Verdict :</strong> Proxmox est idéal pour un labo académique (gratuit, complet, flexible).</p>
+    </div>
+    <div class="card">
+      <h4>🛡️ SOC / Blue Team</h4>
+      <table>
+        <tr><th></th><th>ESXi</th><th>Proxmox</th></tr>
+        <tr><td>Intégration SIEM</td><td style="color:var(--success);">✅ Standard</td><td>✅ Syslog Linux</td></tr>
+        <tr><td>RBAC granulaire</td><td>Avec vCenter</td><td style="color:var(--success);">✅ Natif</td></tr>
+        <tr><td>Écosystème sécu</td><td style="color:var(--success);">✅ Large</td><td>Croissant</td></tr>
+        <tr><td>Auditing</td><td style="color:var(--success);">✅ Mature</td><td>✅ Linux standard</td></tr>
+      </table>
+      <p style="margin-top:8px;font-size:0.9em;"><strong>Verdict :</strong> Les deux conviennent. ESXi/vSphere est plus courant en entreprise, Proxmox offre plus de flexibilité open source.</p>
+    </div>
+    <div class="card">
+      <h4>🔴 Pentest Lab isolé</h4>
+      <table>
+        <tr><th></th><th>ESXi</th><th>Proxmox</th></tr>
+        <tr><td>Réseau isolé</td><td>✅ Port group</td><td style="color:var(--success);">✅ Bridge sans uplink</td></tr>
+        <tr><td>Snapshots rapides</td><td>✅</td><td style="color:var(--success);">✅</td></tr>
+        <tr><td>Flexibilité réseau</td><td>Correcte</td><td style="color:var(--success);">✅ OVS, bridges multiples</td></tr>
+        <tr><td>Coût</td><td>Limité</td><td style="color:var(--success);">✅ Gratuit</td></tr>
+      </table>
+      <p style="margin-top:8px;font-size:0.9em;"><strong>Verdict :</strong> Proxmox excelle pour un lab de pentest (flexibilité réseau, snapshots, gratuit).</p>
+    </div>
+    <div class="card">
+      <h4>🏢 Environnement PME</h4>
+      <table>
+        <tr><th></th><th>ESXi</th><th>Proxmox</th></tr>
+        <tr><td>Support éditeur</td><td style="color:var(--success);">✅ VMware</td><td>Optionnel (payant)</td></tr>
+        <tr><td>Compatibilité</td><td style="color:var(--success);">✅ Large</td><td>Bonne</td></tr>
+        <tr><td>Clustering</td><td>Payant (vCenter)</td><td style="color:var(--success);">✅ Gratuit</td></tr>
+        <tr><td>Coût total</td><td>Élevé</td><td style="color:var(--success);">✅ Très bas</td></tr>
+      </table>
+      <p style="margin-top:8px;font-size:0.9em;"><strong>Verdict :</strong> Proxmox est économique et fonctionnel. ESXi/vSphere reste le standard si le budget le permet et que l'écosystème VMware est requis.</p>
+    </div>
+  </div>
+
+  <h3>5.3 Discussion sécurité approfondie</h3>
+
+  <table>
+    <tr><th>Aspect sécurité</th><th>VMware ESXi</th><th>Proxmox VE</th></tr>
+    <tr>
+      <td><strong>Surface d'attaque de l'interface d'admin</strong></td>
+      <td>HTTPS :443, interface minimaliste. Pas de shell accessible par défaut depuis le web.</td>
+      <td>HTTPS :8006, interface riche. Le nœud étant un Debian complet, la surface est plus large (SSH, apt, services Linux).</td>
+    </tr>
+    <tr>
+      <td><strong>Segmentation réseau</strong></td>
+      <td>Port groups avec politiques de sécurité (promiscuous, MAC changes). VLAN support.</td>
+      <td>Bridges Linux avec support VLAN, Open vSwitch optionnel, firewall intégré par VM/CT.</td>
+    </tr>
+    <tr>
+      <td><strong>Moindre privilège</strong></td>
+      <td>Limité sans vCenter. Rôles basiques (Admin, Read-Only, No Access).</td>
+      <td>RBAC complet : rôles, groupes, paths. Granularité fine (ex: accès à une seule VM).</td>
+    </tr>
+    <tr>
+      <td><strong>Journalisation</strong></td>
+      <td>Logs VMkernel, hostd, auth. Envoi syslog configurable.</td>
+      <td>journald + syslog Linux complet. Intégration facile avec tout SIEM.</td>
+    </tr>
+    <tr>
+      <td><strong>Patching</strong></td>
+      <td>Moins fréquent, via VMware Update Manager ou CLI. Processus plus lourd.</td>
+      <td><code>apt update && apt dist-upgrade</code>. Cycle Debian, mises à jour fréquentes.</td></tr>
+    <tr>
+      <td><strong>Sauvegarde / restauration</strong></td>
+      <td>Pas de solution intégrée (nécessite Veeam, ghettoVCB, etc.)</td>
+      <td>vzdump intégré, scheduling, compression, restauration directe.</td>
+    </tr>
+  </table>
+
+  <div class="callout securite">
+    <div class="callout-title">🔒 Synthèse sécurité</div>
+    <div class="callout-body">
+      <strong>ESXi</strong> a une surface d'attaque naturellement plus réduite (VMkernel minimal), ce qui est un avantage intrinsèque. Cependant, la gestion fine des accès nécessite vCenter (coûteux).
+      <br><br>
+      <strong>Proxmox</strong>, étant basé sur Debian, a une surface d'attaque plus large mais offre en contrepartie toute la puissance des outils Linux (iptables, fail2ban, AppArmor, etc.) et un RBAC natif complet. Le durcissement passe par les bonnes pratiques Linux classiques.
+    </div>
+  </div>
+
+  <div class="question-block">
+    <strong>🤔 Questions de réflexion — Partie C :</strong>
+    <ol style="padding-left:20px;margin-top:8px;">
+      <li>Si vous deviez déployer un lab de forensic, laquelle des deux plateformes choisiriez-vous ? Justifiez.</li>
+      <li>Quels sont les risques spécifiques liés au fait que Proxmox est un Debian complet ?</li>
+      <li>Pourquoi le Broadcom (anciennement VMware) vient-il de modifier ses licences ? Quel impact pour les PME ?</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║       SECTION 6 — PARTIE D : MINI-LAB CYBERSÉCURITÉ         ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="section" id="sec6">
+  <h2>6. Partie D — Mini-lab guidé cybersécurité</h2>
+
+  <div class="callout objectif">
+    <div class="callout-title">🎯 Objectif</div>
+    <div class="callout-body">
+      Mettre en pratique vos compétences en construisant un mini-lab isolé : deux VMs sur un réseau privé, avec des mesures de sécurité, un snapshot, une modification volontaire et une restauration.
+      <br><strong>Réalisez ce scénario sur la plateforme de votre choix</strong> (ESXi ou Proxmox). Bonus si vous le faites sur les deux.
+    </div>
+  </div>
+
+  <div class="diagram-container">
+    <svg viewBox="0 0 700 250" width="100%" style="max-width:680px;">
+      <!-- Network segment -->
+      <rect x="100" y="100" width="500" height="8" rx="4" fill="#e0e0e0" stroke="#bdbdbd"/>
+      <text x="350" y="95" text-anchor="middle" font-size="12" fill="#424242" font-weight="bold">Réseau isolé : 10.10.10.0/24</text>
+      <text x="350" y="80" text-anchor="middle" font-size="10" fill="#757575">(vmbr1 / Lab-Isolated — aucun uplink physique)</text>
+
+      <!-- Server VM -->
+      <rect x="110" y="130" width="180" height="100" rx="8" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+      <text x="200" y="155" text-anchor="middle" font-size="13" fill="#1565c0" font-weight="bold">🖥️ VM-Server</text>
+      <text x="200" y="175" text-anchor="middle" font-size="10" fill="#424242">Debian / Ubuntu Server</text>
+      <text x="200" y="192" text-anchor="middle" font-size="10" fill="#424242">IP: 10.10.10.10/24</text>
+      <text x="200" y="209" text-anchor="middle" font-size="10" fill="#424242">SSH activé, pare-feu actif</text>
+      <text x="200" y="222" text-anchor="middle" font-size="9" fill="#757575">1 vCPU | 1 GB RAM | 8 GB</text>
+
+      <line x1="200" y1="130" x2="200" y2="108" stroke="#1565c0" stroke-width="2"/>
+
+      <!-- Client VM -->
+      <rect x="410" y="130" width="180" height="100" rx="8" fill="#e0f2f1" stroke="#00695c" stroke-width="2"/>
+      <text x="500" y="155" text-anchor="middle" font-size="13" fill="#00695c" font-weight="bold">💻 VM-Client</text>
+      <text x="500" y="175" text-anchor="middle" font-size="10" fill="#424242">Debian / Ubuntu Desktop ou CLI</text>
+      <text x="500" y="192" text-anchor="middle" font-size="10" fill="#424242">IP: 10.10.10.20/24</text>
+      <text x="500" y="209" text-anchor="middle" font-size="10" fill="#424242">Utilisateur non-root</text>
+      <text x="500" y="222" text-anchor="middle" font-size="9" fill="#757575">1 vCPU | 1 GB RAM | 8 GB</text>
+
+      <line x1="500" y1="130" x2="500" y2="108" stroke="#00695c" stroke-width="2"/>
+
+      <!-- Arrow ping -->
+      <line x1="290" y1="170" x2="410" y2="170" stroke="#ff6f00" stroke-width="2" marker-end="url(#arrow)"/>
+      <text x="350" y="165" text-anchor="middle" font-size="10" fill="#ff6f00" font-weight="bold">ping / SSH</text>
+
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6 Z" fill="#ff6f00"/>
+        </marker>
+      </defs>
+
+      <!-- Security badge -->
+      <rect x="230" y="15" width="240" height="45" rx="8" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="1.5"/>
+      <text x="350" y="34" text-anchor="middle" font-size="11" fill="#7b1fa2" font-weight="bold">🔒 Mesures de sécurité appliquées</text>
+      <text x="350" y="50" text-anchor="middle" font-size="9" fill="#6a1b9a">Firewall + Comptes + Snapshots</text>
+    </svg>
+    <figcaption>Figure 3 — Architecture du mini-lab cybersécurité</figcaption>
+  </div>
+
+  <h3>Étape 1 — Créer les deux VMs</h3>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-title">VM-Server</div>
+    <p>Créez une VM nommée <code>VM-Server</code> avec les paramètres suivants :</p>
+    <ul style="padding-left:20px;">
+      <li>OS : Debian 12 (ou votre ISO disponible)</li>
+      <li>1 vCPU, 1 GB RAM, 8 GB disque (thin)</li>
+      <li>Réseau : <strong>Lab-Isolated</strong> (ESXi) ou <strong>vmbr1</strong> (Proxmox)</li>
+    </ul>
+    <p>Installez l'OS de manière minimale. Configurez l'IP statique : <code>10.10.10.10/24</code>.</p>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-title">VM-Client</div>
+    <p>Créez une seconde VM <code>VM-Client</code> avec les mêmes paramètres matériels mais l'IP : <code>10.10.10.20/24</code>.</p>
+  </div>
+
+  <div class="callout info">
+    <div class="callout-title">ℹ️ Configuration IP statique sous Debian</div>
+    <div class="callout-body">
+      <pre><span class="comment"># Éditez le fichier d'interfaces :</span>
+<span class="cmd">sudo nano /etc/network/interfaces</span>
+
+<span class="comment"># Ajoutez (adaptez le nom de l'interface, ex: ens18, ens192) :</span>
+auto ens18
+iface ens18 inet static
+    address 10.10.10.10
+    netmask 255.255.255.0
+
+<span class="comment"># Redémarrez le réseau :</span>
+<span class="cmd">sudo systemctl restart networking</span></pre>
+    </div>
+  </div>
+
+  <h3>Étape 2 — Vérifier la connectivité</h3>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-title">Test de ping</div>
+    <p>Depuis <code>VM-Client</code> :</p>
+    <pre><span class="cmd">ping -c 4 10.10.10.10</span>
+<span class="output">PING 10.10.10.10 (10.10.10.10) 56(84) bytes of data.
+64 bytes from 10.10.10.10: icmp_seq=1 ttl=64 time=0.523 ms
+...
+--- 10.10.10.10 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss</span></pre>
+  </div>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-title">Vérifier l'isolation</div>
+    <p>Depuis <code>VM-Client</code>, essayez de pinguer une adresse externe (ex: <code>8.8.8.8</code>). Le ping doit <strong>échouer</strong> (pas de passerelle, réseau isolé). Cela confirme l'isolation.</p>
+  </div>
+
+  <div class="callout verification">
+    <div class="callout-title">✅ Point de contrôle</div>
+    <div class="callout-body">
+      <ul>
+        <li>☐ VM-Server et VM-Client se pinguent mutuellement ✅</li>
+        <li>☐ Aucune des deux VMs n'accède à Internet ✅ (réseau isolé)</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Étape 3 — Appliquer 3 mesures de sécurité minimales</h3>
+
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-title">Mesure 1 — Créer un utilisateur non-root avec sudo</div>
+    <pre><span class="comment"># Sur VM-Server :</span>
+<span class="cmd">adduser operateur</span>                    <span class="comment"># Créer un utilisateur</span>
+<span class="cmd">usermod -aG sudo operateur</span>            <span class="comment"># Ajouter au groupe sudo</span>
+<span class="comment"># Testez la connexion avec ce compte</span></pre>
+  </div>
+
+  <div class="step">
+    <div class="step-num">6</div>
+    <div class="step-title">Mesure 2 — Activer et configurer un pare-feu (UFW)</div>
+    <pre><span class="comment"># Sur VM-Server :</span>
+<span class="cmd">sudo apt install ufw</span>                  <span class="comment"># Installer UFW</span>
+<span class="cmd">sudo ufw default deny incoming</span>        <span class="comment"># Bloquer tout par défaut</span>
+<span class="cmd">sudo ufw default allow outgoing</span>       <span class="comment"># Autoriser le sortant</span>
+<span class="cmd">sudo ufw allow from 10.10.10.0/24 to any port 22</span> <span class="comment"># SSH uniquement depuis le LAN</span>
+<span class="cmd">sudo ufw enable</span>                       <span class="comment"># Activer le firewall</span>
+<span class="cmd">sudo ufw status verbose</span>               <span class="comment"># Vérifier</span></pre>
+  </div>
+
+  <div class="step">
+    <div class="step-num">7</div>
+    <div class="step-title">Mesure 3 — Désactiver la connexion root par SSH</div>
+    <pre><span class="comment"># Sur VM-Server :</span>
+<span class="cmd">sudo nano /etc/ssh/sshd_config</span>
+<span class="comment"># Trouver et modifier :</span>
+PermitRootLogin no
+<span class="comment"># Redémarrer SSH :</span>
+<span class="cmd">sudo systemctl restart sshd</span></pre>
+  </div>
+
+  <div class="callout verification">
+    <div class="callout-title">✅ Vérification des mesures</div>
+    <div class="callout-body">
+      Depuis <code>VM-Client</code> :
+      <ul>
+        <li><code>ssh operateur@10.10.10.10</code> → ✅ Doit fonctionner</li>
+        <li><code>ssh root@10.10.10.10</code> → ❌ Doit être refusé</li>
+        <li><code>ping 10.10.10.10</code> → ✅ Fonctionne (ICMP autorisé si UFW le permet ou pas filtré)</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Étape 4 — Snapshot, modification et restauration</h3>
+
+  <div class="step">
+    <div class="step-num">8</div>
+    <div class="step-title">Prendre un snapshot « état sécurisé »</div>
+    <p>Sur l'hyperviseur, prenez un snapshot de <code>VM-Server</code> nommé <code>etat-securise</code>.</p>
+  </div>
+
+  <div class="step">
+    <div class="step-num">9</div>
+    <div class="step-title">Effectuer une modification volontaire (simulation d'incident)</div>
+    <pre><span class="comment"># Sur VM-Server, simulez une erreur/incident :</span>
+<span class="cmd">sudo ufw disable</span>                     <span class="comment"># Désactiver le firewall (mauvaise manip)</span>
+<span class="cmd">sudo sed -i 's/PermitRootLogin no/PermitRootLogin yes/' /etc/ssh/sshd_config</span>
+<span class="cmd">sudo systemctl restart sshd</span>           <span class="comment"># Réactiver login root SSH</span>
+<span class="comment"># La VM est maintenant dans un état "dégradé" en sécurité</span></pre>
+  </div>
+
+  <div class="step">
+    <div class="step-num">10</div>
+    <div class="step-title">Restaurer le snapshot</div>
+    <p>Sur l'hyperviseur, restaurez le snapshot <code>etat-securise</code>. La VM revient à son état précédent : firewall actif, root SSH désactivé.</p>
+  </div>
+
+  <div class="callout resultat">
+    <div class="callout-title">📋 Résultat attendu</div>
+    <div class="callout-body">
+      Après restauration du snapshot :
+      <ul>
+        <li><code>sudo ufw status</code> → actif ✅</li>
+        <li><code>grep PermitRootLogin /etc/ssh/sshd_config</code> → <code>no</code> ✅</li>
+      </ul>
+      La VM est revenue à son état « sécurisé » d'avant l'incident. Documentez cette procédure dans votre rapport.
+    </div>
+  </div>
+
+  <div class="question-block">
+    <strong>🤔 Questions d'analyse — Partie D :</strong>
+    <ol style="padding-left:20px;margin-top:8px;">
+      <li>Le snapshot a permis de revenir en arrière. Mais que se passe-t-il si un attaquant a exfiltré des données avant la restauration ? Le snapshot protège-t-il contre cela ?</li>
+      <li>Proposez 3 mesures supplémentaires de sécurité pour renforcer ce mini-lab.</li>
+      <li>Comment documenteriez-vous l'architecture de ce lab pour un rapport d'audit ?</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║        SECTION 7 — PARTIE E : TROUBLESHOOTING                ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="section" id="sec7">
+  <h2>7. Partie E — Troubleshooting guidé</h2>
+
+  <div class="callout objectif">
+    <div class="callout-title">🎯 Objectif</div>
+    <div class="callout-body">
+      Savoir diagnostiquer et résoudre les pannes les plus fréquentes rencontrées en environnement virtualisé, particulièrement en nested virtualization.
+    </div>
+  </div>
+
+  <div class="trouble-card">
+    <h4>🔴 Problème 1 : La VM ne démarre pas</h4>
+    <p><span class="label symptom">Symptôme</span> La VM reste en état « powered off » ou affiche une erreur au démarrage.</p>
+    <p><span class="label cause">Cause probable</span></p>
+    <ul style="padding-left:22px;">
+      <li><strong>VT-x/AMD-V non exposé</strong> à la VM hôte (nested virtualization non activée)</li>
+      <li>Mémoire insuffisante sur l'hôte</li>
+      <li>Fichier disque corrompu ou manquant</li>
+      <li>ISO mal monté ou absent</li>
+    </ul>
+    <p><span class="label fix">Diagnostic & correction</span></p>
+    <ul style="padding-left:22px;">
+      <li><strong>ESXi :</strong> Consultez <code>Monitor → Events</code> pour l'erreur exacte. Vérifiez dans VMware Workstation que « Virtualize Intel VT-x/EPT » est coché dans les paramètres processeur de la VM ESXi.</li>
+      <li><strong>Proxmox :</strong> Vérifiez les logs : <code>journalctl -u pve-qemu-server -n 50</code>. Si l'erreur mentionne KVM, vérifiez <code>cat /proc/cpuinfo | grep vmx</code>.</li>
+    </ul>
+  </div>
+
+  <div class="trouble-card">
+    <h4>🔴 Problème 2 : Pas de réseau dans la VM</h4>
+    <p><span class="label symptom">Symptôme</span> La VM n'obtient pas d'IP ou ne ping rien.</p>
+    <p><span class="label cause">Cause probable</span></p>
+    <ul style="padding-left:22px;">
+      <li>VM connectée au mauvais port group / bridge</li>
+      <li>IP non configurée (pas de DHCP sur le réseau isolé)</li>
+      <li>Driver réseau non installé dans le guest (VirtIO sans pilote)</li>
+      <li>Bridge mal configuré côté Proxmox (<code>vmbr1</code> pas appliqué)</li>
+    </ul>
+    <p><span class="label fix">Correction</span></p>
+    <ul style="padding-left:22px;">
+      <li>Vérifiez le port group / bridge assigné à la VM</li>
+      <li>Configurez une IP statique si pas de DHCP</li>
+      <li>Pour VirtIO sous Windows : installez les <code>virtio-win</code> drivers</li>
+      <li>Proxmox : <code>brctl show</code> pour vérifier que le bridge existe et que l'interface de la VM y est connectée</li>
+    </ul>
+  </div>
+
+  <div class="trouble-card">
+    <h4>🔴 Problème 3 : Interface web inaccessible</h4>
+    <p><span class="label symptom">Symptôme</span> Le navigateur affiche « connection refused » ou timeout.</p>
+    <p><span class="label cause">Cause probable</span></p>
+    <ul style="padding-left:22px;">
+      <li>Mauvaise IP ou mauvais port (oubli du <code>:8006</code> pour Proxmox)</li>
+      <li>Le service web est arrêté</li>
+      <li>Firewall bloquant sur le poste ou sur l'hôte</li>
+      <li>Adaptateur réseau de VMware Workstation en mode incorrect (NAT vs Host-Only)</li>
+    </ul>
+    <p><span class="label fix">Correction</span></p>
+    <ul style="padding-left:22px;">
+      <li>ESXi : vérifiez l'IP sur la DCUI. Testez <code>ping &lt;IP_ESXi&gt;</code> depuis le poste</li>
+      <li>Proxmox : connectez-vous à la console Workstation, vérifiez <code>ip a</code> et <code>systemctl status pveproxy</code></li>
+      <li>Vérifiez le mode réseau de VMware Workstation (NAT donne accès depuis l'hôte)</li>
+    </ul>
+  </div>
+
+  <div class="trouble-card">
+    <h4>🔴 Problème 4 : Datastore / Storage plein</h4>
+    <p><span class="label symptom">Symptôme</span> Impossible de créer une VM, erreur d'espace disque.</p>
+    <p><span class="label cause">Cause probable</span></p>
+    <ul style="padding-left:22px;">
+      <li>Snapshots accumulés consommant l'espace</li>
+      <li>Sauvegardes volumineuses stockées localement</li>
+      <li>Disque de la VM hôte trop petit</li>
+    </ul>
+    <p><span class="label fix">Correction</span></p>
+    <ul style="padding-left:22px;">
+      <li><strong>ESXi :</strong> <code>esxcli storage filesystem list</code> — Supprimez les snapshots inutiles, nettoyez les ISO</li>
+      <li><strong>Proxmox :</strong> <code>pvesm status</code>, <code>df -h</code> — Supprimez les anciens backups (<code>/var/lib/vz/dump/</code>)</li>
+      <li>Augmentez la taille du disque de la VM hôte dans VMware Workstation puis étendez la partition</li>
+    </ul>
+  </div>
+
+  <div class="trouble-card">
+    <h4>🔴 Problème 5 : Lenteur extrême en nested virtualization</h4>
+    <p><span class="label symptom">Symptôme</span> Tout est extrêmement lent : boot, console, opérations.</p>
+    <p><span class="label cause">Cause probable</span></p>
+    <ul style="padding-left:22px;">
+      <li>VT-x/AMD-V non activé dans le BIOS de la machine physique</li>
+      <li>RAM insuffisante allouée à la VM hôte (ESXi/Proxmox)</li>
+      <li>Swap excessive sur l'hôte physique</li>
+      <li>Antivirus sur le poste hôte analysant les fichiers VM</li>
+    </ul>
+    <p><span class="label fix">Correction</span></p>
+    <ul style="padding-left:22px;">
+      <li>Vérifiez le BIOS physique : VT-x / AMD-V / SVM doit être <strong>Enabled</strong></li>
+      <li>Allouez au minimum 4 GB à la VM ESXi/Proxmox (8 GB idéal)</li>
+      <li>Réduisez les ressources des VMs imbriquées (1 vCPU, 512-1024 MB)</li>
+      <li>Excluez le dossier VMware Workstation de l'antivirus</li>
+      <li>Utilisez un SSD sur le poste physique si possible</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║       SECTION 8 — PARTIE F : ÉVALUATION                     ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="section" id="sec8">
+  <h2>8. Partie F — Questions, livrables & évaluation</h2>
+
+  <h3>8.1 Questions de compréhension</h3>
+
+  <h4>Technique</h4>
+  <div class="question-block">
+    <ol style="padding-left:20px;">
+      <li>Expliquez la différence entre un hyperviseur de Type 1 et de Type 2. Donnez un exemple de chaque.</li>
+      <li>Qu'est-ce qu'un vSwitch (ESXi) ? Comment se compare-t-il à un bridge Linux (Proxmox) ?</li>
+      <li>Quelle est la différence entre thin provisioning et thick provisioning ? Quel impact sur les performances et le stockage ?</li>
+      <li>Expliquez le concept de snapshot. Pourquoi ne remplace-t-il pas une sauvegarde ?</li>
+      <li>Quelle commande permet de lister les VMs sur ESXi en CLI ? Et sur Proxmox ?</li>
+    </ol>
+  </div>
+
+  <h4>Cybersécurité</h4>
+  <div class="question-block">
+    <ol start="6" style="padding-left:20px;">
+      <li>Listez 5 mesures de durcissement que vous appliqueriez sur un ESXi en production.</li>
+      <li>Expliquez le principe du moindre privilège. Comment le RBAC de Proxmox permet-il de l'appliquer ?</li>
+      <li>Quels sont les risques d'une interface d'administration exposée sur Internet ? Comment s'en protéger ?</li>
+      <li>Un conteneur LXC non privilégié est-il « suffisamment isolé » pour héberger un service critique ? Argumentez.</li>
+      <li>Comment configureriez-vous la centralisation des logs d'un ESXi vers un SIEM ? Quel est l'intérêt ?</li>
+    </ol>
+  </div>
+
+  <h3>8.2 Mini exercice comparatif</h3>
+  <div class="callout objectif">
+    <div class="callout-title">📝 Exercice</div>
+    <div class="callout-body">
+      <strong>Scénario :</strong> Une PME de 50 employés souhaite virtualiser 3 serveurs (Active Directory, serveur de fichiers, serveur web interne). Budget limité. Un seul administrateur IT à mi-temps. Besoin de sauvegardes automatisées.
+      <br><br>
+      <strong>Consigne :</strong> En 15-20 lignes, recommandez et justifiez le choix entre ESXi/vSphere et Proxmox VE. Argumentez sur : le coût, la complexité d'administration, les fonctionnalités de sauvegarde, la sécurité, le support.
+    </div>
+  </div>
+
+  <h3>8.3 Livrables demandés</h3>
+  <table>
+    <tr><th>N°</th><th>Livrable</th><th>Format</th><th>Détail</th></tr>
+    <tr><td>1</td><td>Captures d'écran</td><td>Images (.png)</td><td>Dashboard ESXi, Dashboard Proxmox, création VM, snapshot, réseau, RBAC</td></tr>
+    <tr><td>2</td><td>Tableau comparatif personnalisé</td><td>Tableau dans le rapport</td><td>Votre propre comparaison ESXi vs Proxmox (minimum 10 critères)</td></tr>
+    <tr><td>3</td><td>Schéma d'architecture du mini-lab</td><td>Schéma (draw.io, Visio, ou papier scanné)</td><td>Topologie réseau, IPs, VMs, mesures de sécurité appliquées</td></tr>
+    <tr><td>4</td><td>Réponses aux questions</td><td>Texte dans le rapport</td><td>Questions techniques + cybersécurité + exercice comparatif</td></tr>
+    <tr><td>5</td><td>Documentation du mini-lab</td><td>Texte + captures</td><td>Étapes réalisées, mesures de sécurité, test snapshot/restore</td></tr>
+    <tr><td>6</td><td>Rapport final</td><td>PDF</td><td>Document structuré regroupant tous les livrables ci-dessus</td></tr>
+  </table>
+
+  <h3>8.4 Grille d'évaluation</h3>
+  <table class="eval-grid">
+    <tr><th>Critère</th><th>Détail</th><th>Barème</th></tr>
+    <tr><td>Exploration ESXi</td><td>Dashboard, réseau, VM créée, snapshots, logs, comptes</td><td>/4</td></tr>
+    <tr><td>Exploration Proxmox</td><td>Dashboard, réseau, stockage, VM/CT, RBAC, sauvegarde</td><td>/4</td></tr>
+    <tr><td>Comparaison argumentée</td><td>Tableau comparatif + exercice PME</td><td>/3</td></tr>
+    <tr><td>Mini-lab cybersécurité</td><td>2 VMs, réseau isolé, 3 mesures sécu, snapshot/restore</td><td>/4</td></tr>
+    <tr><td>Réponses aux questions</td><td>Qualité, précision, argumentation cybersécurité</td><td>/3</td></tr>
+    <tr><td>Qualité du rapport</td><td>Clarté, captures, schéma, présentation professionnelle</td><td>/2</td></tr>
+    <tr><td colspan="2" style="text-align:right;font-weight:bold;">TOTAL</td><td>/20</td></tr>
+  </table>
+</div>
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║           SECTION 9 — RÉCAPITULATIF FINAL                    ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<div class="section" id="sec9">
+  <h2>9. Récapitulatif final</h2>
+
+  <div class="diagram-container">
+    <svg viewBox="0 0 800 320" width="100%" style="max-width:780px;">
+      <!-- Timeline -->
+      <rect x="50" y="150" width="700" height="6" rx="3" fill="#e0e0e0"/>
+
+      <!-- Step 1 -->
+      <circle cx="100" cy="153" r="18" fill="#1a237e"/>
+      <text x="100" y="158" text-anchor="middle" font-size="12" fill="#fff" font-weight="bold">1</text>
+      <text x="100" y="130" text-anchor="middle" font-size="10" fill="#424242" font-weight="bold">Concepts</text>
+      <text x="100" y="190" text-anchor="middle" font-size="9" fill="#757575">Architecture</text>
+      <text x="100" y="203" text-anchor="middle" font-size="9" fill="#757575">Type 1/2, VM</text>
+      <text x="100" y="216" text-anchor="middle" font-size="9" fill="#757575">Réseau, Stockage</text>
+
+      <!-- Step 2 -->
+      <circle cx="230" cy="153" r="18" fill="#1565c0"/>
+      <text x="230" y="158" text-anchor="middle" font-size="12" fill="#fff" font-weight="bold">2</text>
+      <text x="230" y="130" text-anchor="middle" font-size="10" fill="#424242" font-weight="bold">ESXi</text>
+      <text x="230" y="190" text-anchor="middle" font-size="9" fill="#757575">Interface, réseau</text>
+      <text x="230" y="203" text-anchor="middle" font-size="9" fill="#757575">VM, snapshots</text>
+      <text x="230" y="216" text-anchor="middle" font-size="9" fill="#757575">Logs, durcissement</text>
+
+      <!-- Step 3 -->
+      <circle cx="360" cy="153" r="18" fill="#00796b"/>
+      <text x="360" y="158" text-anchor="middle" font-size="12" fill="#fff" font-weight="bold">3</text>
+      <text x="360" y="130" text-anchor="middle" font-size="10" fill="#424242" font-weight="bold">Proxmox</text>
+      <text x="360" y="190" text-anchor="middle" font-size="9" fill="#757575">Interface, bridges</text>
+      <text x="360" y="203" text-anchor="middle" font-size="9" fill="#757575">VM, LXC, RBAC</text>
+      <text x="360" y="216" text-anchor="middle" font-size="9" fill="#757575">Backup, monitoring</text>
+
+      <!-- Step 4 -->
+      <circle cx="490" cy="153" r="18" fill="#e65100"/>
+      <text x="490" y="158" text-anchor="middle" font-size="12" fill="#fff" font-weight="bold">4</text>
+      <text x="490" y="130" text-anchor="middle" font-size="10" fill="#424242" font-weight="bold">Comparaison</text>
+      <text x="490" y="190" text-anchor="middle" font-size="9" fill="#757575">ESXi vs Proxmox</text>
+      <text x="490" y="203" text-anchor="middle" font-size="9" fill="#757575">Contextes d'usage</text>
+      <text x="490" y="216" text-anchor="middle" font-size="9" fill="#757575">Analyse sécu</text>
+
+      <!-- Step 5 -->
+      <circle cx="620" cy="153" r="18" fill="#7b1fa2"/>
+      <text x="620" y="158" text-anchor="middle" font-size="12" fill="#fff" font-weight="bold">5</text>
+      <text x="620" y="130" text-anchor="middle" font-size="10" fill="#424242" font-weight="bold">Mini-Lab</text>
+      <text x="620" y="190" text-anchor="middle" font-size="9" fill="#757575">2 VMs isolées</text>
+      <text x="620" y="203" text-anchor="middle" font-size="9" fill="#757575">Sécu + snapshot</text>
+      <text x="620" y="216" text-anchor="middle" font-size="9" fill="#757575">Restore</text>
+
+      <!-- Step 6 -->
+      <circle cx="700" cy="153" r="18" fill="#c62828"/>
+      <text x="700" y="158" text-anchor="middle" font-size="12" fill="#fff" font-weight="bold">6</text>
+      <text x="700" y="130" text-anchor="middle" font-size="10" fill="#424242" font-weight="bold">Rapport</text>
+      <text x="700" y="190" text-anchor="middle" font-size="9" fill="#757575">Questions</text>
+      <text x="700" y="203" text-anchor="middle" font-size="9" fill="#757575">Livrables</text>
+      <text x="700" y="216" text-anchor="middle" font-size="9" fill="#757575">Évaluation</text>
+
+      <!-- Arrows -->
+      <line x1="118" y1="153" x2="212" y2="153" stroke="#1a237e" stroke-width="2" marker-end="url(#arrowB)"/>
+      <line x1="248" y1="153" x2="342" y2="153" stroke="#1565c0" stroke-width="2" marker-end="url(#arrowB)"/>
+      <line x1="378" y1="153" x2="472" y2="153" stroke="#00796b" stroke-width="2" marker-end="url(#arrowB)"/>
+      <line x1="508" y1="153" x2="602" y2="153" stroke="#e65100" stroke-width="2" marker-end="url(#arrowB)"/>
+      <line x1="638" y1="153" x2="682" y2="153" stroke="#7b1fa2" stroke-width="2" marker-end="url(#arrowB)"/>
+
+      <defs>
+        <marker id="arrowB" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6 Z" fill="#424242"/>
+        </marker>
+      </defs>
+
+      <!-- Title -->
+      <text x="400" y="280" text-anchor="middle" font-size="13" fill="#424242" font-weight="bold">Parcours du TP — De la théorie à la pratique</text>
+      <text x="400" y="300" text-anchor="middle" font-size="11" fill="#757575">Chaque étape construit sur la précédente • Durée totale estimée : 4 à 6 heures</text>
+    </svg>
+  </div>
+
+  <h3>Ce que vous avez appris</h3>
+
+  <div class="grid-3">
+    <div class="card" style="border-top:3px solid var(--primary);">
+      <h4>🏗️ Architecture</h4>
+      <ul style="padding-left:16px;font-size:0.9em;">
+        <li>Hyperviseur Type 1 vs Type 2</li>
+        <li>Architecture ESXi (VMkernel)</li>
+        <li>Architecture Proxmox (Debian + KVM)</li>
+        <li>Stockage et réseau virtuel</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top:3px solid var(--accent);">
+      <h4>🔧 Administration</h4>
+      <ul style="padding-left:16px;font-size:0.9em;">
+        <li>Interfaces web ESXi & Proxmox</li>
+        <li>Création et gestion de VMs</li>
+        <li>Configuration réseau</li>
+        <li>Snapshots et sauvegardes</li>
+        <li>Commandes CLI</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top:3px solid var(--security);">
+      <h4>🔒 Cybersécurité</h4>
+      <ul style="padding-left:16px;font-size:0.9em;">
+        <li>Durcissement d'hyperviseur</li>
+        <li>RBAC et moindre privilège</li>
+        <li>Segmentation réseau</li>
+        <li>Journalisation et audit</li>
+        <li>Sauvegarde / restauration</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout securite">
+    <div class="callout-title">🔒 Message final — La sécurité est un processus, pas un produit</div>
+    <div class="callout-body">
+      <p>La virtualisation est un <strong>pilier de l'infrastructure moderne</strong>. En tant que futurs professionnels de la cybersécurité, vous devez non seulement savoir administrer ces plateformes, mais surtout les <strong>sécuriser</strong>, les <strong>auditer</strong> et les <strong>surveiller</strong>.</p>
+      <p style="margin-top:8px;">Retenez ces principes fondamentaux :</p>
+      <ul>
+        <li><strong>Moindre privilège</strong> — N'accordez que les droits nécessaires</li>
+        <li><strong>Défense en profondeur</strong> — Ne reposez pas sur une seule mesure de sécurité</li>
+        <li><strong>Journalisation</strong> — Ce qui n'est pas loggé n'est pas auditable</li>
+        <li><strong>Segmentation</strong> — Isolez les réseaux et les rôles</li>
+        <li><strong>Mises à jour</strong> — Un hyperviseur non patché est une porte ouverte</li>
+        <li><strong>Sauvegardes</strong> — Testez régulièrement la restauration</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin:30px 0;padding:20px;background:var(--gray-50);border-radius:var(--radius);">
+    <p style="font-size:1.1em;color:var(--primary);font-weight:bold;">Bon travail et bonne exploration ! 🚀</p>
+    <p style="font-size:0.9em;color:var(--gray-600);margin-top:5px;">
+      Module Cloud & Infrastructure — 1<sup>ère</sup> année Cybersécurité — 2025/2026
+    </p>
+  </div>
+</div>
+
+</div><!-- /container -->
+</body>
+</html>

@@ -1,0 +1,3329 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Séance 1 — Introduction à Docker comme base de Kubernetes</title>
+<style>
+/* ============================================================
+   RESET ET BASE
+   ============================================================ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+  color: #1f2937;
+  background: #f8fafc;
+  padding: 0;
+}
+
+/* ============================================================
+   LAYOUT PRINCIPAL
+   ============================================================ */
+.wrapper {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  max-width: 1400px;
+  margin: 0 auto;
+  background: #ffffff;
+  min-height: 100vh;
+}
+
+/* ============================================================
+   NAVIGATION LATERALE
+   ============================================================ */
+.sidebar {
+  background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 100%);
+  color: #e0e7ff;
+  padding: 30px 20px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebar h3 {
+  color: #ffffff;
+  font-size: 1.1rem;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #3b82f6;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.sidebar ul {
+  list-style: none;
+}
+
+.sidebar ul li {
+  margin: 6px 0;
+}
+
+.sidebar ul li a {
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 0.88rem;
+  display: block;
+  padding: 6px 10px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  border-left: 3px solid transparent;
+}
+
+.sidebar ul li a:hover {
+  background: rgba(59, 130, 246, 0.2);
+  color: #ffffff;
+  border-left: 3px solid #60a5fa;
+  padding-left: 15px;
+}
+
+.sidebar ul ul {
+  margin-left: 15px;
+  margin-top: 3px;
+}
+
+.sidebar ul ul li a {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+/* ============================================================
+   CONTENU PRINCIPAL
+   ============================================================ */
+.content {
+  padding: 50px 60px;
+  max-width: 1100px;
+}
+
+/* ============================================================
+   PAGE D'OUVERTURE
+   ============================================================ */
+.cover {
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%);
+  color: #ffffff;
+  padding: 60px 50px;
+  border-radius: 12px;
+  margin-bottom: 50px;
+  box-shadow: 0 10px 40px rgba(30, 58, 138, 0.25);
+}
+
+.cover .tag {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  margin-bottom: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.cover h1 {
+  font-size: 2.6rem;
+  line-height: 1.2;
+  margin-bottom: 15px;
+  font-weight: 700;
+}
+
+.cover .subtitle {
+  font-size: 1.3rem;
+  color: #bfdbfe;
+  margin-bottom: 35px;
+  font-weight: 300;
+}
+
+.cover-meta {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 25px;
+  margin-top: 35px;
+}
+
+.cover-meta-item {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #fbbf24;
+  backdrop-filter: blur(10px);
+}
+
+.cover-meta-item h4 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #fbbf24;
+  margin-bottom: 10px;
+}
+
+.cover-meta-item p, .cover-meta-item ul {
+  color: #ffffff;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.cover-meta-item ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.cover-meta-item ul li {
+  padding: 3px 0;
+  padding-left: 20px;
+  position: relative;
+}
+
+.cover-meta-item ul li::before {
+  content: "▸";
+  color: #fbbf24;
+  position: absolute;
+  left: 0;
+}
+
+/* ============================================================
+   TITRES
+   ============================================================ */
+h2 {
+  color: #1e3a8a;
+  font-size: 2rem;
+  margin: 60px 0 25px 0;
+  padding-bottom: 12px;
+  border-bottom: 3px solid #3b82f6;
+  position: relative;
+}
+
+h2::before {
+  content: "";
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  width: 80px;
+  height: 3px;
+  background: #fbbf24;
+}
+
+h3 {
+  color: #1e40af;
+  font-size: 1.45rem;
+  margin: 35px 0 18px 0;
+  padding-left: 15px;
+  border-left: 5px solid #3b82f6;
+}
+
+h4 {
+  color: #1f2937;
+  font-size: 1.15rem;
+  margin: 25px 0 12px 0;
+  font-weight: 600;
+}
+
+h5 {
+  color: #374151;
+  font-size: 1rem;
+  margin: 18px 0 10px 0;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================================
+   TEXTE
+   ============================================================ */
+p {
+  margin: 12px 0;
+  text-align: justify;
+  color: #374151;
+}
+
+strong { color: #1e3a8a; font-weight: 600; }
+em { color: #6b21a8; font-style: italic; }
+
+ul, ol {
+  margin: 12px 0 12px 25px;
+  color: #374151;
+}
+
+li { margin: 6px 0; line-height: 1.7; }
+
+/* ============================================================
+   ENCADRES PEDAGOGIQUES
+   ============================================================ */
+.callout {
+  margin: 25px 0;
+  padding: 20px 25px;
+  border-radius: 8px;
+  border-left: 5px solid;
+  background: #f9fafb;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.callout-title {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.callout-title::before {
+  font-size: 1.2rem;
+}
+
+/* Info - bleu */
+.info {
+  background: #eff6ff;
+  border-left-color: #3b82f6;
+}
+.info .callout-title { color: #1e40af; }
+.info .callout-title::before { content: "ℹ️"; }
+
+/* Note pédagogique - violet */
+.note {
+  background: #faf5ff;
+  border-left-color: #8b5cf6;
+}
+.note .callout-title { color: #6b21a8; }
+.note .callout-title::before { content: "📘"; }
+
+/* Attention - orange */
+.warning {
+  background: #fffbeb;
+  border-left-color: #f59e0b;
+}
+.warning .callout-title { color: #b45309; }
+.warning .callout-title::before { content: "⚠️"; }
+
+/* Erreur fréquente - rouge */
+.error {
+  background: #fef2f2;
+  border-left-color: #ef4444;
+}
+.error .callout-title { color: #b91c1c; }
+.error .callout-title::before { content: "❌"; }
+
+/* Astuce - vert */
+.tip {
+  background: #f0fdf4;
+  border-left-color: #22c55e;
+}
+.tip .callout-title { color: #15803d; }
+.tip .callout-title::before { content: "💡"; }
+
+/* Synthèse - bleu foncé */
+.synthesis {
+  background: #eef2ff;
+  border-left-color: #4f46e5;
+  border: 1px solid #c7d2fe;
+  border-left: 5px solid #4f46e5;
+}
+.synthesis .callout-title { color: #3730a3; }
+.synthesis .callout-title::before { content: "🎯"; }
+
+/* Objectif TP - cyan */
+.objective {
+  background: #ecfeff;
+  border-left-color: #06b6d4;
+}
+.objective .callout-title { color: #0e7490; }
+.objective .callout-title::before { content: "🎯"; }
+
+/* Résultat attendu - vert foncé */
+.expected {
+  background: #f0fdfa;
+  border-left-color: #14b8a6;
+}
+.expected .callout-title { color: #0f766e; }
+.expected .callout-title::before { content: "✅"; }
+
+/* Question/Réflexion */
+.question {
+  background: #fdf4ff;
+  border-left-color: #d946ef;
+}
+.question .callout-title { color: #86198f; }
+.question .callout-title::before { content: "❓"; }
+
+/* ============================================================
+   TABLEAUX
+   ============================================================ */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 25px 0;
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+thead {
+  background: linear-gradient(90deg, #1e40af 0%, #2563eb 100%);
+  color: #ffffff;
+}
+
+thead th {
+  padding: 14px 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.3px;
+}
+
+tbody tr {
+  border-bottom: 1px solid #e5e7eb;
+  transition: background 0.15s;
+}
+
+tbody tr:hover {
+  background: #f3f4f6;
+}
+
+tbody tr:nth-child(even) {
+  background: #f9fafb;
+}
+
+tbody tr:nth-child(even):hover {
+  background: #f3f4f6;
+}
+
+tbody td {
+  padding: 12px 16px;
+  font-size: 0.92rem;
+  color: #374151;
+  vertical-align: top;
+}
+
+tbody td:first-child {
+  font-weight: 600;
+  color: #1e3a8a;
+}
+
+tbody code {
+  background: #eef2ff;
+  color: #4338ca;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+/* ============================================================
+   BLOCS DE CODE
+   ============================================================ */
+pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 18px 22px;
+  border-radius: 8px;
+  margin: 18px 0;
+  overflow-x: auto;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  border-left: 4px solid #3b82f6;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  position: relative;
+}
+
+pre::before {
+  content: attr(data-label);
+  display: block;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #1e293b;
+}
+
+pre:not([data-label])::before {
+  display: none;
+}
+
+code {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+p code, li code {
+  background: #eef2ff;
+  color: #4338ca;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+/* Commentaires dans le code */
+.cmt { color: #64748b; font-style: italic; }
+.kw { color: #60a5fa; font-weight: 600; }
+.str { color: #fde68a; }
+.val { color: #86efac; }
+.prm { color: #f9a8d4; }
+
+/* ============================================================
+   BLOC TP
+   ============================================================ */
+.tp-block {
+  background: #ffffff;
+  border: 2px solid #3b82f6;
+  border-radius: 12px;
+  padding: 30px;
+  margin: 40px 0;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1);
+  position: relative;
+}
+
+.tp-header {
+  background: linear-gradient(90deg, #1e40af 0%, #3b82f6 100%);
+  color: #ffffff;
+  padding: 15px 25px;
+  margin: -30px -30px 25px -30px;
+  border-radius: 10px 10px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tp-header h3 {
+  color: #ffffff;
+  margin: 0;
+  padding: 0;
+  border: none;
+  font-size: 1.25rem;
+}
+
+.tp-header .tp-duration {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.tp-step {
+  background: #f8fafc;
+  border-left: 4px solid #3b82f6;
+  padding: 15px 20px;
+  margin: 15px 0;
+  border-radius: 0 6px 6px 0;
+}
+
+.tp-step-title {
+  font-weight: 600;
+  color: #1e3a8a;
+  margin-bottom: 8px;
+  font-size: 1rem;
+}
+
+/* ============================================================
+   SCHEMAS SVG
+   ============================================================ */
+.diagram {
+  margin: 30px auto;
+  padding: 25px;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  text-align: center;
+  border: 1px solid #e5e7eb;
+}
+
+.diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.diagram-caption {
+  margin-top: 15px;
+  font-style: italic;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+/* ============================================================
+   LISTES NUMEROTEES PEDAGOGIQUES
+   ============================================================ */
+.pedagogy-list {
+  list-style: none;
+  counter-reset: ped-counter;
+  padding-left: 0;
+  margin: 20px 0;
+}
+
+.pedagogy-list li {
+  counter-increment: ped-counter;
+  padding: 12px 15px 12px 55px;
+  margin: 10px 0;
+  background: #f8fafc;
+  border-radius: 6px;
+  position: relative;
+  border-left: 3px solid #3b82f6;
+}
+
+.pedagogy-list li::before {
+  content: counter(ped-counter);
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #3b82f6;
+  color: #ffffff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/* ============================================================
+   GRILLE DE COMPARAISON
+   ============================================================ */
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin: 25px 0;
+}
+
+.compare-card {
+  padding: 20px;
+  border-radius: 8px;
+  border: 2px solid;
+}
+
+.compare-card h4 {
+  margin-top: 0;
+  padding-bottom: 10px;
+  border-bottom: 2px solid currentColor;
+}
+
+.compare-vm {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  color: #78350f;
+}
+
+.compare-vm h4 { color: #b45309; }
+
+.compare-docker {
+  background: #dbeafe;
+  border-color: #3b82f6;
+  color: #1e3a8a;
+}
+
+.compare-docker h4 { color: #1e40af; }
+
+/* ============================================================
+   CONCLUSION ET SECTIONS FINALES
+   ============================================================ */
+.conclusion-box {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #e2e8f0;
+  padding: 40px;
+  border-radius: 12px;
+  margin: 40px 0;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.conclusion-box h2 {
+  color: #ffffff;
+  border-bottom-color: #fbbf24;
+  margin-top: 0;
+}
+
+.conclusion-box h2::before {
+  background: #fbbf24;
+}
+
+.conclusion-box p, .conclusion-box li {
+  color: #cbd5e1;
+}
+
+.conclusion-box strong {
+  color: #fbbf24;
+}
+
+/* ============================================================
+   EVALUATION
+   ============================================================ */
+.eval-question {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-left: 4px solid #8b5cf6;
+  padding: 15px 20px;
+  margin: 12px 0;
+  border-radius: 0 6px 6px 0;
+  counter-increment: eval-counter;
+}
+
+.eval-question::before {
+  content: "Q" counter(eval-counter) ". ";
+  font-weight: 700;
+  color: #6b21a8;
+}
+
+.eval-list {
+  counter-reset: eval-counter;
+  list-style: none;
+  padding: 0;
+}
+
+/* ============================================================
+   DIVERS
+   ============================================================ */
+.highlight {
+  background: linear-gradient(120deg, transparent 0%, transparent 40%, #fef08a 40%, #fef08a 100%);
+  padding: 0 3px;
+  font-weight: 500;
+}
+
+.separator {
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, #3b82f6 50%, transparent 100%);
+  margin: 40px 0;
+  border: none;
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin: 0 3px;
+}
+
+.badge-orange { background: #fed7aa; color: #9a3412; }
+.badge-green { background: #bbf7d0; color: #166534; }
+.badge-purple { background: #e9d5ff; color: #6b21a8; }
+
+.flow-arrow {
+  text-align: center;
+  font-size: 1.5rem;
+  color: #3b82f6;
+  margin: 10px 0;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1000px) {
+  .wrapper { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; }
+  .content { padding: 30px 25px; }
+  .cover h1 { font-size: 1.8rem; }
+  .cover-meta { grid-template-columns: 1fr; }
+  .compare-grid { grid-template-columns: 1fr; }
+}
+
+@media print {
+  .sidebar { display: none; }
+  .wrapper { grid-template-columns: 1fr; }
+  .content { padding: 20px; }
+  pre { page-break-inside: avoid; }
+  .tp-block { page-break-inside: avoid; }
+  .cover { page-break-after: always; }
+}
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<aside class="sidebar">
+  <h3>🐳 Sommaire</h3>
+  <ul>
+    <li><a href="#cover">Page d'ouverture</a></li>
+    <li><a href="#intro">1. Introduction générale</a></li>
+    <li><a href="#theorie">2. Partie théorique</a>
+      <ul>
+        <li><a href="#pourquoi-docker">2.1 Pourquoi Docker ?</a></li>
+        <li><a href="#vm-vs-conteneur">2.2 VM vs Conteneur</a></li>
+        <li><a href="#concepts">2.3 Concepts Docker</a></li>
+        <li><a href="#cycle-vie">2.4 Cycle de vie</a></li>
+        <li><a href="#limites-docker">2.5 Limites de Docker</a></li>
+      </ul>
+    </li>
+    <li><a href="#commandes">3. Commandes essentielles</a></li>
+    <li><a href="#fil-rouge">4. Application fil rouge</a></li>
+    <li><a href="#tp">5. TP guidé</a>
+      <ul>
+        <li><a href="#tp1">TP 1 — Environnement</a></li>
+        <li><a href="#tp2">TP 2 — Installation</a></li>
+        <li><a href="#tp3">TP 3 — hello-world</a></li>
+        <li><a href="#tp4">TP 4 — Images/Conteneurs</a></li>
+        <li><a href="#tp5">TP 5 — Serveur web</a></li>
+        <li><a href="#tp6">TP 6 — Application</a></li>
+        <li><a href="#tp7">TP 7 — Dockerfile</a></li>
+        <li><a href="#tp8">TP 8 — Build</a></li>
+        <li><a href="#tp9">TP 9 — Exécution</a></li>
+        <li><a href="#tp10">TP 10 — Variables ENV</a></li>
+        <li><a href="#tp11">TP 11 — Volumes</a></li>
+        <li><a href="#tp12">TP 12 — Réseau</a></li>
+        <li><a href="#tp13">TP 13 — Nettoyage</a></li>
+      </ul>
+    </li>
+    <li><a href="#synthese">6. Synthèse</a></li>
+    <li><a href="#ouverture">7. Vers Kubernetes</a></li>
+    <li><a href="#evaluation">8. Évaluation</a></li>
+  </ul>
+</aside>
+
+<main class="content">
+
+<!-- ========== PAGE D'OUVERTURE ========== -->
+<section id="cover" class="cover">
+  <div class="tag">FORMATION CLOUD &amp; INFRASTRUCTURE</div>
+  <h1>Séance 1 — Introduction à Docker comme base de Kubernetes</h1>
+  <p class="subtitle">De la virtualisation classique à la conteneurisation : préparer le terrain pour l'orchestration et le MLOps</p>
+
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <h4>🎯 Objectifs de la séance</h4>
+      <ul>
+        <li>Comprendre la place de Docker dans un parcours cloud moderne</li>
+        <li>Distinguer clairement VM et conteneur</li>
+        <li>Maîtriser les concepts fondamentaux de Docker</li>
+        <li>Construire et exécuter une application conteneurisée</li>
+        <li>Identifier les limites de Docker seul pour justifier Kubernetes</li>
+      </ul>
+    </div>
+
+    <div class="cover-meta-item">
+      <h4>📋 Prérequis</h4>
+      <ul>
+        <li>Notions de base sur la virtualisation (ESXi, vCenter déjà connus)</li>
+        <li>Usage élémentaire du shell Linux (cd, ls, cat, nano/vim)</li>
+        <li>Connaissance basique d'une application web (HTTP, ports)</li>
+        <li>Accès à une VM Ubuntu Server (déployée sur ESXi)</li>
+      </ul>
+    </div>
+
+    <div class="cover-meta-item">
+      <h4>💡 Compétences visées</h4>
+      <ul>
+        <li>Installer et configurer Docker Engine</li>
+        <li>Écrire un Dockerfile propre et lisible</li>
+        <li>Construire, exécuter, inspecter et nettoyer des images</li>
+        <li>Utiliser volumes, variables d'environnement et port mapping</li>
+        <li>Se préparer à l'orchestration Kubernetes</li>
+      </ul>
+    </div>
+
+    <div class="cover-meta-item">
+      <h4>⏱️ Durée &amp; contexte</h4>
+      <p><strong>Durée totale :</strong> 4 heures<br>
+      <strong>Découpage :</strong> 1h30 théorie + 2h15 TP + 15 min synthèse<br>
+      <strong>Contexte :</strong> infrastructure virtualisée déjà en place (ESXi, vCenter, Veeam). Cette séance ouvre la voie à Kubernetes puis à Kubeflow/MLOps.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========== INTRODUCTION GENERALE ========== -->
+<section id="intro">
+<h2>1. Introduction générale</h2>
+
+<p>Dans votre environnement de travail, vous disposez déjà d'une infrastructure virtualisée mature : des hôtes <strong>ESXi</strong>, un <strong>vCenter</strong> qui les administre de manière centralisée, et <strong>Veeam</strong> qui assure les sauvegardes. Vous savez créer des machines virtuelles, les cloner, les migrer à chaud entre hôtes, les sauvegarder. C'est un socle solide, et ce socle reste pleinement valide.</p>
+
+<p>Alors pourquoi parler de Docker et de Kubernetes ? Parce que la virtualisation classique, aussi puissante soit-elle, répond à un certain type de besoin — essentiellement <em>faire tourner plusieurs systèmes d'exploitation sur un même matériel</em>. Or, les applications modernes posent d'autres problèmes : comment livrer une application identique du poste du développeur au serveur de production ? Comment démarrer vingt instances d'un service en quelques secondes pour absorber un pic de charge ? Comment mettre à jour sans interruption de service ? Comment orchestrer des dizaines, voire des centaines de composants applicatifs qui doivent communiquer entre eux ?</p>
+
+<p>C'est à ces questions que répondent successivement <strong>la conteneurisation</strong> (Docker) et <strong>l'orchestration de conteneurs</strong> (Kubernetes). La séance d'aujourd'hui pose la première brique : comprendre ce qu'est un conteneur, comment on le construit, comment on l'exécute, et pourquoi on aura très vite besoin d'un outil pour les orchestrer à grande échelle.</p>
+
+<p>Au-delà de Kubernetes, cette chaîne technologique ouvre la porte à tout l'écosystème du <strong>MLOps</strong> : Kubeflow, MLflow, TensorFlow Serving, pipelines de données reproductibles. Tous reposent fondamentalement sur la conteneurisation. Docker est donc une compétence transverse : une fois maîtrisée, elle irrigue l'ensemble de vos futurs projets cloud et data.</p>
+
+<h3>La progression logique de ce module</h3>
+
+<p>Cette séance s'inscrit dans un parcours structuré. Voici la chaîne qui structure l'ensemble du module :</p>
+
+<div class="diagram">
+<svg viewBox="0 0 900 280" xmlns="http://www.w3.org/2000/svg">
+  <!-- Flèches directionnelles -->
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L10,6 L0,12 Z" fill="#3b82f6"/>
+    </marker>
+  </defs>
+
+  <!-- Etape 1 : ESXi / VM -->
+  <rect x="20" y="80" width="160" height="120" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="100" y="105" text-anchor="middle" font-size="14" font-weight="bold" fill="#78350f">ESXi / VM</text>
+  <text x="100" y="130" text-anchor="middle" font-size="11" fill="#78350f">Virtualisation</text>
+  <text x="100" y="146" text-anchor="middle" font-size="11" fill="#78350f">classique</text>
+  <text x="100" y="172" text-anchor="middle" font-size="10" fill="#92400e">✓ Déjà maîtrisé</text>
+  <text x="100" y="188" text-anchor="middle" font-size="10" fill="#92400e">(vCenter, Veeam)</text>
+
+  <!-- Flèche 1 -->
+  <line x1="185" y1="140" x2="220" y2="140" stroke="#3b82f6" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <!-- Etape 2 : Docker -->
+  <rect x="230" y="80" width="160" height="120" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="3"/>
+  <text x="310" y="105" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e3a8a">Docker</text>
+  <text x="310" y="130" text-anchor="middle" font-size="11" fill="#1e3a8a">Conteneurisation</text>
+  <text x="310" y="146" text-anchor="middle" font-size="11" fill="#1e3a8a">d'applications</text>
+  <text x="310" y="172" text-anchor="middle" font-size="10" font-weight="bold" fill="#1e40af">⭐ Séance 1</text>
+  <text x="310" y="188" text-anchor="middle" font-size="10" fill="#1e40af">(aujourd'hui)</text>
+
+  <!-- Flèche 2 -->
+  <line x1="395" y1="140" x2="430" y2="140" stroke="#3b82f6" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <!-- Etape 3 : Kubernetes -->
+  <rect x="440" y="80" width="160" height="120" rx="10" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
+  <text x="520" y="105" text-anchor="middle" font-size="14" font-weight="bold" fill="#3730a3">Kubernetes</text>
+  <text x="520" y="130" text-anchor="middle" font-size="11" fill="#3730a3">Orchestration</text>
+  <text x="520" y="146" text-anchor="middle" font-size="11" fill="#3730a3">à grande échelle</text>
+  <text x="520" y="172" text-anchor="middle" font-size="10" fill="#4338ca">→ Séances 2-3</text>
+  <text x="520" y="188" text-anchor="middle" font-size="10" fill="#4338ca">(prochaines étapes)</text>
+
+  <!-- Flèche 3 -->
+  <line x1="605" y1="140" x2="640" y2="140" stroke="#3b82f6" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <!-- Etape 4 : Kubeflow / MLOps -->
+  <rect x="650" y="80" width="230" height="120" rx="10" fill="#f3e8ff" stroke="#a855f7" stroke-width="2"/>
+  <text x="765" y="105" text-anchor="middle" font-size="14" font-weight="bold" fill="#6b21a8">Kubeflow / MLOps</text>
+  <text x="765" y="130" text-anchor="middle" font-size="11" fill="#6b21a8">Pipelines ML</text>
+  <text x="765" y="146" text-anchor="middle" font-size="11" fill="#6b21a8">reproductibles</text>
+  <text x="765" y="172" text-anchor="middle" font-size="10" fill="#7e22ce">→ Fin du module</text>
+  <text x="765" y="188" text-anchor="middle" font-size="10" fill="#7e22ce">(horizon)</text>
+
+  <!-- Titre -->
+  <text x="450" y="30" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e3a8a">Progression du module cloud : de l'infrastructure au MLOps</text>
+  <text x="450" y="50" text-anchor="middle" font-size="11" fill="#64748b" font-style="italic">Chaque étape s'appuie sur la précédente — Docker est le pivot de toute la chaîne</text>
+
+  <!-- Ligne de base -->
+  <line x1="50" y1="230" x2="850" y2="230" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3,3"/>
+  <text x="100" y="250" text-anchor="middle" font-size="10" fill="#64748b">Infrastructure</text>
+  <text x="310" y="250" text-anchor="middle" font-size="10" fill="#64748b">Packaging</text>
+  <text x="520" y="250" text-anchor="middle" font-size="10" fill="#64748b">Orchestration</text>
+  <text x="765" y="250" text-anchor="middle" font-size="10" fill="#64748b">Industrialisation</text>
+</svg>
+<p class="diagram-caption">Figure 1 — Parcours pédagogique complet du module : chaque brique technologique prépare la suivante.</p>
+</div>
+
+<div class="callout note">
+<div class="callout-title">À retenir avant d'aller plus loin</div>
+<p>Docker n'est <strong>pas un remplaçant</strong> de la virtualisation VMware. C'est une <strong>couche complémentaire</strong> qui s'installe généralement <em>dans</em> une VM Linux hébergée sur votre infrastructure ESXi. Ces deux mondes cohabitent parfaitement. Vous ne jetez rien, vous ajoutez un outil de plus à votre coffre.</p>
+</div>
+
+</section>
+
+<hr class="separator">
+<!-- ========== PARTIE THEORIQUE ========== -->
+<section id="theorie">
+<h2>2. Partie théorique : comprendre avant de manipuler</h2>
+
+<p>Avant de lancer la moindre commande, nous allons poser les fondations conceptuelles. Cette partie est essentielle : un étudiant qui sait taper <code>docker run</code> sans comprendre ce qui se passe au niveau du noyau Linux ne pourra pas dépanner un incident en production, ni concevoir une architecture propre. Le temps investi ici est rentabilisé mille fois lors du TP et surtout lors des séances Kubernetes à venir.</p>
+
+<!-- ========== 2.1 POURQUOI DOCKER ========== -->
+<h3 id="pourquoi-docker">2.1 Pourquoi introduire Docker maintenant ?</h3>
+
+<p>Vous savez déployer une application sur une VM. Pourquoi changer une méthode qui fonctionne ? La réponse tient en une observation simple : <strong>la VM optimise le matériel, pas le déploiement applicatif</strong>. Elle a été pensée dans les années 2000 pour faire tourner plusieurs OS sur un même serveur physique. Mais une fois l'OS en place, vous devez encore y installer l'application, ses dépendances, configurer le réseau, les services, les droits… et refaire tout cela à l'identique sur chaque environnement (dev, test, préprod, prod). C'est là que les ennuis commencent.</p>
+
+<h4>Les limites concrètes d'un fonctionnement uniquement en VM</h4>
+
+<p>Prenons un exemple que vous connaissez tous. Un développeur termine une application Python qui fonctionne parfaitement sur sa machine. Il l'envoie à l'équipe d'exploitation. Celle-ci la déploie sur une VM de préprod. Surprise : l'application ne démarre pas. Version de Python différente. Bibliothèque manquante. Variable d'environnement absente. Permissions incorrectes sur un répertoire. Le fameux <em>« ça marche chez moi »</em> naît de cette fragilité.</p>
+
+<p>Ce problème n'est pas théorique. Il coûte du temps, de l'argent, et génère des tensions entre équipes. Docker a été conçu pour y répondre en proposant un principe simple : <strong>emballer l'application ET son environnement dans un paquet autonome, identique partout</strong>.</p>
+
+<p>Voici les limites précises qui motivent l'adoption de Docker :</p>
+
+<ul class="pedagogy-list">
+<li><strong>Démarrage lent.</strong> Une VM Linux met typiquement 30 à 60 secondes à démarrer. Un conteneur démarre en moins d'une seconde. Quand on doit lancer 50 instances pour absorber un pic, la différence est décisive.</li>
+<li><strong>Empreinte disque et mémoire.</strong> Une VM embarque un OS complet : plusieurs gigaoctets. Dix VM = dix OS. Un conteneur réutilise le noyau de l'hôte : quelques dizaines de mégaoctets suffisent souvent.</li>
+<li><strong>Reproductibilité fragile.</strong> Deux VM installées à six mois d'intervalle avec la même procédure ne sont presque jamais strictement identiques (mises à jour, versions légèrement différentes, patches). Une image Docker, elle, produit toujours le même conteneur.</li>
+<li><strong>Portabilité limitée.</strong> Déplacer une VM d'un hyperviseur à un autre est possible mais fastidieux (formats différents, drivers). Une image Docker tourne à l'identique sur un laptop, un serveur ESXi, un cluster Kubernetes, AWS, Azure…</li>
+<li><strong>Couplage fort entre application et OS.</strong> Dans une VM, l'application partage l'OS avec d'autres choses (monitoring, agents, autres services). Un conteneur, lui, est dédié à un et un seul processus applicatif.</li>
+<li><strong>Déploiement et mise à jour complexes.</strong> Mettre à jour une application sur une VM implique souvent une interruption, un risque de régression, un retour arrière complexe. Avec Docker, on remplace simplement l'image par une nouvelle version.</li>
+<li><strong>Standardisation absente.</strong> Chaque entreprise, chaque équipe réinvente ses propres procédures de packaging. Docker impose un format standard que tout l'écosystème comprend.</li>
+</ul>
+
+<div class="callout info">
+<div class="callout-title">Le vrai apport de Docker en une phrase</div>
+<p>Docker permet de <strong>packager une application avec tout son environnement d'exécution</strong> dans une unité légère, portable et reproductible, qui démarre en une fraction de seconde et se comporte identiquement partout où elle est exécutée.</p>
+</div>
+
+<p>Ces propriétés ne sont pas des bonus esthétiques : elles sont précisément ce qui rend possible l'orchestration à grande échelle. Sans conteneurs, pas de Kubernetes. Sans Kubernetes, pas de MLOps moderne. C'est pour cela que cette séance est un pivot.</p>
+
+<hr class="separator">
+
+<!-- ========== 2.2 VM VS CONTENEUR ========== -->
+<h3 id="vm-vs-conteneur">2.2 Machine virtuelle vs conteneur : la comparaison fondamentale</h3>
+
+<p>Cette section est probablement la plus importante de la partie théorique. Beaucoup d'étudiants pensent qu'un conteneur est « une VM légère ». C'est <strong>faux</strong>, et cette incompréhension est source de nombreuses erreurs de conception par la suite. Un conteneur et une VM reposent sur des mécanismes fondamentalement différents.</p>
+
+<h4>Architecture d'une machine virtuelle</h4>
+
+<p>Une VM s'appuie sur un <strong>hyperviseur</strong>, comme ESXi dans votre environnement. L'hyperviseur émule du matériel virtuel (CPU, RAM, disque, carte réseau) au-dessus du matériel physique. Sur ce matériel virtuel, on installe un <strong>système d'exploitation complet</strong>, avec son propre noyau, ses propres pilotes, ses propres services système. Chaque VM est donc une <em>machine</em> à part entière, isolée des autres non seulement au niveau applicatif, mais jusqu'à la racine de son OS.</p>
+
+<p>Cette isolation profonde est un avantage (forte sécurité, possibilité de faire cohabiter Linux et Windows sur le même hôte) mais aussi un coût : on multiplie les OS, avec la RAM, le CPU et l'espace disque que cela implique.</p>
+
+<h4>Architecture d'un conteneur</h4>
+
+<p>Un conteneur, lui, ne virtualise <strong>pas</strong> le matériel. Il s'appuie sur des fonctionnalités du noyau Linux : les <em>namespaces</em> (qui isolent la vue des processus, du réseau, du système de fichiers) et les <em>cgroups</em> (qui limitent les ressources consommées). Concrètement, un conteneur est un ou plusieurs processus qui tournent sur l'OS hôte, mais qui <em>croient</em> être seuls au monde grâce à ces mécanismes d'isolation.</p>
+
+<p>Il n'y a donc <strong>qu'un seul noyau</strong>, celui de l'hôte, partagé par tous les conteneurs. C'est ce partage qui explique la légèreté et la vitesse de démarrage : pas besoin d'initialiser un second noyau, pas besoin de boot complet, pas besoin de services système redondants.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg">
+  <!-- ===== PARTIE GAUCHE : VMs ===== -->
+  <text x="220" y="30" text-anchor="middle" font-size="18" font-weight="bold" fill="#b45309">Architecture avec VMs</text>
+
+  <!-- VM 1 -->
+  <rect x="40" y="60" width="160" height="130" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="120" y="80" text-anchor="middle" font-size="12" font-weight="bold" fill="#78350f">VM 1</text>
+  <rect x="50" y="90" width="140" height="20" fill="#ddd6fe" stroke="#8b5cf6"/>
+  <text x="120" y="104" text-anchor="middle" font-size="10" fill="#5b21b6">App A</text>
+  <rect x="50" y="112" width="140" height="25" fill="#fed7aa" stroke="#ea580c"/>
+  <text x="120" y="128" text-anchor="middle" font-size="10" fill="#9a3412">Bibliothèques</text>
+  <rect x="50" y="139" width="140" height="40" fill="#fecaca" stroke="#dc2626"/>
+  <text x="120" y="155" text-anchor="middle" font-size="10" font-weight="bold" fill="#991b1b">OS invité complet</text>
+  <text x="120" y="170" text-anchor="middle" font-size="9" fill="#991b1b">(noyau + services)</text>
+
+  <!-- VM 2 -->
+  <rect x="220" y="60" width="160" height="130" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="300" y="80" text-anchor="middle" font-size="12" font-weight="bold" fill="#78350f">VM 2</text>
+  <rect x="230" y="90" width="140" height="20" fill="#ddd6fe" stroke="#8b5cf6"/>
+  <text x="300" y="104" text-anchor="middle" font-size="10" fill="#5b21b6">App B</text>
+  <rect x="230" y="112" width="140" height="25" fill="#fed7aa" stroke="#ea580c"/>
+  <text x="300" y="128" text-anchor="middle" font-size="10" fill="#9a3412">Bibliothèques</text>
+  <rect x="230" y="139" width="140" height="40" fill="#fecaca" stroke="#dc2626"/>
+  <text x="300" y="155" text-anchor="middle" font-size="10" font-weight="bold" fill="#991b1b">OS invité complet</text>
+  <text x="300" y="170" text-anchor="middle" font-size="9" fill="#991b1b">(noyau + services)</text>
+
+  <!-- Hyperviseur -->
+  <rect x="40" y="210" width="340" height="50" rx="6" fill="#c7d2fe" stroke="#4f46e5" stroke-width="2"/>
+  <text x="210" y="232" text-anchor="middle" font-size="13" font-weight="bold" fill="#3730a3">Hyperviseur (ESXi / KVM / Hyper-V)</text>
+  <text x="210" y="248" text-anchor="middle" font-size="10" fill="#4338ca">Émule le matériel virtuel pour chaque VM</text>
+
+  <!-- OS hote -->
+  <rect x="40" y="275" width="340" height="35" rx="6" fill="#e5e7eb" stroke="#6b7280" stroke-width="2"/>
+  <text x="210" y="297" text-anchor="middle" font-size="12" font-weight="bold" fill="#374151">Système d'exploitation hôte (optionnel)</text>
+
+  <!-- Materiel -->
+  <rect x="40" y="325" width="340" height="45" rx="6" fill="#1f2937" stroke="#111827" stroke-width="2"/>
+  <text x="210" y="348" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Matériel physique</text>
+  <text x="210" y="363" text-anchor="middle" font-size="10" fill="#d1d5db">CPU · RAM · Disque · Réseau</text>
+
+  <!-- Annotation -->
+  <text x="210" y="405" text-anchor="middle" font-size="10" fill="#78350f" font-style="italic">Chaque VM = OS complet + noyau dédié</text>
+  <text x="210" y="420" text-anchor="middle" font-size="10" fill="#78350f" font-style="italic">→ lourd, mais isolation maximale</text>
+
+  <!-- Separateur -->
+  <line x1="445" y1="40" x2="445" y2="440" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="5,5"/>
+
+  <!-- ===== PARTIE DROITE : CONTENEURS ===== -->
+  <text x="680" y="30" text-anchor="middle" font-size="18" font-weight="bold" fill="#1e40af">Architecture avec conteneurs</text>
+
+  <!-- Conteneur 1 -->
+  <rect x="490" y="60" width="120" height="85" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="550" y="78" text-anchor="middle" font-size="11" font-weight="bold" fill="#1e3a8a">Conteneur 1</text>
+  <rect x="500" y="86" width="100" height="22" fill="#ddd6fe" stroke="#8b5cf6"/>
+  <text x="550" y="101" text-anchor="middle" font-size="10" fill="#5b21b6">App A</text>
+  <rect x="500" y="110" width="100" height="25" fill="#fed7aa" stroke="#ea580c"/>
+  <text x="550" y="126" text-anchor="middle" font-size="9" fill="#9a3412">Bibliothèques</text>
+
+  <!-- Conteneur 2 -->
+  <rect x="620" y="60" width="120" height="85" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="680" y="78" text-anchor="middle" font-size="11" font-weight="bold" fill="#1e3a8a">Conteneur 2</text>
+  <rect x="630" y="86" width="100" height="22" fill="#ddd6fe" stroke="#8b5cf6"/>
+  <text x="680" y="101" text-anchor="middle" font-size="10" fill="#5b21b6">App B</text>
+  <rect x="630" y="110" width="100" height="25" fill="#fed7aa" stroke="#ea580c"/>
+  <text x="680" y="126" text-anchor="middle" font-size="9" fill="#9a3412">Bibliothèques</text>
+
+  <!-- Conteneur 3 -->
+  <rect x="750" y="60" width="120" height="85" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="810" y="78" text-anchor="middle" font-size="11" font-weight="bold" fill="#1e3a8a">Conteneur 3</text>
+  <rect x="760" y="86" width="100" height="22" fill="#ddd6fe" stroke="#8b5cf6"/>
+  <text x="810" y="101" text-anchor="middle" font-size="10" fill="#5b21b6">App C</text>
+  <rect x="760" y="110" width="100" height="25" fill="#fed7aa" stroke="#ea580c"/>
+  <text x="810" y="126" text-anchor="middle" font-size="9" fill="#9a3412">Bibliothèques</text>
+
+  <!-- Docker Engine -->
+  <rect x="490" y="165" width="380" height="50" rx="6" fill="#bfdbfe" stroke="#2563eb" stroke-width="2"/>
+  <text x="680" y="188" text-anchor="middle" font-size="13" font-weight="bold" fill="#1e40af">Docker Engine</text>
+  <text x="680" y="204" text-anchor="middle" font-size="10" fill="#1e40af">Gère namespaces, cgroups, images, réseau</text>
+
+  <!-- OS hote (noyau partage) -->
+  <rect x="490" y="230" width="380" height="60" rx="6" fill="#fca5a5" stroke="#dc2626" stroke-width="2"/>
+  <text x="680" y="253" text-anchor="middle" font-size="13" font-weight="bold" fill="#7f1d1d">Système d'exploitation hôte (Linux)</text>
+  <text x="680" y="270" text-anchor="middle" font-size="11" font-weight="bold" fill="#991b1b">NOYAU PARTAGÉ par tous les conteneurs</text>
+  <text x="680" y="283" text-anchor="middle" font-size="9" fill="#991b1b">namespaces + cgroups = isolation</text>
+
+  <!-- Materiel -->
+  <rect x="490" y="305" width="380" height="45" rx="6" fill="#1f2937" stroke="#111827" stroke-width="2"/>
+  <text x="680" y="328" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Matériel physique</text>
+  <text x="680" y="343" text-anchor="middle" font-size="10" fill="#d1d5db">CPU · RAM · Disque · Réseau</text>
+
+  <!-- Annotation -->
+  <text x="680" y="385" text-anchor="middle" font-size="10" fill="#1e40af" font-style="italic">Un seul noyau partagé, aucun OS dupliqué</text>
+  <text x="680" y="400" text-anchor="middle" font-size="10" fill="#1e40af" font-style="italic">→ léger et ultra-rapide</text>
+
+  <!-- Legende du bas -->
+  <rect x="40" y="445" width="15" height="15" fill="#ddd6fe" stroke="#8b5cf6"/>
+  <text x="62" y="457" font-size="11" fill="#374151">App</text>
+  <rect x="110" y="445" width="15" height="15" fill="#fed7aa" stroke="#ea580c"/>
+  <text x="132" y="457" font-size="11" fill="#374151">Bibliothèques</text>
+  <rect x="230" y="445" width="15" height="15" fill="#fecaca" stroke="#dc2626"/>
+  <text x="252" y="457" font-size="11" fill="#374151">OS complet (noyau + services)</text>
+  <rect x="450" y="445" width="15" height="15" fill="#fca5a5" stroke="#dc2626"/>
+  <text x="472" y="457" font-size="11" fill="#374151">Noyau hôte unique (partagé)</text>
+  <rect x="670" y="445" width="15" height="15" fill="#c7d2fe" stroke="#4f46e5"/>
+  <text x="692" y="457" font-size="11" fill="#374151">Couche de virtualisation</text>
+</svg>
+<p class="diagram-caption">Figure 2 — Comparaison architecturale : à gauche, chaque VM embarque son propre OS ; à droite, tous les conteneurs partagent le noyau de l'hôte via Docker Engine.</p>
+</div>
+
+<h4>Les acteurs en jeu : une clarification nécessaire</h4>
+
+<p>Quand on parle de VM et de conteneur, plusieurs éléments interviennent. Clarifions leurs rôles respectifs, car la confusion est fréquente.</p>
+
+<table>
+<thead>
+<tr><th style="width:22%">Élément</th><th style="width:28%">Rôle</th><th>Précisions pédagogiques</th></tr>
+</thead>
+<tbody>
+<tr>
+<td>Hyperviseur</td>
+<td>Émule du matériel virtuel pour faire tourner plusieurs OS sur un même serveur physique.</td>
+<td>ESXi, KVM, Hyper-V, VirtualBox. Il s'exécute soit directement sur le matériel (type 1, comme ESXi), soit au-dessus d'un OS hôte (type 2, comme VirtualBox).</td>
+</tr>
+<tr>
+<td>Système hôte</td>
+<td>OS sur lequel tourne Docker. Il fournit le noyau que les conteneurs partageront.</td>
+<td>En pratique, Linux (Ubuntu, Debian, RHEL…). Sur Windows et macOS, Docker Desktop lance en réalité une petite VM Linux discrète pour disposer d'un noyau Linux.</td>
+</tr>
+<tr>
+<td>Noyau Linux</td>
+<td>Cœur du système, gère processus, mémoire, fichiers, réseau. C'est lui qui fournit namespaces et cgroups.</td>
+<td>Le noyau est <strong>unique</strong> sur la machine hôte. Tous les conteneurs y accèdent simultanément. C'est ce partage qui explique la légèreté.</td>
+</tr>
+<tr>
+<td>Docker Engine</td>
+<td>Démon système qui reçoit les commandes, construit des images, crée et gère les conteneurs.</td>
+<td>Composé de <code>dockerd</code> (démon) et <code>docker</code> (client CLI). Le client envoie des requêtes au démon via une socket Unix.</td>
+</tr>
+<tr>
+<td>Conteneur</td>
+<td>Ensemble de processus isolés sur le système hôte, perçus comme un environnement autonome.</td>
+<td>N'a pas son propre noyau. Il voit son propre système de fichiers, son propre réseau, ses propres processus, mais tout repose sur le noyau partagé.</td>
+</tr>
+</tbody>
+</table>
+
+<h4>Tableau comparatif détaillé</h4>
+
+<table>
+<thead>
+<tr><th>Critère</th><th style="color:#fbbf24">Machine virtuelle</th><th style="color:#60a5fa">Conteneur Docker</th></tr>
+</thead>
+<tbody>
+<tr><td>Niveau de virtualisation</td><td>Matériel (CPU, RAM, disque émulés)</td><td>Système d'exploitation (processus isolés)</td></tr>
+<tr><td>OS invité</td><td>OS complet par VM (Linux, Windows…)</td><td>Aucun — noyau partagé avec l'hôte</td></tr>
+<tr><td>Temps de démarrage</td><td>30 s à plusieurs minutes</td><td>Moins d'une seconde typiquement</td></tr>
+<tr><td>Taille</td><td>De plusieurs Go à plusieurs dizaines de Go</td><td>De quelques Mo à quelques centaines de Mo</td></tr>
+<tr><td>Consommation mémoire</td><td>Élevée (OS complet en mémoire)</td><td>Faible (uniquement les processus applicatifs)</td></tr>
+<tr><td>Isolation</td><td>Très forte (OS séparés)</td><td>Bonne mais moindre (noyau partagé)</td></tr>
+<tr><td>Portabilité</td><td>Moyenne (formats hyperviseur, drivers)</td><td>Excellente (image standard OCI)</td></tr>
+<tr><td>Mixité d'OS</td><td>Linux + Windows sur un même hôte</td><td>Un seul type d'OS (celui du noyau hôte)</td></tr>
+<tr><td>Densité par serveur</td><td>Dizaines de VM typiquement</td><td>Centaines à milliers de conteneurs</td></tr>
+<tr><td>Cas d'usage idéal</td><td>Environnements isolés de bout en bout, OS différents, machines longue durée</td><td>Microservices, applications stateless, CI/CD, scaling rapide, MLOps</td></tr>
+<tr><td>Compatibilité avec Kubernetes</td><td>Indirecte (on installe Docker dans la VM)</td><td>Native (Kubernetes orchestre des conteneurs)</td></tr>
+</tbody>
+</table>
+
+<div class="compare-grid">
+<div class="compare-card compare-vm">
+<h4>🖥️ La VM : pour quoi faire ?</h4>
+<p><strong>Points forts :</strong> isolation très forte, possibilité de faire tourner des OS différents, longévité, maturité de l'écosystème (sauvegarde, migration à chaud, snapshots).</p>
+<p><strong>Limites :</strong> lourdeur, lenteur de démarrage, empreinte disque importante, procédures de déploiement hétérogènes entre équipes.</p>
+<p><strong>À privilégier quand :</strong> on doit isoler complètement un OS, héberger du legacy Windows, respecter des contraintes de sécurité très fortes au niveau OS.</p>
+</div>
+
+<div class="compare-card compare-docker">
+<h4>📦 Le conteneur : pour quoi faire ?</h4>
+<p><strong>Points forts :</strong> démarrage immédiat, faible empreinte, portabilité totale, reproductibilité garantie, scalabilité horizontale facile.</p>
+<p><strong>Limites :</strong> noyau partagé (moindre isolation), complexité à gérer à grande échelle sans orchestrateur, applications stateful plus délicates.</p>
+<p><strong>À privilégier quand :</strong> on veut packager une application, déployer rapidement, scaler dynamiquement, construire une chaîne CI/CD moderne, préparer le MLOps.</p>
+</div>
+</div>
+
+<div class="callout warning">
+<div class="callout-title">Confusion classique à éviter</div>
+<p>« Docker remplace VMware. » <strong>Faux.</strong> Les deux technologies répondent à des problèmes différents et se combinent très bien. Dans la réalité, une architecture moderne typique ressemble à ceci : des hôtes ESXi → des VM Linux → Docker installé dans ces VM → conteneurs applicatifs. Plus tard : Kubernetes orchestre ces conteneurs à travers plusieurs VM.</p>
+</div>
+
+<div class="callout synthesis">
+<div class="callout-title">Synthèse section 2.2</div>
+<p>Une <strong>VM</strong> virtualise du matériel et fait tourner un OS complet. Un <strong>conteneur</strong> isole des processus sur un OS partagé. La VM offre plus d'isolation, le conteneur offre plus de vitesse et de densité. Les deux cohabitent dans les infrastructures modernes. Kubernetes, que nous verrons ensuite, orchestre des conteneurs — pas des VM.</p>
+</div>
+
+</section>
+<!-- ========== 2.3 CONCEPTS DOCKER ========== -->
+<h3 id="concepts">2.3 Concepts fondamentaux de Docker</h3>
+
+<p>Pour travailler efficacement avec Docker, il faut maîtriser un petit nombre de concepts. Une fois ces briques assimilées, le reste n'est qu'application. Nous allons les voir un à un, en expliquant <em>ce que c'est</em>, <em>à quoi ça sert</em> et <em>comment ça s'articule</em>.</p>
+
+<h4>Docker Engine : le moteur</h4>
+
+<p><strong>Docker Engine</strong> est le composant central. C'est un service (un démon) qui tourne en arrière-plan sur la machine hôte et qui répond aux requêtes que vous lui envoyez via la commande <code>docker</code>. Quand vous tapez <code>docker run nginx</code>, ce n'est pas la commande <code>docker</code> qui fait le travail : elle envoie une requête au démon <code>dockerd</code>, qui se charge ensuite de télécharger l'image, de créer les namespaces nécessaires, de configurer le réseau, et de démarrer le processus.</p>
+
+<p>L'architecture est donc en <strong>client-serveur</strong>. C'est important à comprendre pour plus tard : quand on fera du Docker à distance, ou quand on se connectera au démon depuis un outil CI/CD, on exploitera cette séparation. Le client peut même être sur une autre machine que le démon.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr2" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L9,5 L0,10 Z" fill="#3b82f6"/>
+    </marker>
+  </defs>
+
+  <!-- Client -->
+  <rect x="40" y="80" width="160" height="80" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+  <text x="120" y="105" text-anchor="middle" font-size="13" font-weight="bold" fill="#1e3a8a">Client CLI</text>
+  <text x="120" y="125" text-anchor="middle" font-size="11" fill="#1e40af">docker run ...</text>
+  <text x="120" y="145" text-anchor="middle" font-size="11" fill="#1e40af">docker build ...</text>
+
+  <!-- Flèche REST -->
+  <line x1="205" y1="120" x2="275" y2="120" stroke="#3b82f6" stroke-width="3" marker-end="url(#arr2)"/>
+  <text x="240" y="110" text-anchor="middle" font-size="10" fill="#64748b" font-style="italic">REST API</text>
+  <text x="240" y="137" text-anchor="middle" font-size="9" fill="#64748b">(socket /var/run/docker.sock)</text>
+
+  <!-- Daemon -->
+  <rect x="285" y="60" width="200" height="140" rx="8" fill="#c7d2fe" stroke="#4f46e5" stroke-width="2"/>
+  <text x="385" y="85" text-anchor="middle" font-size="13" font-weight="bold" fill="#3730a3">Démon dockerd</text>
+  <text x="385" y="110" text-anchor="middle" font-size="10" fill="#4338ca">• Gère images</text>
+  <text x="385" y="128" text-anchor="middle" font-size="10" fill="#4338ca">• Crée conteneurs</text>
+  <text x="385" y="146" text-anchor="middle" font-size="10" fill="#4338ca">• Pilote réseau</text>
+  <text x="385" y="164" text-anchor="middle" font-size="10" fill="#4338ca">• Pilote stockage</text>
+  <text x="385" y="182" text-anchor="middle" font-size="10" fill="#4338ca">• Dialogue avec le kernel</text>
+
+  <!-- Flèche vers registry -->
+  <line x1="490" y1="120" x2="560" y2="120" stroke="#3b82f6" stroke-width="3" marker-end="url(#arr2)"/>
+  <text x="525" y="110" text-anchor="middle" font-size="10" fill="#64748b" font-style="italic">pull / push</text>
+
+  <!-- Registry -->
+  <rect x="570" y="80" width="180" height="80" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="660" y="105" text-anchor="middle" font-size="13" font-weight="bold" fill="#78350f">Registry</text>
+  <text x="660" y="125" text-anchor="middle" font-size="11" fill="#92400e">Docker Hub</text>
+  <text x="660" y="143" text-anchor="middle" font-size="11" fill="#92400e">(ou registre privé)</text>
+
+  <!-- Titre -->
+  <text x="400" y="30" text-anchor="middle" font-size="15" font-weight="bold" fill="#1e3a8a">Architecture client-serveur de Docker</text>
+
+  <!-- Legende -->
+  <text x="400" y="230" text-anchor="middle" font-size="11" fill="#64748b">Quand vous tapez <tspan font-family="monospace" fill="#1e40af">docker run</tspan>, c'est le démon qui agit réellement.</text>
+  <text x="400" y="248" text-anchor="middle" font-size="11" fill="#64748b">Le client ne fait qu'envoyer des requêtes.</text>
+</svg>
+<p class="diagram-caption">Figure 3 — Le client docker (CLI) envoie des commandes au démon dockerd via une API REST. Le démon peut aussi communiquer avec un registry distant pour télécharger ou publier des images.</p>
+</div>
+
+<h4>Image : le plan de construction</h4>
+
+<p>Une <strong>image Docker</strong> est un fichier figé qui contient tout ce qu'il faut pour exécuter une application : le système de fichiers minimal, les bibliothèques nécessaires, le code de l'application, les variables d'environnement par défaut, la commande à lancer. Une image est <em>immuable</em> : une fois construite, on ne la modifie plus.</p>
+
+<p>Analogie utile : l'image est comme la <strong>classe</strong> en programmation orientée objet, et le conteneur est l'<strong>instance</strong>. À partir d'une même image, on peut lancer autant de conteneurs identiques qu'on veut. Chacun aura sa propre mémoire, ses propres logs, son propre état éphémère, mais tous partiront du même point de départ.</p>
+
+<h4>Conteneur : l'exécution vivante</h4>
+
+<p>Un <strong>conteneur</strong> est une instance <em>en cours d'exécution</em> d'une image. Il dispose de son propre système de fichiers (en superposition par-dessus celui de l'image), de ses propres processus, de sa propre interface réseau virtuelle. Il peut être démarré, arrêté, mis en pause, redémarré, supprimé. Par défaut, <strong>tout ce qui est écrit dans le conteneur est perdu</strong> quand on le supprime — sauf si on utilise un volume, que nous verrons plus loin.</p>
+
+<h4>Registry : le dépôt des images</h4>
+
+<p>Une <strong>registry</strong> est un serveur qui stocke et distribue des images Docker. La plus connue est <strong>Docker Hub</strong> (<code>hub.docker.com</code>), publique et gratuite pour les images open source. Il existe aussi des registries privées : Harbor, GitLab Container Registry, AWS ECR, Azure ACR, etc. Dans un contexte d'entreprise, on héberge souvent sa propre registry pour garder la main sur les images sensibles et leur disponibilité.</p>
+
+<p>Le mécanisme est simple : <code>docker pull</code> télécharge une image depuis une registry vers votre hôte, <code>docker push</code> envoie une image locale vers une registry.</p>
+
+<h4>Dockerfile : la recette</h4>
+
+<p>Un <strong>Dockerfile</strong> est un fichier texte qui décrit, instruction par instruction, comment construire une image. C'est la <em>recette reproductible</em> par excellence : toute personne disposant du Dockerfile et du code source peut reconstruire exactement la même image. Chaque instruction du Dockerfile produit une <strong>couche</strong> (layer) dans l'image finale.</p>
+
+<p>Exemple simplifié commenté :</p>
+
+<pre data-label="Dockerfile - exemple commenté"><span class="kw">FROM</span> python:3.11-slim              <span class="cmt"># image de base minimaliste</span>
+<span class="kw">WORKDIR</span> /app                        <span class="cmt"># répertoire de travail dans l'image</span>
+<span class="kw">COPY</span> requirements.txt .              <span class="cmt"># copie du fichier de dépendances</span>
+<span class="kw">RUN</span> pip install -r requirements.txt <span class="cmt"># installation des dépendances</span>
+<span class="kw">COPY</span> . .                             <span class="cmt"># copie du code source</span>
+<span class="kw">EXPOSE</span> 5000                          <span class="cmt"># port exposé par le conteneur</span>
+<span class="kw">CMD</span> [<span class="str">"python"</span>, <span class="str">"app.py"</span>]            <span class="cmt"># commande lancée au démarrage</span>
+</pre>
+
+<h4>Layers : la superposition intelligente</h4>
+
+<p>Une image Docker n'est pas un gros bloc monolithique. Elle est composée de <strong>couches</strong> empilées, chacune correspondant à une étape du Dockerfile. Cette architecture a deux avantages majeurs.</p>
+
+<p>D'abord, les couches sont <strong>partagées</strong> entre images. Si trois images partent toutes de <code>python:3.11-slim</code>, la couche de base n'est téléchargée qu'une seule fois sur la machine. Économie de disque et de bande passante.</p>
+
+<p>Ensuite, le cache de build tire parti des couches. Quand vous reconstruisez une image après avoir modifié uniquement votre code, Docker réutilise les couches précédentes (téléchargement, installation des dépendances) et ne refait que les étapes affectées. Gain de temps considérable en CI/CD.</p>
+
+<div class="callout tip">
+<div class="callout-title">Ordre des instructions dans le Dockerfile</div>
+<p>Placez les instructions qui changent <strong>rarement</strong> en premier (installation des dépendances système, des paquets), et celles qui changent <strong>souvent</strong> à la fin (copie du code source). C'est une des bonnes pratiques les plus utiles : elle maximise l'efficacité du cache et accélère drastiquement les reconstructions.</p>
+</div>
+
+<h4>Volume : la persistance</h4>
+
+<p>Par défaut, un conteneur est <strong>éphémère</strong> : ce qu'il écrit dans son système de fichiers disparaît quand on le supprime. Pour conserver des données (une base de données, des fichiers uploadés, des logs), on utilise un <strong>volume</strong>. Un volume est une zone de stockage gérée par Docker sur l'hôte, montée à l'intérieur du conteneur.</p>
+
+<p>On distingue deux formes :</p>
+
+<ul>
+<li><strong>Volumes nommés</strong> : gérés par Docker, stockés dans <code>/var/lib/docker/volumes/</code>. À privilégier en général.</li>
+<li><strong>Bind mounts</strong> : un répertoire de l'hôte monté directement dans le conteneur. Pratique en développement, plus risqué en production.</li>
+</ul>
+
+<h4>Réseau Docker : la connectivité</h4>
+
+<p>Chaque conteneur dispose d'une interface réseau virtuelle. Docker crée par défaut plusieurs réseaux, dont le plus connu est <code>bridge</code> : les conteneurs attachés à ce réseau peuvent communiquer entre eux via leurs adresses IP internes. On peut aussi créer des réseaux personnalisés, ce qui permet notamment de faire dialoguer plusieurs conteneurs par leur nom de service plutôt que par IP.</p>
+
+<p>Les types principaux :</p>
+
+<ul>
+<li><strong>bridge</strong> (par défaut) : réseau virtuel local à l'hôte. Idéal pour faire communiquer des conteneurs sur la même machine.</li>
+<li><strong>host</strong> : le conteneur partage directement la pile réseau de l'hôte. Performances maximales, isolation réseau nulle.</li>
+<li><strong>none</strong> : aucune connectivité réseau. Pour des tâches de calcul pur isolées.</li>
+<li><strong>overlay</strong> : réseau distribué entre plusieurs hôtes. Utilisé par Docker Swarm et, d'une certaine manière, par Kubernetes.</li>
+</ul>
+
+<h4>Port mapping : l'ouverture vers l'extérieur</h4>
+
+<p>Un conteneur qui écoute sur le port 5000 <em>à l'intérieur</em> n'est pas accessible de l'extérieur tant qu'on n'a pas publié ce port. Le <strong>port mapping</strong> associe un port de l'hôte à un port du conteneur. Syntaxe : <code>-p 8080:5000</code> signifie « le port 8080 de l'hôte redirige vers le port 5000 du conteneur ».</p>
+
+<p>C'est ce mécanisme qui permet, par exemple, d'ouvrir un navigateur sur <code>http://ip-de-la-vm:8080</code> et de tomber sur une application qui, dans le conteneur, croit écouter sur 5000.</p>
+
+<h4>build · pull · run · exec · stop · rm : le vocabulaire de base</h4>
+
+<p>Ces verbes forment l'essentiel de votre vocabulaire quotidien avec Docker. Comprenons leur différence :</p>
+
+<table>
+<thead>
+<tr><th>Verbe</th><th>Objet manipulé</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>build</td><td>Image</td><td>Construire une image à partir d'un Dockerfile</td></tr>
+<tr><td>pull</td><td>Image</td><td>Télécharger une image depuis une registry</td></tr>
+<tr><td>push</td><td>Image</td><td>Envoyer une image locale vers une registry</td></tr>
+<tr><td>run</td><td>Conteneur (créé + démarré)</td><td>Créer un conteneur à partir d'une image et le démarrer</td></tr>
+<tr><td>exec</td><td>Processus dans un conteneur actif</td><td>Exécuter une commande supplémentaire dans un conteneur déjà en cours d'exécution</td></tr>
+<tr><td>stop</td><td>Conteneur</td><td>Arrêter proprement un conteneur actif (signal SIGTERM)</td></tr>
+<tr><td>rm</td><td>Conteneur</td><td>Supprimer un conteneur arrêté (libère son système de fichiers)</td></tr>
+<tr><td>rmi</td><td>Image</td><td>Supprimer une image locale (attention : on supprime l'image, pas les conteneurs)</td></tr>
+</tbody>
+</table>
+
+<div class="callout info">
+<div class="callout-title">Erreur de terminologie la plus fréquente chez les débutants</div>
+<p>« J'ai supprimé le conteneur, donc l'image est supprimée aussi. » <strong>Non.</strong> Image et conteneur sont deux objets distincts. Supprimer le conteneur (<code>docker rm</code>) laisse l'image intacte et prête à créer de nouveaux conteneurs. Pour supprimer l'image elle-même, il faut <code>docker rmi</code>.</p>
+</div>
+
+<hr class="separator">
+
+<!-- ========== 2.4 CYCLE DE VIE ========== -->
+<h3 id="cycle-vie">2.4 Cycle de vie d'un conteneur</h3>
+
+<p>Un conteneur Docker passe par plusieurs <strong>états</strong> bien définis, du moment où on le crée jusqu'à sa suppression. Comprendre ces états et les transitions entre eux est crucial, car la majorité des commandes Docker agissent précisément sur ces transitions.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 900 320" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arr3" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+      <path d="M0,0 L9,5 L0,10 Z" fill="#1e40af"/>
+    </marker>
+  </defs>
+
+  <!-- Titre -->
+  <text x="450" y="25" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e3a8a">Cycle de vie d'un conteneur Docker</text>
+
+  <!-- Image -->
+  <rect x="30" y="60" width="140" height="70" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="100" y="85" text-anchor="middle" font-size="13" font-weight="bold" fill="#78350f">Image</text>
+  <text x="100" y="105" text-anchor="middle" font-size="10" fill="#92400e">(figée, immuable)</text>
+  <text x="100" y="120" text-anchor="middle" font-size="10" fill="#92400e">build / pull</text>
+
+  <!-- Fleche create -->
+  <line x1="175" y1="95" x2="225" y2="95" stroke="#1e40af" stroke-width="2.5" marker-end="url(#arr3)"/>
+  <text x="200" y="85" text-anchor="middle" font-size="10" fill="#1e40af" font-family="monospace">create</text>
+
+  <!-- Created -->
+  <rect x="235" y="60" width="140" height="70" rx="8" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
+  <text x="305" y="85" text-anchor="middle" font-size="13" font-weight="bold" fill="#3730a3">Created</text>
+  <text x="305" y="105" text-anchor="middle" font-size="10" fill="#4338ca">Conteneur préparé</text>
+  <text x="305" y="120" text-anchor="middle" font-size="10" fill="#4338ca">pas encore démarré</text>
+
+  <!-- Fleche start -->
+  <line x1="380" y1="95" x2="430" y2="95" stroke="#1e40af" stroke-width="2.5" marker-end="url(#arr3)"/>
+  <text x="405" y="85" text-anchor="middle" font-size="10" fill="#1e40af" font-family="monospace">start</text>
+
+  <!-- Running -->
+  <rect x="440" y="60" width="160" height="70" rx="8" fill="#d1fae5" stroke="#10b981" stroke-width="3"/>
+  <text x="520" y="85" text-anchor="middle" font-size="13" font-weight="bold" fill="#065f46">Running</text>
+  <text x="520" y="105" text-anchor="middle" font-size="10" fill="#047857">Conteneur actif</text>
+  <text x="520" y="120" text-anchor="middle" font-size="10" fill="#047857">processus en exécution</text>
+
+  <!-- Fleche stop -->
+  <line x1="605" y1="95" x2="655" y2="95" stroke="#1e40af" stroke-width="2.5" marker-end="url(#arr3)"/>
+  <text x="630" y="85" text-anchor="middle" font-size="10" fill="#1e40af" font-family="monospace">stop</text>
+
+  <!-- Exited -->
+  <rect x="665" y="60" width="140" height="70" rx="8" fill="#fee2e2" stroke="#ef4444" stroke-width="2"/>
+  <text x="735" y="85" text-anchor="middle" font-size="13" font-weight="bold" fill="#991b1b">Exited</text>
+  <text x="735" y="105" text-anchor="middle" font-size="10" fill="#b91c1c">Conteneur arrêté</text>
+  <text x="735" y="120" text-anchor="middle" font-size="10" fill="#b91c1c">mais toujours présent</text>
+
+  <!-- Fleche restart (boucle) -->
+  <path d="M 665 95 Q 600 30 510 60" fill="none" stroke="#1e40af" stroke-width="2.5" marker-end="url(#arr3)"/>
+  <text x="590" y="40" text-anchor="middle" font-size="10" fill="#1e40af" font-family="monospace">start / restart</text>
+
+  <!-- Fleche rm -->
+  <line x1="735" y1="135" x2="735" y2="200" stroke="#dc2626" stroke-width="2.5" marker-end="url(#arr3)"/>
+  <text x="755" y="170" font-size="10" fill="#dc2626" font-family="monospace">rm</text>
+
+  <!-- Supprime -->
+  <rect x="665" y="210" width="140" height="60" rx="8" fill="#1f2937" stroke="#111827" stroke-width="2"/>
+  <text x="735" y="235" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Supprimé</text>
+  <text x="735" y="255" text-anchor="middle" font-size="10" fill="#d1d5db">(disparaît totalement)</text>
+
+  <!-- Paused (etat annexe) -->
+  <rect x="440" y="200" width="160" height="60" rx="8" fill="#fed7aa" stroke="#f97316" stroke-width="2"/>
+  <text x="520" y="225" text-anchor="middle" font-size="13" font-weight="bold" fill="#9a3412">Paused</text>
+  <text x="520" y="245" text-anchor="middle" font-size="10" fill="#c2410c">processus gelés</text>
+
+  <!-- Fleche pause -->
+  <line x1="520" y1="135" x2="520" y2="195" stroke="#1e40af" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#arr3)"/>
+  <text x="545" y="170" font-size="9" fill="#64748b" font-family="monospace">pause / unpause</text>
+
+  <!-- Raccourci docker run -->
+  <path d="M 100 130 Q 100 280 440 260" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="5,5" marker-end="url(#arr3)"/>
+  <text x="250" y="295" text-anchor="middle" font-size="11" fill="#6b21a8" font-style="italic" font-weight="bold">docker run = create + start (raccourci direct de l'image au Running)</text>
+</svg>
+<p class="diagram-caption">Figure 4 — Les états d'un conteneur et les commandes qui provoquent les transitions.</p>
+</div>
+
+<h4>Création</h4>
+
+<p>Tout commence par une image. À partir de celle-ci, Docker <em>crée</em> un conteneur (<code>docker create</code>) : il prépare le système de fichiers, réserve les ressources, configure le réseau. À ce stade, aucun processus ne tourne encore. L'état est <strong>Created</strong>.</p>
+
+<p>En pratique, on utilise rarement <code>docker create</code> seul. On préfère <code>docker run</code>, qui combine <em>create + start</em> en une seule commande. C'est le cas d'usage le plus courant.</p>
+
+<h4>Exécution</h4>
+
+<p><code>docker start</code> démarre le conteneur. Le processus principal (celui défini par <code>CMD</code> ou <code>ENTRYPOINT</code> dans le Dockerfile) est lancé. L'état passe à <strong>Running</strong>. Le conteneur est maintenant joignable via le réseau, répond aux requêtes, écrit des logs.</p>
+
+<p>Durant cette phase, vous pouvez :</p>
+<ul>
+<li>consulter les logs avec <code>docker logs</code></li>
+<li>entrer dans le conteneur avec <code>docker exec -it &lt;conteneur&gt; bash</code></li>
+<li>inspecter sa configuration avec <code>docker inspect</code></li>
+<li>suivre sa consommation avec <code>docker stats</code></li>
+</ul>
+
+<h4>Arrêt</h4>
+
+<p><code>docker stop</code> envoie un signal <code>SIGTERM</code> au processus principal, lui laissant dix secondes (par défaut) pour se terminer proprement. Si le processus ne répond pas, Docker envoie <code>SIGKILL</code> pour forcer l'arrêt. L'état devient <strong>Exited</strong>.</p>
+
+<p>Un conteneur arrêté n'est pas supprimé : il existe toujours, avec son système de fichiers, prêt à être redémarré (<code>docker start</code>) ou supprimé (<code>docker rm</code>).</p>
+
+<h4>Suppression</h4>
+
+<p><code>docker rm</code> efface définitivement le conteneur. Son système de fichiers en couche est libéré. Attention : les <strong>données du conteneur lui-même</strong> disparaissent, mais les <strong>volumes</strong> montés dans ce conteneur survivent (sauf option <code>-v</code>). C'est précisément le rôle des volumes : garantir la persistance.</p>
+
+<h4>Persistance via volumes : le bon réflexe</h4>
+
+<p>La règle mnémotechnique à retenir : <strong>si une donnée doit survivre à la suppression du conteneur, elle doit être dans un volume.</strong> Base de données, fichiers utilisateurs, logs à conserver, configurations dynamiques : tout cela va dans un volume.</p>
+
+<div class="callout error">
+<div class="callout-title">Erreur fréquente — "J'ai perdu toutes mes données"</div>
+<p>Un étudiant installe PostgreSQL dans un conteneur, y charge des données, puis fait <code>docker rm -f postgres</code>. Toutes les données sont perdues. C'est <strong>normal</strong> : le conteneur était éphémère. Il fallait monter un volume sur <code>/var/lib/postgresql/data</code>. Règle de survie : tout ce qui est précieux doit être externalisé via un volume.</p>
+</div>
+
+<hr class="separator">
+
+<!-- ========== 2.5 POURQUOI DOCKER NE SUFFIT PAS ========== -->
+<h3 id="limites-docker">2.5 Pourquoi Docker seul ne suffit pas à grande échelle</h3>
+
+<p>Docker résout le problème du packaging d'une application. Mais en production réelle, vous n'avez presque jamais <em>une seule</em> application <em>sur une seule</em> machine. Vous avez plusieurs applications, dépendantes les unes des autres, réparties sur plusieurs hôtes, qui doivent rester disponibles 24/7, absorber des pics de charge et se mettre à jour sans interruption. À ce stade, Docker seul atteint ses limites.</p>
+
+<h4>Les problèmes concrets qui émergent à l'échelle</h4>
+
+<ul class="pedagogy-list">
+
+<li><strong>Gestion de plusieurs conteneurs interdépendants.</strong> Une application moderne est rarement monolithique : une API + une base de données + un cache Redis + un worker asynchrone. Comment s'assurer qu'ils démarrent dans le bon ordre, qu'ils redémarrent si l'un tombe, qu'ils se retrouvent après un reboot ? Docker seul ne gère pas cela nativement. Il faut orchestrer.</li>
+
+<li><strong>Redémarrage automatique en cas de panne.</strong> Si votre conteneur crashe à 3h du matin, qui le redémarre ? Docker propose une option <code>--restart</code>, utile mais limitée : elle ne fonctionne que sur la machine locale. Si c'est la machine elle-même qui tombe, tout tombe avec elle.</li>
+
+<li><strong>Montée en charge (scaling).</strong> Un pic de trafic arrive. Vous voulez passer de 2 à 20 instances de votre API. Avec Docker seul, il faut lancer manuellement 18 conteneurs supplémentaires, reconfigurer l'équilibrage de charge, penser aux ressources. Fastidieux et sujet aux erreurs.</li>
+
+<li><strong>Service discovery.</strong> Dans un environnement dynamique où les conteneurs apparaissent et disparaissent, comment l'API sait-elle sur quelle IP trouver la base de données aujourd'hui ? Les IP changent à chaque redémarrage. Il faut un mécanisme d'annuaire dynamique — que Docker seul ne fournit pas de manière robuste.</li>
+
+<li><strong>Réseau multi-hôte.</strong> Si votre cluster a dix serveurs, comment un conteneur sur le serveur A parle-t-il à un conteneur sur le serveur E, de manière sécurisée, avec équilibrage de charge ? Docker seul reste cantonné à un hôte ; le multi-hôte exige des couches supplémentaires.</li>
+
+<li><strong>Stockage partagé.</strong> Si un conteneur tombe sur l'hôte A et est redémarré sur l'hôte B, il doit retrouver ses données. Un volume local à A ne suffit pas ; il faut un stockage accessible depuis tous les hôtes (NFS, Ceph, cloud storage…).</li>
+
+<li><strong>Haute disponibilité.</strong> Faire en sorte qu'une application reste disponible même si un serveur entier tombe demande de la réplication, du basculement automatique, du monitoring fin. Aucun de ces mécanismes n'est natif dans Docker.</li>
+
+<li><strong>Mise à jour sans interruption (rolling update).</strong> Déployer la version v2 sans jamais couper le service demande de lancer la v2 progressivement, de rediriger le trafic au fur et à mesure, et de pouvoir revenir en arrière (rollback) instantanément en cas de problème. Docker seul n'offre pas cela.</li>
+
+<li><strong>Supervision centralisée.</strong> Quand vous avez 300 conteneurs répartis sur 20 machines, vous ne pouvez plus faire <code>docker ps</code> partout à la main. Il faut une vue d'ensemble : logs centralisés, métriques, alertes, dashboards.</li>
+
+<li><strong>Gestion des secrets.</strong> Stocker des mots de passe, des clés d'API, des certificats de manière sécurisée et les distribuer uniquement aux conteneurs qui en ont besoin : problématique complexe non couverte par Docker seul.</li>
+
+</ul>
+
+<div class="callout synthesis">
+<div class="callout-title">La transition logique</div>
+<p>C'est précisément pour répondre à l'ensemble de ces besoins — orchestration multi-conteneurs, scaling dynamique, haute disponibilité, réseau distribué, service discovery, rolling updates, gestion des secrets, supervision — que la communauté a développé des <strong>orchestrateurs de conteneurs</strong>. Docker Swarm fut une première réponse. <strong>Kubernetes</strong>, née chez Google, s'est imposée comme le standard de facto. C'est précisément l'objet de la séance 2.</p>
+</div>
+
+<p>Retenez bien cette articulation : Docker <em>packagera</em> vos applications, Kubernetes les <em>orchestrera</em>. Les deux technologies sont complémentaires, pas concurrentes. On construit d'abord des images Docker propres, puis on décrit à Kubernetes comment les déployer, les répliquer, les exposer, les mettre à jour.</p>
+
+<div class="callout synthesis">
+<div class="callout-title">Synthèse de la partie théorique</div>
+<p>Vous savez maintenant <strong>pourquoi</strong> Docker existe (packaging reproductible), <strong>comment</strong> il diffère d'une VM (noyau partagé, processus isolés), <strong>quels sont ses composants essentiels</strong> (image, conteneur, registry, Dockerfile, volume, réseau), <strong>comment un conteneur évolue dans le temps</strong> (Created → Running → Exited → Supprimé), et enfin <strong>pourquoi Docker seul ne suffit pas</strong> en production à grande échelle. Tous ces concepts seront manipulés dans le TP qui suit.</p>
+</div>
+<hr class="separator">
+
+<!-- ========== 3. COMMANDES ESSENTIELLES ========== -->
+<section id="commandes">
+<h2>3. Commandes Docker essentielles</h2>
+
+<p>Avant d'entrer dans le TP, voici le répertoire de commandes que nous utiliserons. Prenez le temps de lire attentivement la colonne <em>Explication</em> : la majorité des bugs rencontrés en TP viennent d'une incompréhension fine de ces commandes, pas d'une faute de frappe.</p>
+
+<table>
+<thead>
+<tr>
+  <th style="width:20%">Commande</th>
+  <th style="width:22%">Rôle</th>
+  <th style="width:28%">Exemple</th>
+  <th>Explication pédagogique</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+  <td><code>docker --version</code></td>
+  <td>Afficher la version du client Docker installé</td>
+  <td><code>docker --version</code></td>
+  <td>Premier réflexe après installation. Confirme que la commande est disponible dans le PATH. Ne prouve pas que le démon tourne.</td>
+</tr>
+
+<tr>
+  <td><code>docker info</code></td>
+  <td>Afficher l'état complet du démon Docker</td>
+  <td><code>docker info</code></td>
+  <td>Donne la version serveur, le driver de stockage, le nombre d'images et conteneurs, l'espace disque utilisé, l'OS hôte. Si ça échoue, c'est que le démon n'est pas joignable.</td>
+</tr>
+
+<tr>
+  <td><code>docker pull</code></td>
+  <td>Télécharger une image depuis une registry</td>
+  <td><code>docker pull nginx:1.25</code></td>
+  <td>Le tag (<code>:1.25</code>) est très important. Sans tag explicite, Docker prend <code>latest</code>, qui change au fil du temps. En production, toujours fixer un tag précis.</td>
+</tr>
+
+<tr>
+  <td><code>docker images</code></td>
+  <td>Lister les images présentes localement</td>
+  <td><code>docker images</code></td>
+  <td>Affiche repository, tag, ID, date, taille. Utile pour vérifier ce qui est téléchargé et pour faire le ménage.</td>
+</tr>
+
+<tr>
+  <td><code>docker ps</code></td>
+  <td>Lister les conteneurs <em>en cours d'exécution</em></td>
+  <td><code>docker ps</code></td>
+  <td>Ne montre que les conteneurs actifs. Si votre conteneur a crashé, il n'apparaît pas ici — il faut <code>docker ps -a</code>.</td>
+</tr>
+
+<tr>
+  <td><code>docker ps -a</code></td>
+  <td>Lister <em>tous</em> les conteneurs (y compris arrêtés)</td>
+  <td><code>docker ps -a</code></td>
+  <td>Indispensable pour diagnostiquer. La colonne STATUS indique la cause : Exited (0) = arrêt propre, Exited (1) = erreur, Created = jamais démarré.</td>
+</tr>
+
+<tr>
+  <td><code>docker run</code></td>
+  <td>Créer et démarrer un conteneur à partir d'une image</td>
+  <td><code>docker run -d -p 8080:80 nginx</code></td>
+  <td>La commande centrale. Options clés : <code>-d</code> (détaché, en arrière-plan), <code>-p</code> (port mapping), <code>--name</code> (nom lisible), <code>-e</code> (variable d'environnement), <code>-v</code> (volume).</td>
+</tr>
+
+<tr>
+  <td><code>docker exec</code></td>
+  <td>Exécuter une commande dans un conteneur <em>actif</em></td>
+  <td><code>docker exec -it web bash</code></td>
+  <td>Permet d'entrer dans un conteneur pour inspecter, débugger. Les options <code>-it</code> (interactive + tty) sont obligatoires pour une session shell. Ne fonctionne pas sur un conteneur arrêté.</td>
+</tr>
+
+<tr>
+  <td><code>docker logs</code></td>
+  <td>Afficher les logs (stdout/stderr) d'un conteneur</td>
+  <td><code>docker logs -f web</code></td>
+  <td>L'outil de débogage numéro un. L'option <code>-f</code> (follow) suit les logs en temps réel. <code>--tail 50</code> pour ne voir que les 50 dernières lignes.</td>
+</tr>
+
+<tr>
+  <td><code>docker stop</code></td>
+  <td>Arrêter proprement un conteneur actif</td>
+  <td><code>docker stop web</code></td>
+  <td>Envoie SIGTERM, puis SIGKILL après 10 s. À préférer à <code>docker kill</code> qui tue brutalement.</td>
+</tr>
+
+<tr>
+  <td><code>docker start</code></td>
+  <td>Redémarrer un conteneur arrêté</td>
+  <td><code>docker start web</code></td>
+  <td>Redémarre sans recréer. Conserve la configuration initiale (ports, volumes, variables). Pratique quand on a bien configuré un conteneur et qu'on veut juste le relancer.</td>
+</tr>
+
+<tr>
+  <td><code>docker restart</code></td>
+  <td>Arrêter puis redémarrer un conteneur</td>
+  <td><code>docker restart web</code></td>
+  <td>Équivaut à <code>stop</code> + <code>start</code>. Utile pour appliquer un changement de configuration externe.</td>
+</tr>
+
+<tr>
+  <td><code>docker rm</code></td>
+  <td>Supprimer un conteneur arrêté</td>
+  <td><code>docker rm web</code></td>
+  <td>Échoue sur un conteneur actif. Pour forcer, ajouter <code>-f</code> (fait un stop + rm). Ne supprime pas l'image.</td>
+</tr>
+
+<tr>
+  <td><code>docker rmi</code></td>
+  <td>Supprimer une image locale</td>
+  <td><code>docker rmi nginx:1.25</code></td>
+  <td>Échoue si l'image est encore utilisée par un conteneur (même arrêté). Supprimer d'abord les conteneurs concernés.</td>
+</tr>
+
+<tr>
+  <td><code>docker build</code></td>
+  <td>Construire une image à partir d'un Dockerfile</td>
+  <td><code>docker build -t monapp:1.0 .</code></td>
+  <td>Le point final désigne le contexte de build (répertoire courant). <code>-t</code> tague l'image. Chaque étape du Dockerfile produit une couche et un cache.</td>
+</tr>
+
+<tr>
+  <td><code>docker inspect</code></td>
+  <td>Afficher la configuration complète d'un objet (JSON)</td>
+  <td><code>docker inspect web</code></td>
+  <td>Retourne absolument tout : réseau, volumes, variables, processus. Outil de référence pour comprendre précisément ce que Docker a configuré.</td>
+</tr>
+
+<tr>
+  <td><code>docker volume ls</code></td>
+  <td>Lister les volumes Docker</td>
+  <td><code>docker volume ls</code></td>
+  <td>Affiche les volumes nommés. Combiné avec <code>docker volume inspect &lt;nom&gt;</code>, donne le chemin physique sur l'hôte.</td>
+</tr>
+
+<tr>
+  <td><code>docker network ls</code></td>
+  <td>Lister les réseaux Docker</td>
+  <td><code>docker network ls</code></td>
+  <td>Montre au minimum bridge, host, none. Permet de voir les réseaux personnalisés créés pour isoler des groupes de conteneurs.</td>
+</tr>
+
+</tbody>
+</table>
+
+<div class="callout tip">
+<div class="callout-title">Conseils d'apprentissage pour ce vocabulaire</div>
+<p>Ne cherchez pas à mémoriser toutes ces commandes par cœur d'un coup. En revanche, retenez l'<strong>intention</strong> de chacune. En TP, vous utiliserez naturellement <code>run</code>, <code>ps</code>, <code>logs</code>, <code>exec</code>, <code>stop</code>, <code>rm</code> dizaines de fois : la mémoire musculaire se construira d'elle-même. Les autres commandes se retrouvent facilement avec <code>docker --help</code> ou <code>docker &lt;commande&gt; --help</code>.</p>
+</div>
+
+</section>
+
+<hr class="separator">
+
+<!-- ========== 4. APPLICATION FIL ROUGE ========== -->
+<section id="fil-rouge">
+<h2>4. L'application fil rouge du TP</h2>
+
+<p>Pour donner de la cohérence au TP, nous allons travailler sur une même petite application tout au long des exercices. Cette application est volontairement minimaliste : elle tient en une trentaine de lignes de Python. L'objectif n'est pas de faire du Flask avancé, mais d'avoir un support concret pour illustrer chaque concept Docker.</p>
+
+<h3>Présentation du service « DevOps Monitor »</h3>
+
+<p>Imaginons un petit service web qui servirait d'indicateur de santé basique dans une infrastructure. Trois fonctionnalités :</p>
+
+<ul>
+<li><strong>Une page d'accueil</strong> (<code>/</code>) qui affiche un message personnalisable et incrémente un compteur à chaque visite.</li>
+<li><strong>Une route de santé</strong> (<code>/health</code>) qui retourne un JSON avec l'état du service, l'heure, le hostname. C'est l'équivalent d'un <em>health check</em> tel qu'on l'utilise en supervision.</li>
+<li><strong>Une route de statistiques</strong> (<code>/stats</code>) qui expose le compteur de visites et le nombre d'écritures en fichier de log.</li>
+</ul>
+
+<p>L'application utilise :</p>
+
+<ul>
+<li>le framework <strong>Flask</strong> pour la partie web,</li>
+<li>une <strong>variable d'environnement</strong> <code>APP_MESSAGE</code> pour personnaliser le message d'accueil (illustrera la configuration par variable),</li>
+<li>un <strong>fichier de log</strong> dans un répertoire dédié pour enregistrer chaque visite (illustrera la persistance via volume).</li>
+</ul>
+
+<h3>Intérêt pédagogique</h3>
+
+<p>Pourquoi ce choix d'application ? Parce qu'elle permet d'illustrer, de manière ramassée mais réaliste, l'ensemble des concepts Docker que nous voulons pratiquer :</p>
+
+<table>
+<thead>
+<tr><th style="width:30%">Concept Docker</th><th>Illustration dans l'application</th></tr>
+</thead>
+<tbody>
+<tr><td>Image de base</td><td>Héritage depuis <code>python:3.11-slim</code></td></tr>
+<tr><td>Installation de dépendances</td><td>Flask via <code>pip install</code> dans le Dockerfile</td></tr>
+<tr><td>Copie du code</td><td>Le fichier <code>app.py</code> est intégré dans l'image</td></tr>
+<tr><td>Commande de démarrage</td><td>Directive <code>CMD</code> qui lance le serveur Flask</td></tr>
+<tr><td>Port exposé</td><td>Flask écoute sur 5000, on mappera sur 8080 côté hôte</td></tr>
+<tr><td>Variable d'environnement</td><td><code>APP_MESSAGE</code> injectée au démarrage du conteneur</td></tr>
+<tr><td>Persistance via volume</td><td>Le répertoire <code>/app/logs</code> monté vers un volume nommé</td></tr>
+<tr><td>Route de santé</td><td>Endpoint <code>/health</code> — standard Kubernetes pour <em>readiness/liveness probe</em></td></tr>
+</tbody>
+</table>
+
+<div class="callout note">
+<div class="callout-title">Pont vers Kubernetes</div>
+<p>La route <code>/health</code> n'est pas anodine : en Kubernetes, chaque Pod définit généralement un <em>liveness probe</em> et un <em>readiness probe</em>, c'est-à-dire deux endpoints que Kubernetes interroge régulièrement pour savoir si le conteneur est vivant et prêt à servir du trafic. En développant l'habitude dès maintenant, vous préparez la séance 2 sans effort.</p>
+</div>
+
+<div class="callout tip">
+<div class="callout-title">Pourquoi pas une application plus complexe ?</div>
+<p>Parce que la complexité noierait le propos. L'objectif de ce TP n'est pas d'apprendre Flask, mais Docker. Une application volontairement simple permet de se concentrer sur ce qui change réellement d'un exercice à l'autre : un port, une variable, un volume. Vous pourrez plus tard refaire le même exercice avec vos propres applications Python, Node.js ou Java.</p>
+</div>
+
+</section>
+<hr class="separator">
+
+<!-- ========== 5. TP GUIDE ========== -->
+<section id="tp">
+<h2>5. TP guidé complet</h2>
+
+<p>Cette partie occupe environ 2h15. Chaque exercice suit la même structure : objectif, prérequis, étapes commentées, résultats attendus, points de vigilance. Respectez l'ordre : chaque TP s'appuie sur le précédent.</p>
+
+<div class="callout objective">
+<div class="callout-title">Contexte du lab</div>
+<p>L'ensemble du TP se déroule dans une <strong>VM Ubuntu Server 22.04 (ou 24.04) LTS</strong> déployée sur l'infrastructure ESXi de votre laboratoire. Configuration recommandée : 2 vCPU, 4 Go de RAM, 30 Go de disque, un accès internet. Vous y êtes connecté en SSH avec un compte disposant des droits <code>sudo</code>.</p>
+</div>
+
+<!-- ========== TP 1 ========== -->
+<div class="tp-block" id="tp1">
+<div class="tp-header">
+<h3>TP 1 — Vérification de l'environnement</h3>
+<span class="tp-duration">⏱️ 10 min</span>
+</div>
+
+<div class="callout objective">
+<div class="callout-title">Objectif</div>
+<p>Vérifier que la VM est prête à recevoir Docker : OS à jour, accès internet, droits suffisants, ressources disponibles.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 1.1 — Se connecter à la VM et vérifier l'OS</div>
+<p>Depuis votre poste, connectez-vous en SSH à la VM Ubuntu. Une fois connecté, identifiez la version exacte de l'OS : cela conditionnera les dépôts Docker utilisés.</p>
+<pre data-label="shell"><span class="prm">$</span> lsb_release -a
+<span class="prm">$</span> uname -r</pre>
+<div class="callout expected">
+<div class="callout-title">Résultat attendu</div>
+<p>Une distribution Ubuntu récente (22.04 ou 24.04) et un noyau Linux 5.x ou 6.x. Si la distribution est plus ancienne, certains paquets Docker peuvent manquer.</p>
+</div>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 1.2 — Vérifier l'accès réseau</div>
+<p>Docker va devoir télécharger des images depuis Docker Hub. Un simple test de connectivité suffit.</p>
+<pre data-label="shell"><span class="prm">$</span> ping -c 3 hub.docker.com
+<span class="prm">$</span> curl -I https://registry-1.docker.io/v2/</pre>
+<div class="callout expected">
+<div class="callout-title">Résultat attendu</div>
+<p>Le ping doit répondre (sauf si ICMP est filtré — dans ce cas, seul le <code>curl</code> compte). Le <code>curl</code> doit renvoyer un code HTTP (401 est normal, cela signifie que le serveur répond mais demande une authentification pour aller plus loin).</p>
+</div>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 1.3 — Vérifier les droits sudo</div>
+<pre data-label="shell"><span class="prm">$</span> sudo -v
+<span class="prm">$</span> id</pre>
+<p>La commande <code>sudo -v</code> valide vos droits (demande le mot de passe si nécessaire). <code>id</code> affiche les groupes de votre utilisateur.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 1.4 — Vérifier les ressources disponibles</div>
+<pre data-label="shell"><span class="prm">$</span> free -h
+<span class="prm">$</span> df -h /
+<span class="prm">$</span> nproc</pre>
+<div class="callout expected">
+<div class="callout-title">Résultat attendu</div>
+<p>Au moins 2 Go de RAM libre, 10 Go d'espace disque libre, 2 CPU visibles. En-dessous, le TP reste faisable mais certains builds seront lents.</p>
+</div>
+</div>
+
+<div class="callout warning">
+<div class="callout-title">Point de vigilance</div>
+<p>Si vous n'avez pas d'accès internet (proxy d'entreprise restrictif), configurez le proxy avant toute installation. Docker a besoin de joindre <code>registry-1.docker.io</code> et <code>auth.docker.io</code> au minimum.</p>
+</div>
+</div>
+
+<!-- ========== TP 2 ========== -->
+<div class="tp-block" id="tp2">
+<div class="tp-header">
+<h3>TP 2 — Installation de Docker</h3>
+<span class="tp-duration">⏱️ 15 min</span>
+</div>
+
+<div class="callout objective">
+<div class="callout-title">Objectif</div>
+<p>Installer Docker Engine en utilisant les dépôts officiels, configurer l'accès sans <code>sudo</code> pour votre utilisateur, vérifier que le service démarre correctement.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 2.1 — Mettre à jour le système et installer les prérequis</div>
+<pre data-label="shell"><span class="prm">$</span> sudo apt update
+<span class="prm">$</span> sudo apt install -y ca-certificates curl gnupg lsb-release</pre>
+<p>Ces paquets permettront de récupérer la clé GPG officielle de Docker et d'ajouter son dépôt APT en HTTPS de manière sécurisée.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 2.2 — Ajouter la clé GPG officielle Docker</div>
+<pre data-label="shell"><span class="prm">$</span> sudo install -m 0755 -d /etc/apt/keyrings
+<span class="prm">$</span> curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+      sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+<span class="prm">$</span> sudo chmod a+r /etc/apt/keyrings/docker.gpg</pre>
+<p>On télécharge la clé publique de Docker, on la convertit au format binaire attendu par APT, et on la place dans un répertoire dédié. Cette clé servira à vérifier l'authenticité des paquets Docker téléchargés.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 2.3 — Ajouter le dépôt Docker stable</div>
+<pre data-label="shell"><span class="prm">$</span> echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+<span class="prm">$</span> sudo apt update</pre>
+<p>Le dépôt Docker est maintenant reconnu par APT. La commande <code>lsb_release -cs</code> retourne le nom de code de votre distribution (<em>jammy</em> pour 22.04, <em>noble</em> pour 24.04), et Docker fournit un dépôt spécifique pour chacun.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 2.4 — Installer Docker Engine et le plugin Compose</div>
+<pre data-label="shell"><span class="prm">$</span> sudo apt install -y docker-ce docker-ce-cli containerd.io \
+      docker-buildx-plugin docker-compose-plugin</pre>
+<p>Cinq paquets sont installés :</p>
+<ul>
+<li><code>docker-ce</code> : le démon Docker (Community Edition)</li>
+<li><code>docker-ce-cli</code> : le client en ligne de commande</li>
+<li><code>containerd.io</code> : le runtime de conteneur bas niveau utilisé par Docker</li>
+<li><code>docker-buildx-plugin</code> : builder multi-architecture</li>
+<li><code>docker-compose-plugin</code> : la commande <code>docker compose</code> (v2)</li>
+</ul>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 2.5 — Vérifier que le service est actif</div>
+<pre data-label="shell"><span class="prm">$</span> sudo systemctl status docker
+<span class="prm">$</span> sudo systemctl enable docker</pre>
+<p>La première commande affiche l'état du service (doit être <strong>active (running)</strong>). La seconde active le démarrage automatique au boot.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 2.6 — Utiliser Docker sans sudo (optionnel mais recommandé)</div>
+<pre data-label="shell"><span class="prm">$</span> sudo usermod -aG docker $USER
+<span class="prm">$</span> newgrp docker
+<span class="prm">$</span> docker version</pre>
+<p>On ajoute l'utilisateur courant au groupe <code>docker</code>. La commande <code>newgrp</code> applique immédiatement ce changement de groupe dans la session courante. Ensuite, <code>docker version</code> devrait fonctionner sans <code>sudo</code>.</p>
+
+<div class="callout warning">
+<div class="callout-title">Sécurité : conséquence d'ajouter un utilisateur au groupe docker</div>
+<p>Le groupe <code>docker</code> confère à ses membres des droits équivalents à root : on peut monter <code>/</code> dans un conteneur et écrire n'importe où. Sur un poste personnel ou une VM de TP, c'est acceptable. En production ou sur un serveur partagé, réfléchissez-y à deux fois et utilisez plutôt <code>sudo docker</code>.</p>
+</div>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 2.7 — Vérification finale</div>
+<pre data-label="shell"><span class="prm">$</span> docker --version
+<span class="prm">$</span> docker info | head -20</pre>
+<div class="callout expected">
+<div class="callout-title">Résultat attendu</div>
+<p>Une version Docker affichée (ex. <code>Docker version 27.x.x</code>) et une sortie de <code>docker info</code> qui mentionne <em>Server Version</em> avec un numéro, <em>Storage Driver: overlay2</em>, et l'OS hôte. Aucune erreur de connexion au démon.</p>
+</div>
+</div>
+
+<div class="callout error">
+<div class="callout-title">Erreur fréquente : « Cannot connect to the Docker daemon »</div>
+<p>Si cette erreur apparaît, deux causes principales. Soit le service n'est pas démarré (<code>sudo systemctl start docker</code>), soit votre utilisateur n'est pas dans le groupe <code>docker</code> et n'a pas relancé sa session. La commande <code>newgrp docker</code> résout le second cas dans le shell courant ; pour un effet permanent, déconnectez-vous puis reconnectez-vous.</p>
+</div>
+</div>
+
+<!-- ========== TP 3 ========== -->
+<div class="tp-block" id="tp3">
+<div class="tp-header">
+<h3>TP 3 — Premier conteneur : hello-world</h3>
+<span class="tp-duration">⏱️ 10 min</span>
+</div>
+
+<div class="callout objective">
+<div class="callout-title">Objectif</div>
+<p>Exécuter son tout premier conteneur et comprendre ce qui se passe en arrière-plan : téléchargement de l'image, création du conteneur, exécution, message, terminaison.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 3.1 — Lancer hello-world</div>
+<pre data-label="shell"><span class="prm">$</span> docker run hello-world</pre>
+<p>Observez attentivement la sortie. Elle explique exactement les étapes que Docker vient de réaliser :</p>
+<pre data-label="sortie typique"><span class="val">Unable to find image 'hello-world:latest' locally</span>
+latest: Pulling from library/hello-world
+<span class="cmt">...</span>
+Status: Downloaded newer image for hello-world:latest
+
+<span class="val">Hello from Docker!</span>
+This message shows that your installation appears to be working correctly.
+
+To generate this message, Docker took the following steps:
+ 1. The Docker client contacted the Docker daemon.
+ 2. The daemon pulled the "hello-world" image from the Docker Hub.
+ 3. The daemon created a new container from that image which runs the
+    executable that produces the output you are currently reading.
+ 4. The daemon streamed that output to the Docker client, which sent it
+    to your terminal.</pre>
+
+<div class="callout note">
+<div class="callout-title">Que s'est-il passé exactement ?</div>
+<p>Cette sortie est pédagogique à dessein. Elle décrit précisément les quatre étapes :</p>
+<ol>
+<li><strong>Le client</strong> (votre <code>docker run</code>) a contacté le démon dockerd.</li>
+<li><strong>Le démon</strong> n'avait pas l'image localement, il l'a téléchargée depuis Docker Hub.</li>
+<li>Il a <strong>créé un conteneur</strong> à partir de cette image.</li>
+<li>Il a <strong>exécuté le programme</strong> embarqué dans l'image, dont la sortie est redirigée vers votre terminal.</li>
+</ol>
+<p>Vous venez d'utiliser, sans le savoir, toute la chaîne décrite dans la figure 3 de la partie théorique.</p>
+</div>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 3.2 — Vérifier l'image téléchargée</div>
+<pre data-label="shell"><span class="prm">$</span> docker images</pre>
+<p>L'image <code>hello-world</code> apparaît. Notez sa taille : quelques kilooctets seulement. C'est l'image Docker la plus petite de l'écosystème, pensée précisément pour être un test.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 3.3 — Inspecter le conteneur</div>
+<pre data-label="shell"><span class="prm">$</span> docker ps
+<span class="prm">$</span> docker ps -a</pre>
+<p>La première commande ne renvoie rien : le conteneur hello-world a terminé son exécution et n'est plus actif. La seconde le montre avec un statut <code>Exited (0)</code> : arrêté normalement avec un code de retour 0 (succès).</p>
+
+<div class="callout info">
+<div class="callout-title">Conteneur = cycle de vie court par nature</div>
+<p>Un conteneur ne tourne que tant que son processus principal tourne. Pour <code>hello-world</code>, ce processus affiche un message puis se termine. Le conteneur s'arrête donc immédiatement. Pour un serveur web, le processus reste actif en permanence, et le conteneur reste dans l'état Running. C'est la clé du comportement Docker.</p>
+</div>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 3.4 — Nettoyage</div>
+<pre data-label="shell"><span class="prm">$</span> docker ps -a
+<span class="cmt"># noter le CONTAINER ID ou le NAME du conteneur hello-world</span>
+<span class="prm">$</span> docker rm <span class="val">&lt;container_id&gt;</span></pre>
+<p>Le conteneur est supprimé. L'image, elle, reste (nous la laisserons pour l'instant).</p>
+</div>
+</div>
+
+<!-- ========== TP 4 ========== -->
+<div class="tp-block" id="tp4">
+<div class="tp-header">
+<h3>TP 4 — Manipulation d'images et de conteneurs</h3>
+<span class="tp-duration">⏱️ 15 min</span>
+</div>
+
+<div class="callout objective">
+<div class="callout-title">Objectif</div>
+<p>Prendre en main les commandes quotidiennes : télécharger une image explicitement, lancer un conteneur en mode interactif, entrer dedans, lire ses logs, l'arrêter proprement, le supprimer.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 4.1 — Télécharger explicitement une image</div>
+<pre data-label="shell"><span class="prm">$</span> docker pull alpine:3.20</pre>
+<p>Alpine Linux est une distribution minimaliste (5 Mo environ). On spécifie le tag <code>3.20</code> pour une version précise, ce qui est une bonne pratique.</p>
+<pre data-label="shell"><span class="prm">$</span> docker images</pre>
+<p>L'image <code>alpine</code> apparaît avec sa taille. Retenez : toujours fixer un tag précis plutôt que de laisser <code>latest</code> par défaut.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 4.2 — Lancer un conteneur interactif</div>
+<pre data-label="shell"><span class="prm">$</span> docker run -it --name alpine-test alpine:3.20 sh</pre>
+<p>Décortiquons cette commande :</p>
+<ul>
+<li><code>-i</code> : mode interactif (garde stdin ouvert)</li>
+<li><code>-t</code> : alloue un pseudo-terminal</li>
+<li><code>--name alpine-test</code> : donne un nom au conteneur (plus lisible que l'ID aléatoire)</li>
+<li><code>alpine:3.20</code> : l'image à utiliser</li>
+<li><code>sh</code> : la commande à exécuter dans le conteneur (un shell)</li>
+</ul>
+<p>Vous arrivez dans un shell <em>à l'intérieur</em> du conteneur. Le prompt change, par exemple <code>/ #</code>.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 4.3 — Explorer l'intérieur du conteneur</div>
+<pre data-label="dans le conteneur"><span class="prm">/ #</span> cat /etc/os-release
+<span class="prm">/ #</span> ls /
+<span class="prm">/ #</span> ps aux
+<span class="prm">/ #</span> hostname</pre>
+<div class="callout note">
+<div class="callout-title">Observation importante</div>
+<p><code>ps aux</code> ne montre que deux processus : le shell lui-même et la commande <code>ps</code>. C'est la démonstration concrète des <strong>namespaces PID</strong> : le conteneur ne voit <em>pas</em> les processus de l'hôte. Il se croit seul. L'isolation est réelle.</p>
+<p>Le hostname est un identifiant court (souvent les 12 premiers caractères de l'ID du conteneur). Là encore, namespace UTS : le conteneur a son propre nom.</p>
+</div>
+<p>Sortez du conteneur :</p>
+<pre data-label="dans le conteneur"><span class="prm">/ #</span> exit</pre>
+<p>Le shell se termine, donc le processus principal se termine, donc le conteneur s'arrête. Vérifiez :</p>
+<pre data-label="shell"><span class="prm">$</span> docker ps -a | grep alpine-test</pre>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 4.4 — Lancer un conteneur en arrière-plan</div>
+<pre data-label="shell"><span class="prm">$</span> docker run -d --name ping-box alpine:3.20 sh -c "while true; do echo 'je suis vivant'; sleep 2; done"</pre>
+<p>Explications :</p>
+<ul>
+<li><code>-d</code> : mode <em>détaché</em>, le conteneur tourne en arrière-plan</li>
+<li>la commande <code>sh -c "..."</code> exécute une boucle infinie qui écrit un message toutes les 2 secondes</li>
+</ul>
+<p>Le conteneur tourne maintenant en arrière-plan. Vérifiez :</p>
+<pre data-label="shell"><span class="prm">$</span> docker ps</pre>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 4.5 — Lire les logs</div>
+<pre data-label="shell"><span class="prm">$</span> docker logs ping-box
+<span class="prm">$</span> docker logs --tail 5 ping-box
+<span class="prm">$</span> docker logs -f ping-box     <span class="cmt"># Ctrl+C pour arrêter le suivi</span></pre>
+<p>Les logs d'un conteneur sont simplement ce que son processus principal écrit sur <code>stdout</code> et <code>stderr</code>. Pas de fichier spécial, pas de magie. C'est pour cela qu'il est recommandé que les applications conteneurisées écrivent leurs logs sur la sortie standard plutôt que dans des fichiers.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 4.6 — Exécuter une commande dans un conteneur actif</div>
+<pre data-label="shell"><span class="prm">$</span> docker exec -it ping-box sh</pre>
+<p>Vous entrez dans le conteneur <em>pendant</em> qu'il tourne. C'est l'outil de débogage par excellence.</p>
+<pre data-label="dans le conteneur"><span class="prm">/ #</span> ps aux
+<span class="prm">/ #</span> exit</pre>
+<p>Observez que vous voyez maintenant la boucle <code>while true</code> et votre propre shell. En sortant (<code>exit</code>), vous fermez votre session <code>exec</code> — mais le conteneur continue de tourner, car son processus principal (la boucle) est toujours actif.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 4.7 — Arrêter et supprimer</div>
+<pre data-label="shell"><span class="prm">$</span> docker stop ping-box
+<span class="prm">$</span> docker ps -a
+<span class="prm">$</span> docker rm ping-box
+<span class="prm">$</span> docker rm alpine-test</pre>
+<p><code>stop</code> envoie SIGTERM puis SIGKILL après 10 s. <code>rm</code> supprime le conteneur. L'image alpine reste en place pour la suite du TP.</p>
+</div>
+
+<div class="callout error">
+<div class="callout-title">Erreur fréquente — Oublier le <code>-it</code></div>
+<p>Beaucoup d'étudiants tapent <code>docker run alpine sh</code> (sans <code>-it</code>) et sont surpris que le conteneur se termine instantanément. C'est normal : sans TTY, <code>sh</code> n'a pas d'entrée interactive, il lit EOF et se termine. Retenez : pour un shell interactif, <code>-it</code> est obligatoire. Pour un démon en arrière-plan, c'est <code>-d</code> et surtout <strong>pas</strong> <code>-it</code>.</p>
+</div>
+</div>
+
+<!-- ========== TP 5 ========== -->
+<div class="tp-block" id="tp5">
+<div class="tp-header">
+<h3>TP 5 — Exécution d'un serveur web simple</h3>
+<span class="tp-duration">⏱️ 10 min</span>
+</div>
+
+<div class="callout objective">
+<div class="callout-title">Objectif</div>
+<p>Lancer un serveur web (nginx) dans un conteneur, publier son port vers l'hôte, tester l'accès depuis l'extérieur. Comprendre en profondeur le mécanisme de port mapping.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 5.1 — Lancer nginx en arrière-plan</div>
+<pre data-label="shell"><span class="prm">$</span> docker run -d --name web -p 8080:80 nginx:1.27-alpine</pre>
+<p>Décortiquons l'option <code>-p 8080:80</code> : <strong>elle signifie « tout le trafic arrivant sur le port 8080 de la VM sera redirigé vers le port 80 du conteneur »</strong>. Le conteneur, lui, croit écouter sur 80. De l'extérieur, on attaque la VM sur 8080.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 5.2 — Tester depuis la VM elle-même</div>
+<pre data-label="shell"><span class="prm">$</span> curl http://localhost:8080
+<span class="prm">$</span> curl -I http://localhost:8080</pre>
+<p>La première commande affiche le HTML de la page d'accueil nginx. La seconde ne montre que les en-têtes HTTP, y compris <code>Server: nginx/1.27.x</code>.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 5.3 — Tester depuis un navigateur extérieur</div>
+<p>Récupérez l'adresse IP de votre VM :</p>
+<pre data-label="shell"><span class="prm">$</span> ip -4 addr show | grep inet</pre>
+<p>Depuis un navigateur sur votre poste, ouvrez <code>http://&lt;ip-de-la-vm&gt;:8080</code>. La page de bienvenue nginx doit s'afficher.</p>
+<div class="callout warning">
+<div class="callout-title">Si ça ne marche pas depuis l'extérieur</div>
+<p>Vérifiez d'abord que le pare-feu de la VM ne bloque pas le port 8080. Sur Ubuntu avec UFW : <code>sudo ufw status</code>. Vérifiez ensuite les règles du réseau ESXi (VLAN, port group). Enfin, assurez-vous que votre poste et la VM sont bien sur le même réseau logique.</p>
+</div>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 5.4 — Observer les logs d'accès</div>
+<p>Dans un terminal, laissez tourner :</p>
+<pre data-label="shell"><span class="prm">$</span> docker logs -f web</pre>
+<p>Puis depuis un autre terminal (ou votre navigateur), rechargez la page plusieurs fois. Chaque requête apparaît en temps réel dans les logs. C'est exactement ce que fait un observateur de logs en production — sur un cluster entier, ces flux seront centralisés par un outil comme Loki ou ELK.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 5.5 — Inspecter la configuration réseau du conteneur</div>
+<pre data-label="shell"><span class="prm">$</span> docker inspect web --format='{{json .NetworkSettings}}' | python3 -m json.tool</pre>
+<p>Vous voyez l'IP interne du conteneur (par exemple 172.17.0.2), sa MAC, la gateway, le mapping de port. Cela confirme qu'il y a bien un réseau virtuel entre l'hôte et le conteneur.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 5.6 — Nettoyage</div>
+<pre data-label="shell"><span class="prm">$</span> docker stop web
+<span class="prm">$</span> docker rm web</pre>
+</div>
+
+<div class="callout synthesis">
+<div class="callout-title">Synthèse intermédiaire des TP 1 à 5</div>
+<p>Vous savez désormais installer Docker, télécharger des images, lancer des conteneurs interactifs ou en arrière-plan, les inspecter via logs ou exec, gérer les ports publiés, et nettoyer derrière vous. C'est le socle opérationnel. Dans les TP suivants, nous allons créer <em>notre propre image</em> à partir de l'application fil rouge.</p>
+</div>
+</div>
+<!-- ========== TP 6 ========== -->
+<div class="tp-block" id="tp6">
+<div class="tp-header">
+<h3>TP 6 — Création de l'application fil rouge</h3>
+<span class="tp-duration">⏱️ 15 min</span>
+</div>
+
+<div class="callout objective">
+<div class="callout-title">Objectif</div>
+<p>Créer localement l'application Flask qui nous accompagnera dans tous les TP suivants. Comprendre sa structure avant de la conteneuriser.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 6.1 — Créer l'arborescence du projet</div>
+<pre data-label="shell"><span class="prm">$</span> mkdir -p ~/devops-monitor
+<span class="prm">$</span> cd ~/devops-monitor
+<span class="prm">$</span> mkdir logs</pre>
+<p>Le répertoire <code>logs/</code> servira plus tard pour la persistance via volume.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 6.2 — Créer le fichier <code>requirements.txt</code></div>
+<pre data-label="~/devops-monitor/requirements.txt">flask==3.0.3</pre>
+<p>Commande rapide :</p>
+<pre data-label="shell"><span class="prm">$</span> echo "flask==3.0.3" > requirements.txt</pre>
+<p>Remarquez que la version est fixée : c'est une bonne pratique pour garantir la reproductibilité.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 6.3 — Créer le fichier <code>app.py</code></div>
+<p>Créez le fichier avec votre éditeur préféré (<code>nano app.py</code>) et collez le contenu suivant :</p>
+<pre data-label="~/devops-monitor/app.py"><span class="kw">from</span> flask <span class="kw">import</span> Flask, jsonify
+<span class="kw">import</span> os, socket, datetime, threading
+
+app = Flask(__name__)
+lock = threading.Lock()
+
+MESSAGE = os.environ.get(<span class="str">"APP_MESSAGE"</span>, <span class="str">"Bonjour depuis DevOps Monitor !"</span>)
+LOG_DIR = <span class="str">"/app/logs"</span>
+LOG_FILE = os.path.join(LOG_DIR, <span class="str">"visits.log"</span>)
+
+visits = 0
+os.makedirs(LOG_DIR, exist_ok=<span class="val">True</span>)
+
+<span class="kw">def</span> record_visit(path):
+    <span class="kw">global</span> visits
+    <span class="kw">with</span> lock:
+        visits += <span class="val">1</span>
+        <span class="kw">with</span> open(LOG_FILE, <span class="str">"a"</span>) <span class="kw">as</span> f:
+            f.write(f<span class="str">"{datetime.datetime.utcnow().isoformat()} {path}\n"</span>)
+
+<span class="prm">@app.route(</span><span class="str">"/"</span><span class="prm">)</span>
+<span class="kw">def</span> home():
+    record_visit(<span class="str">"/"</span>)
+    <span class="kw">return</span> f<span class="str">"""
+    &lt;html&gt;&lt;body style='font-family:sans-serif;padding:40px'&gt;
+    &lt;h1&gt;{MESSAGE}&lt;/h1&gt;
+    &lt;p&gt;Conteneur : &lt;b&gt;{socket.gethostname()}&lt;/b&gt;&lt;/p&gt;
+    &lt;p&gt;Visites : &lt;b&gt;{visits}&lt;/b&gt;&lt;/p&gt;
+    &lt;p&gt;&lt;a href='/health'&gt;/health&lt;/a&gt; · &lt;a href='/stats'&gt;/stats&lt;/a&gt;&lt;/p&gt;
+    &lt;/body&gt;&lt;/html&gt;
+    """</span>
+
+<span class="prm">@app.route(</span><span class="str">"/health"</span><span class="prm">)</span>
+<span class="kw">def</span> health():
+    <span class="kw">return</span> jsonify({
+        <span class="str">"status"</span>: <span class="str">"ok"</span>,
+        <span class="str">"hostname"</span>: socket.gethostname(),
+        <span class="str">"utc"</span>: datetime.datetime.utcnow().isoformat() + <span class="str">"Z"</span>
+    })
+
+<span class="prm">@app.route(</span><span class="str">"/stats"</span><span class="prm">)</span>
+<span class="kw">def</span> stats():
+    log_lines = <span class="val">0</span>
+    <span class="kw">if</span> os.path.exists(LOG_FILE):
+        <span class="kw">with</span> open(LOG_FILE) <span class="kw">as</span> f:
+            log_lines = sum(<span class="val">1</span> <span class="kw">for</span> _ <span class="kw">in</span> f)
+    <span class="kw">return</span> jsonify({<span class="str">"visits"</span>: visits, <span class="str">"log_lines"</span>: log_lines})
+
+<span class="kw">if</span> __name__ == <span class="str">"__main__"</span>:
+    app.run(host=<span class="str">"0.0.0.0"</span>, port=<span class="val">5000</span>)
+</pre>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 6.4 — Comprendre chaque bloc</div>
+<p>Lisons l'application bloc par bloc :</p>
+<ul>
+<li><strong>Imports et setup.</strong> Flask pour le web, <code>os</code> pour les variables d'environnement, <code>socket</code> pour le hostname du conteneur, <code>datetime</code> pour l'horodatage.</li>
+<li><strong>Variable <code>MESSAGE</code>.</strong> Récupérée depuis la variable d'environnement <code>APP_MESSAGE</code>. Si celle-ci n'est pas définie, une valeur par défaut est utilisée. <em>Ce point est crucial</em> — il illustre comment une image Docker peut être configurée différemment selon son contexte d'exécution, sans modifier l'image elle-même.</li>
+<li><strong>Variable <code>LOG_DIR</code>.</strong> Pointée vers <code>/app/logs</code>. C'est le répertoire <em>à l'intérieur du conteneur</em>. Nous y écrirons un fichier à chaque visite. Plus tard, on montera un volume dessus pour garantir la persistance.</li>
+<li><strong>Routes.</strong> <code>/</code> affiche une page HTML, <code>/health</code> renvoie un JSON de statut (typique des health checks Kubernetes), <code>/stats</code> expose des métriques.</li>
+<li><strong>host="0.0.0.0".</strong> Obligatoire en conteneur : sans cela, Flask n'écouterait que sur 127.0.0.1 <em>à l'intérieur</em> du conteneur, inaccessible depuis l'extérieur.</li>
+</ul>
+
+<div class="callout warning">
+<div class="callout-title">Le piège classique : <code>host="127.0.0.1"</code></div>
+<p>Un des débuggages les plus frustrants pour un débutant : « mon appli marche sur mon poste, pas dans le conteneur ». La cause est presque toujours la même : l'application écoute sur <code>127.0.0.1</code>, c'est-à-dire la boucle locale <em>du conteneur</em>. Depuis l'hôte, on ne peut pas l'atteindre. Il faut obligatoirement <code>host="0.0.0.0"</code> dans Flask, ou l'équivalent dans d'autres frameworks.</p>
+</div>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 6.5 — Vérifier la structure</div>
+<pre data-label="shell"><span class="prm">$</span> ls -la ~/devops-monitor/</pre>
+<div class="callout expected">
+<div class="callout-title">Résultat attendu</div>
+<p>Vous devez voir au minimum : <code>app.py</code>, <code>requirements.txt</code>, le répertoire <code>logs/</code>. Dans la suite, nous ajouterons le Dockerfile.</p>
+</div>
+</div>
+</div>
+
+<!-- ========== TP 7 ========== -->
+<div class="tp-block" id="tp7">
+<div class="tp-header">
+<h3>TP 7 — Écriture du Dockerfile</h3>
+<span class="tp-duration">⏱️ 15 min</span>
+</div>
+
+<div class="callout objective">
+<div class="callout-title">Objectif</div>
+<p>Écrire un Dockerfile propre, comprendre chaque instruction, appliquer les bonnes pratiques de base (ordre des instructions, image slim, utilisateur non-root).</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 7.1 — Créer le Dockerfile</div>
+<p>Depuis <code>~/devops-monitor</code>, créez le fichier <code>Dockerfile</code> (sans extension) :</p>
+<pre data-label="~/devops-monitor/Dockerfile"><span class="cmt"># ---------- Image de base ----------</span>
+<span class="kw">FROM</span> python:3.11-slim
+
+<span class="cmt"># ---------- Métadonnées ----------</span>
+<span class="kw">LABEL</span> maintainer=<span class="str">"cours-cloud@ensa.ma"</span>
+<span class="kw">LABEL</span> description=<span class="str">"Application fil rouge - séance 1 Docker"</span>
+
+<span class="cmt"># ---------- Répertoire de travail ----------</span>
+<span class="kw">WORKDIR</span> /app
+
+<span class="cmt"># ---------- Dépendances (étape stable en premier) ----------</span>
+<span class="kw">COPY</span> requirements.txt .
+<span class="kw">RUN</span> pip install --no-cache-dir -r requirements.txt
+
+<span class="cmt"># ---------- Code applicatif ----------</span>
+<span class="kw">COPY</span> app.py .
+
+<span class="cmt"># ---------- Répertoire de logs (persistable) ----------</span>
+<span class="kw">RUN</span> mkdir -p /app/logs
+
+<span class="cmt"># ---------- Utilisateur non-root ----------</span>
+<span class="kw">RUN</span> useradd --create-home --shell /bin/bash appuser \
+    && chown -R appuser:appuser /app
+<span class="kw">USER</span> appuser
+
+<span class="cmt"># ---------- Port exposé et commande ----------</span>
+<span class="kw">EXPOSE</span> 5000
+<span class="kw">CMD</span> [<span class="str">"python"</span>, <span class="str">"app.py"</span>]
+</pre>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 7.2 — Explication ligne par ligne</div>
+
+<table>
+<thead>
+<tr><th style="width:30%">Instruction</th><th>Explication pédagogique</th></tr>
+</thead>
+<tbody>
+<tr><td><code>FROM python:3.11-slim</code></td><td>Hérite d'une image officielle Python minimaliste (~130 Mo). La variante <code>slim</code> ne contient que l'essentiel, sans les outils de développement. Pour un conteneur encore plus léger, on pourrait utiliser <code>python:3.11-alpine</code>.</td></tr>
+<tr><td><code>LABEL ...</code></td><td>Ajoute des métadonnées à l'image. Utile pour la traçabilité, notamment en environnement d'entreprise. Purement informatif, sans effet sur l'exécution.</td></tr>
+<tr><td><code>WORKDIR /app</code></td><td>Définit le répertoire de travail. Toutes les instructions suivantes (COPY, RUN) s'exécutent dans ce répertoire. Crée le répertoire s'il n'existe pas.</td></tr>
+<tr><td><code>COPY requirements.txt .</code></td><td>Copie uniquement le fichier de dépendances (pas encore le code). <strong>Cette séparation est volontaire</strong> : elle permet au cache Docker de réutiliser l'installation des dépendances tant que <code>requirements.txt</code> ne change pas, même si le code change.</td></tr>
+<tr><td><code>RUN pip install --no-cache-dir ...</code></td><td>Installe les dépendances. L'option <code>--no-cache-dir</code> évite que pip conserve ses caches dans l'image finale, économisant quelques Mo.</td></tr>
+<tr><td><code>COPY app.py .</code></td><td>Copie le code après les dépendances. Si on change le code mais pas les dépendances, seule cette dernière couche sera reconstruite : gain de temps énorme en CI/CD.</td></tr>
+<tr><td><code>RUN mkdir -p /app/logs</code></td><td>Crée le répertoire de logs qui pourra être monté en volume plus tard.</td></tr>
+<tr><td><code>RUN useradd ...</code> + <code>USER appuser</code></td><td>Crée un utilisateur non-root et bascule l'exécution sous ce compte. Par défaut, un conteneur tourne en root, ce qui est un risque de sécurité. Bonne pratique en production.</td></tr>
+<tr><td><code>EXPOSE 5000</code></td><td>Documente le fait que le conteneur écoute sur le port 5000. <em>N'ouvre pas réellement le port</em> — c'est <code>-p</code> à l'exécution qui fait cela. C'est une indication, lue par les orchestrateurs et les outils.</td></tr>
+<tr><td><code>CMD ["python", "app.py"]</code></td><td>Commande exécutée au démarrage du conteneur. La forme JSON (tableau) est préférée à la forme shell : elle ne passe pas par un shell intermédiaire, donc les signaux (SIGTERM) atteignent bien le processus Python.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 7.3 — Pourquoi cet ordre précis ?</div>
+<p>L'ordre des instructions dans un Dockerfile n'est pas cosmétique : il détermine l'efficacité du cache de build. Retenez le principe suivant :</p>
+<ul class="pedagogy-list">
+<li>Les instructions qui changent <strong>rarement</strong> (image de base, installation système) en <strong>haut</strong>.</li>
+<li>Les instructions intermédiaires (dépendances applicatives) au <strong>milieu</strong>.</li>
+<li>Les instructions qui changent <strong>souvent</strong> (copie du code source) en <strong>bas</strong>.</li>
+</ul>
+<p>Ainsi, quand un développeur change une ligne de code, Docker ne refait que la dernière couche. Construction en quelques secondes au lieu de quelques minutes.</p>
+
+<div class="callout tip">
+<div class="callout-title">Bonnes pratiques du Dockerfile</div>
+<p>Retenez ces six règles d'or : (1) fixer des versions précises, pas <code>latest</code> ; (2) utiliser une image de base <em>slim</em> ou <em>alpine</em> ; (3) placer les dépendances avant le code ; (4) tourner en utilisateur non-root ; (5) une seule responsabilité par conteneur ; (6) documenter avec <code>EXPOSE</code> et <code>LABEL</code>.</p>
+</div>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 7.4 — Créer un fichier <code>.dockerignore</code></div>
+<p>Pour éviter d'envoyer des fichiers inutiles au démon lors du build, créez un <code>.dockerignore</code> :</p>
+<pre data-label="~/devops-monitor/.dockerignore">logs/
+__pycache__/
+*.pyc
+.git/
+.vscode/
+.DS_Store</pre>
+<p>Ces fichiers ne seront pas copiés dans l'image, même s'ils sont présents dans le répertoire du projet. L'image sera plus propre et plus légère.</p>
+</div>
+</div>
+
+<!-- ========== TP 8 ========== -->
+<div class="tp-block" id="tp8">
+<div class="tp-header">
+<h3>TP 8 — Build de l'image</h3>
+<span class="tp-duration">⏱️ 10 min</span>
+</div>
+
+<div class="callout objective">
+<div class="callout-title">Objectif</div>
+<p>Construire l'image à partir du Dockerfile, observer le principe des couches, comprendre ce qui se passe à chaque étape.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 8.1 — Lancer le build</div>
+<pre data-label="shell"><span class="prm">$</span> cd ~/devops-monitor
+<span class="prm">$</span> docker build -t devops-monitor:1.0 .</pre>
+<p>Décortiquons :</p>
+<ul>
+<li><code>-t devops-monitor:1.0</code> : tague l'image avec un nom et une version</li>
+<li><code>.</code> : le contexte de build, c'est-à-dire le répertoire envoyé au démon Docker. Tous les fichiers nécessaires (Dockerfile, <code>app.py</code>, <code>requirements.txt</code>) doivent s'y trouver.</li>
+</ul>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 8.2 — Observer les étapes de construction</div>
+<p>Chaque ligne du Dockerfile produit une <strong>étape</strong> et potentiellement une <strong>couche</strong> dans l'image finale. Vous devriez voir une sortie similaire à :</p>
+<pre data-label="sortie du build">[+] Building 28.3s (11/11) FINISHED
+ => [internal] load build definition from Dockerfile
+ => [internal] load .dockerignore
+ => [internal] load metadata for docker.io/library/python:3.11-slim
+ => [1/7] FROM docker.io/library/python:3.11-slim@sha256:...
+ => [internal] load build context
+ => [2/7] WORKDIR /app
+ => [3/7] COPY requirements.txt .
+ => [4/7] RUN pip install --no-cache-dir -r requirements.txt
+ => [5/7] COPY app.py .
+ => [6/7] RUN mkdir -p /app/logs
+ => [7/7] RUN useradd --create-home --shell /bin/bash appuser ...
+ => exporting to image
+ => => naming to docker.io/library/devops-monitor:1.0</pre>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 8.3 — Vérifier l'image créée</div>
+<pre data-label="shell"><span class="prm">$</span> docker images | grep devops-monitor
+<span class="prm">$</span> docker image inspect devops-monitor:1.0 | head -40</pre>
+<div class="callout expected">
+<div class="callout-title">Résultat attendu</div>
+<p>L'image apparaît avec le tag <code>1.0</code>, une taille d'environ 140 Mo (principalement Python + Flask). La commande <code>inspect</code> révèle les couches, l'utilisateur, le <code>Cmd</code> par défaut.</p>
+</div>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 8.4 — Tester le cache de build</div>
+<p>Refaites un build <strong>sans rien changer</strong> :</p>
+<pre data-label="shell"><span class="prm">$</span> docker build -t devops-monitor:1.0 .</pre>
+<p>Observez : chaque étape affiche <code>CACHED</code>. Le build prend moins d'une seconde. C'est la puissance du cache Docker.</p>
+<p>Maintenant, changez une ligne insignifiante dans <code>app.py</code> (par exemple modifiez le texte du <code>h1</code>) et relancez le build :</p>
+<pre data-label="shell"><span class="prm">$</span> docker build -t devops-monitor:1.1 .</pre>
+<p>Cette fois, les étapes jusqu'au <code>RUN pip install</code> sont <code>CACHED</code>, mais la copie du code et les étapes suivantes sont refaites. C'est exactement ce qu'on attendait : <strong>seules les étapes affectées par le changement sont reconstruites</strong>.</p>
+
+<div class="callout note">
+<div class="callout-title">Le cache : pourquoi l'ordre importe</div>
+<p>Imaginez qu'on ait mis <code>COPY . .</code> avant <code>pip install</code>. Chaque modification de code invaliderait le cache de pip, et on réinstallerait les dépendances à chaque build. Avec des projets lourds (Node.js, Java), ce serait catastrophique. D'où l'importance de l'ordre.</p>
+</div>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 8.5 — Explorer les couches d'une image</div>
+<pre data-label="shell"><span class="prm">$</span> docker history devops-monitor:1.0</pre>
+<p>La commande affiche toutes les couches de l'image, du plus ancien au plus récent, avec leur taille. Vous voyez concrètement ce que chaque instruction du Dockerfile a coûté en espace disque.</p>
+</div>
+</div>
+
+<!-- ========== TP 9 ========== -->
+<div class="tp-block" id="tp9">
+<div class="tp-header">
+<h3>TP 9 — Exécuter l'application conteneurisée</h3>
+<span class="tp-duration">⏱️ 10 min</span>
+</div>
+
+<div class="callout objective">
+<div class="callout-title">Objectif</div>
+<p>Lancer l'application fil rouge dans un conteneur, tester chaque route, y compris le <code>/health</code> qui sera crucial pour Kubernetes.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 9.1 — Démarrer le conteneur</div>
+<pre data-label="shell"><span class="prm">$</span> docker run -d --name monitor -p 8080:5000 devops-monitor:1.0</pre>
+<p>Rappel des options : <code>-d</code> en arrière-plan, <code>--name</code> pour un nom lisible, <code>-p 8080:5000</code> car Flask écoute sur 5000 à l'intérieur, exposé sur 8080 côté hôte.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 9.2 — Vérifier que le conteneur tourne</div>
+<pre data-label="shell"><span class="prm">$</span> docker ps
+<span class="prm">$</span> docker logs monitor</pre>
+<p>Les logs doivent montrer le message de démarrage de Flask, typiquement :</p>
+<pre> * Serving Flask app 'app'
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.17.0.2:5000</pre>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 9.3 — Tester la page d'accueil</div>
+<pre data-label="shell"><span class="prm">$</span> curl http://localhost:8080/</pre>
+<p>Vous obtenez la page HTML de l'application. Le message affiché est celui par défaut (<em>Bonjour depuis DevOps Monitor !</em>) car aucune variable d'environnement n'a été fournie.</p>
+<p>Ouvrez l'URL dans un navigateur depuis votre poste (<code>http://&lt;ip-vm&gt;:8080/</code>). Rechargez quelques fois : le compteur de visites s'incrémente.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 9.4 — Tester la route <code>/health</code></div>
+<pre data-label="shell"><span class="prm">$</span> curl http://localhost:8080/health</pre>
+<div class="callout expected">
+<div class="callout-title">Résultat attendu</div>
+<pre data-label="réponse JSON">{
+  "hostname": "3f2a8e9b1c4d",
+  "status": "ok",
+  "utc": "2026-04-21T14:33:22.145678Z"
+}</pre>
+<p>Le champ <code>hostname</code> correspond à l'ID court du conteneur, confirmant l'isolation UTS que nous avons vue plus tôt.</p>
+</div>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 9.5 — Tester <code>/stats</code></div>
+<pre data-label="shell"><span class="prm">$</span> curl http://localhost:8080/stats</pre>
+<p>La réponse indique le nombre de visites en mémoire et le nombre de lignes dans le fichier de log interne du conteneur.</p>
+</div>
+
+<div class="tp-step">
+<div class="tp-step-title">Étape 9.6 — Vérifier que les logs sont bien écrits dans le conteneur</div>
+<pre data-label="shell"><span class="prm">$</span> docker exec monitor cat /app/logs/visits.log</pre>
+<p>Vous voyez chaque visite horodatée. Notez bien : ce fichier est <em>à l'intérieur</em> du conteneur. Si nous supprimons le conteneur maintenant, il sera perdu. C'est précisément ce que nous allons corriger au TP 11 avec un volume.</p>
+</div>
+
+<div class="callout synthesis">
+<div class="callout-title">Point d'étape</div>
+<p>Vous avez réussi à : écrire une application → écrire un Dockerfile → construire une image → exécuter un conteneur → tester les endpoints. Vous maîtrisez le cycle de base de Docker. Les TP suivants vont affiner : configuration via variables, persistance via volumes, communication réseau.</p>
+</div>
+</div>
+<!-- ============================================================ -->
+<!-- TP 10 : Variables d'environnement                            -->
+<!-- ============================================================ -->
+<section id="tp10" class="section">
+  <div class="tp-block">
+    <div class="tp-header">
+      <h2>TP 10 — Injecter des variables d'environnement</h2>
+      <span class="tp-duration">⏱ 10 min</span>
+    </div>
+
+    <p>
+      Dans un monde conteneurisé, on ne modifie pas le code pour changer le comportement
+      d'une application : on modifie des <strong>variables d'environnement</strong>.
+      C'est exactement le principe du <em>12-Factor App</em> qui sera à la base des
+      <code>ConfigMap</code> et <code>Secret</code> que vous rencontrerez en Kubernetes.
+      Dans cette étape, nous allons voir à quel point il est simple de reconfigurer
+      notre application fil rouge sans rebuilder l'image.
+    </p>
+
+    <div class="tp-step">
+      <div class="tp-step-title">Étape 1 — Arrêter et supprimer le conteneur précédent</div>
+      <p>
+        Nous avions laissé tourner le conteneur <code>monitor</code> à la fin du TP 9.
+        Comme nous voulons relancer la même image avec une configuration différente,
+        il faut d'abord libérer le nom.
+      </p>
+<pre data-label="bash"><span class="prm">$</span> docker stop monitor
+<span class="prm">$</span> docker rm monitor</pre>
+    </div>
+
+    <div class="tp-step">
+      <div class="tp-step-title">Étape 2 — Relancer avec une variable d'environnement personnalisée</div>
+      <p>
+        L'option <code>-e</code> (ou <code>--env</code>) permet d'injecter une variable
+        au moment du <code>docker run</code>. L'application Flask la lira via
+        <code>os.environ.get("APP_MESSAGE", ...)</code>, comme prévu dans le code
+        du TP 6.
+      </p>
+<pre data-label="bash"><span class="prm">$</span> docker run -d \
+    --name monitor \
+    -p 8080:5000 \
+    -e APP_MESSAGE=<span class="str">"Bienvenue à l'ENSA Fès - Promo Cloud 2026"</span> \
+    devops-monitor:1.0</pre>
+
+      <div class="callout expected">
+        <strong>Résultat attendu.</strong> Le conteneur démarre, et la commande
+        <code>curl http://localhost:8080/</code> renvoie désormais la nouvelle phrase.
+        Aucun rebuild, aucun changement de code : <em>même image, comportement différent</em>.
+      </div>
+    </div>
+
+    <div class="tp-step">
+      <div class="tp-step-title">Étape 3 — Vérifier la valeur injectée</div>
+<pre data-label="bash"><span class="prm">$</span> curl http://localhost:8080/
+<span class="prm">$</span> curl http://localhost:8080/health</pre>
+
+      <p>
+        Vous pouvez aussi vérifier directement les variables d'environnement que Docker
+        a injectées à l'intérieur du conteneur :
+      </p>
+<pre data-label="bash"><span class="prm">$</span> docker exec monitor env | grep APP_MESSAGE</pre>
+    </div>
+
+    <div class="tp-step">
+      <div class="tp-step-title">Étape 4 — Lancer une seconde instance avec une autre configuration</div>
+      <p>
+        C'est ici que l'intérêt devient concret : <strong>la même image</strong> peut
+        produire autant de conteneurs différents que nécessaire, chacun avec sa propre
+        configuration. Cela préfigure les <em>replicas</em> Kubernetes que vous verrez
+        bientôt.
+      </p>
+<pre data-label="bash"><span class="prm">$</span> docker run -d \
+    --name monitor-prod \
+    -p 8081:5000 \
+    -e APP_MESSAGE=<span class="str">"Instance PROD"</span> \
+    devops-monitor:1.0
+
+<span class="prm">$</span> docker run -d \
+    --name monitor-dev \
+    -p 8082:5000 \
+    -e APP_MESSAGE=<span class="str">"Instance DEV"</span> \
+    devops-monitor:1.0</pre>
+
+<pre data-label="bash"><span class="prm">$</span> curl http://localhost:8081/     <span class="cmt"># renvoie "Instance PROD"</span>
+<span class="prm">$</span> curl http://localhost:8082/     <span class="cmt"># renvoie "Instance DEV"</span></pre>
+    </div>
+
+    <div class="callout tip">
+      <strong>Bonne pratique.</strong> Ne <em>jamais</em> coder en dur une URL de base
+      de données, un mot de passe ou une clé d'API dans un <code>Dockerfile</code>.
+      On passe toujours ces valeurs via <code>-e</code>, un fichier <code>--env-file</code>,
+      ou — en Kubernetes — un <code>ConfigMap</code> / <code>Secret</code>.
+    </div>
+
+    <div class="callout error">
+      <strong>Erreur fréquente.</strong> Beaucoup d'étudiants essaient de changer la valeur
+      avec <code>docker exec monitor export APP_MESSAGE=...</code>. Cela ne fonctionne
+      pas : les variables d'environnement sont fixées <em>au démarrage du conteneur</em>.
+      Pour les changer, il faut arrêter puis relancer le conteneur.
+    </div>
+
+    <div class="callout synthesis">
+      <strong>À retenir.</strong> Une image est un <em>template immuable</em>. La
+      configuration vit <strong>à l'extérieur</strong> de l'image, injectée au runtime.
+      Ce découplage est la clé de la portabilité : la même image tourne en dev, recette
+      et production, simplement en changeant les variables.
+    </div>
+
+    <p>Avant de passer au TP 11, nettoyons les deux instances supplémentaires :</p>
+<pre data-label="bash"><span class="prm">$</span> docker stop monitor-prod monitor-dev
+<span class="prm">$</span> docker rm monitor-prod monitor-dev</pre>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- TP 11 : Volumes et persistance                               -->
+<!-- ============================================================ -->
+<section id="tp11" class="section">
+  <div class="tp-block">
+    <div class="tp-header">
+      <h2>TP 11 — Volumes et persistance des données</h2>
+      <span class="tp-duration">⏱ 15 min</span>
+    </div>
+
+    <p>
+      Souvenez-vous du constat de la fin du TP 9 : lorsque le conteneur est supprimé,
+      le fichier <code>/app/logs/visits.log</code> disparaît avec lui. C'est <em>normal</em> :
+      un conteneur est éphémère, son système de fichiers est construit sur des couches
+      en lecture seule plus une couche écrivable qui vit et meurt avec le conteneur.
+      Pour conserver les données, il faut les externaliser dans un <strong>volume</strong>.
+    </p>
+
+    <div class="callout note">
+      <strong>Mise en perspective.</strong> En Kubernetes, vous retrouverez exactement
+      ce concept sous le nom de <code>PersistentVolume</code> et <code>PersistentVolumeClaim</code>.
+      La logique que vous apprenez ici est directement transférable.
+    </div>
+
+    <div class="tp-step">
+      <div class="tp-step-title">Étape 1 — Démonstration du problème (sans volume)</div>
+      <p>
+        Commençons par reproduire clairement le problème, pour bien comprendre ce que
+        résout le volume.
+      </p>
+<pre data-label="bash"><span class="prm">$</span> docker stop monitor && docker rm monitor
+
+<span class="prm">$</span> docker run -d --name monitor -p 8080:5000 devops-monitor:1.0
+
+<span class="cmt"># On génère quelques visites</span>
+<span class="prm">$</span> curl http://localhost:8080/
+<span class="prm">$</span> curl http://localhost:8080/
+<span class="prm">$</span> curl http://localhost:8080/
+
+<span class="cmt"># On vérifie que le log existe dans le conteneur</span>
+<span class="prm">$</span> docker exec monitor cat /app/logs/visits.log
+
+<span class="cmt"># On détruit le conteneur</span>
+<span class="prm">$</span> docker stop monitor && docker rm monitor
+
+<span class="cmt"># On en recrée un nouveau à partir de la même image</span>
+<span class="prm">$</span> docker run -d --name monitor -p 8080:5000 devops-monitor:1.0
+
+<span class="cmt"># Et... le log est vide !</span>
+<span class="prm">$</span> docker exec monitor cat /app/logs/visits.log
+<span class="cmt"># → cat: /app/logs/visits.log: No such file or directory</span></pre>
+
+      <div class="callout warning">
+        <strong>Observation pédagogique.</strong> Les données écrites <em>à l'intérieur</em>
+        du conteneur sont perdues dès sa suppression. Ce comportement n'est pas un bug :
+        c'est une garantie de reproductibilité. Mais il faut un mécanisme pour conserver
+        ce qui <em>doit</em> survivre.
+      </div>
+    </div>
+
+    <div class="tp-step">
+      <div class="tp-step-title">Étape 2 — Créer un volume Docker nommé</div>
+      <p>
+        Un <strong>volume nommé</strong> est un espace de stockage géré par Docker,
+        stocké sur l'hôte dans <code>/var/lib/docker/volumes/</code>, et monté dans
+        le conteneur à l'endroit qu'on choisit.
+      </p>
+<pre data-label="bash"><span class="prm">$</span> docker stop monitor && docker rm monitor
+
+<span class="prm">$</span> docker volume create monitor-logs
+
+<span class="prm">$</span> docker volume ls
+<span class="cmt"># DRIVER    VOLUME NAME</span>
+<span class="cmt"># local     monitor-logs</span>
+
+<span class="prm">$</span> docker volume inspect monitor-logs</pre>
+
+      <p>
+        Le volume existe, mais il est vide et pas encore attaché à quoi que ce soit.
+      </p>
+    </div>
+
+    <div class="tp-step">
+      <div class="tp-step-title">Étape 3 — Relancer l'application en montant le volume</div>
+      <p>
+        L'option <code>-v &lt;nom_volume&gt;:&lt;chemin_dans_conteneur&gt;</code>
+        attache le volume au conteneur. Tout ce qui sera écrit dans
+        <code>/app/logs</code> sera en réalité écrit dans le volume <code>monitor-logs</code>.
+      </p>
+<pre data-label="bash"><span class="prm">$</span> docker run -d \
+    --name monitor \
+    -p 8080:5000 \
+    -v monitor-logs:/app/logs \
+    devops-monitor:1.0</pre>
+
+<pre data-label="bash"><span class="cmt"># On génère quelques visites</span>
+<span class="prm">$</span> curl http://localhost:8080/
+<span class="prm">$</span> curl http://localhost:8080/
+<span class="prm">$</span> curl http://localhost:8080/
+<span class="prm">$</span> curl http://localhost:8080/
+
+<span class="cmt"># On vérifie le log</span>
+<span class="prm">$</span> docker exec monitor cat /app/logs/visits.log</pre>
+    </div>
+
+    <div class="tp-step">
+      <div class="tp-step-title">Étape 4 — Test de persistance : détruire et recréer</div>
+      <p>
+        C'est le moment de vérité. On détruit le conteneur, on en recrée un nouveau
+        attaché au même volume, et on observe.
+      </p>
+<pre data-label="bash"><span class="prm">$</span> docker stop monitor && docker rm monitor
+
+<span class="prm">$</span> docker run -d \
+    --name monitor \
+    -p 8080:5000 \
+    -v monitor-logs:/app/logs \
+    devops-monitor:1.0
+
+<span class="cmt"># Les données sont toujours là !</span>
+<span class="prm">$</span> docker exec monitor cat /app/logs/visits.log</pre>
+
+      <div class="callout expected">
+        <strong>Résultat attendu.</strong> Les lignes de log générées <em>avant</em>
+        la destruction du premier conteneur sont toujours présentes dans le nouveau.
+        Le volume a survécu à la disparition du conteneur : il a fait exactement son
+        travail.
+      </div>
+    </div>
+
+    <div class="tp-step">
+      <div class="tp-step-title">Étape 5 — Inspecter le volume depuis l'hôte</div>
+      <p>
+        Pour démystifier le mécanisme, allons voir où Docker stocke réellement les
+        données sur la VM hôte.
+      </p>
+<pre data-label="bash"><span class="prm">$</span> sudo ls -la /var/lib/docker/volumes/monitor-logs/_data/
+<span class="prm">$</span> sudo cat /var/lib/docker/volumes/monitor-logs/_data/visits.log</pre>
+    </div>
+
+    <div class="tp-step">
+      <div class="tp-step-title">Étape 6 — Comparaison : volume nommé vs bind mount</div>
+      <p>
+        Il existe une seconde forme de montage, le <strong>bind mount</strong>, qui
+        monte un répertoire <em>arbitraire</em> de l'hôte dans le conteneur. Pratique
+        en développement, mais moins portable.
+      </p>
+<pre data-label="bash"><span class="prm">$</span> mkdir -p ~/monitor-data
+
+<span class="prm">$</span> docker run -d \
+    --name monitor-bind \
+    -p 8090:5000 \
+    -v ~/monitor-data:/app/logs \
+    devops-monitor:1.0
+
+<span class="prm">$</span> curl http://localhost:8090/
+<span class="prm">$</span> cat ~/monitor-data/visits.log</pre>
+
+      <table class="data-table">
+        <thead>
+          <tr><th>Critère</th><th>Volume nommé</th><th>Bind mount</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Géré par</td><td>Docker</td><td>L'administrateur de la VM</td></tr>
+          <tr><td>Emplacement</td><td><code>/var/lib/docker/volumes/</code></td><td>N'importe où sur l'hôte</td></tr>
+          <tr><td>Portabilité</td><td>Élevée</td><td>Faible (chemin absolu)</td></tr>
+          <tr><td>Usage typique</td><td>Production, BDD, logs</td><td>Développement local (code source)</td></tr>
+          <tr><td>Équivalent K8s</td><td><code>PersistentVolume</code></td><td><code>hostPath</code> (déconseillé)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout synthesis">
+      <strong>Mini-synthèse.</strong> Un conteneur est éphémère, un volume est persistant.
+      On choisit explicitement ce qu'on veut faire survivre aux destructions de
+      conteneurs. Cette séparation entre <em>exécution</em> et <em>données</em> est
+      l'une des idées les plus importantes de la conteneurisation.
+    </div>
+
+    <p>Avant de continuer, on nettoie le conteneur de démonstration bind :</p>
+<pre data-label="bash"><span class="prm">$</span> docker stop monitor-bind && docker rm monitor-bind</pre>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- TP 12 : Réseau et communication                              -->
+<!-- ============================================================ -->
+<section id="tp12" class="section">
+  <div class="tp-block">
+    <div class="tp-header">
+      <h2>TP 12 — Réseau Docker et communication entre conteneurs</h2>
+      <span class="tp-duration">⏱ 15 min</span>
+    </div>
+
+    <p>
+      Jusqu'ici, nous avons fait dialoguer <em>l'hôte avec un conteneur</em> via le
+      port mapping. Mais dans une application réelle, un backend doit parler à une
+      base de données, un frontend à une API, etc. Docker fournit un mécanisme
+      simple : les <strong>réseaux Docker</strong>.
+    </p>
+
+    <div class="diagram">
+      <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Réseau Docker bridge personnalisé">
+        <defs>
+          <linearGradient id="netbg" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#eef2ff"/>
+            <stop offset="100%" stop-color="#e0e7ff"/>
+          </linearGradient>
+          <marker id="arrH" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#4338ca"/>
+          </marker>
+        </defs>
+
+        <!-- Bridge network box -->
+        <rect x="40" y="40" width="640" height="200" rx="14" fill="url(#netbg)" stroke="#4338ca" stroke-width="2"/>
+        <text x="360" y="65" text-anchor="middle" font-size="14" font-weight="700" fill="#312e81">
+          Réseau bridge personnalisé : app-network
+        </text>
+
+        <!-- Container 1 -->
+        <rect x="90" y="100" width="180" height="100" rx="10" fill="#ffffff" stroke="#0f766e" stroke-width="2"/>
+        <text x="180" y="130" text-anchor="middle" font-size="13" font-weight="700" fill="#0f766e">Conteneur : web</text>
+        <text x="180" y="155" text-anchor="middle" font-size="11" fill="#334155">alpine + curl</text>
+        <text x="180" y="178" text-anchor="middle" font-size="11" fill="#334155">IP : 172.x.0.2</text>
+
+        <!-- Container 2 -->
+        <rect x="450" y="100" width="180" height="100" rx="10" fill="#ffffff" stroke="#0f766e" stroke-width="2"/>
+        <text x="540" y="130" text-anchor="middle" font-size="13" font-weight="700" fill="#0f766e">Conteneur : api</text>
+        <text x="540" y="155" text-anchor="middle" font-size="11" fill="#334155">devops-monitor</text>
+        <text x="540" y="178" text-anchor="middle" font-size="11" fill="#334155">IP : 172.x.0.3</text>
+
+        <!-- Arrow -->
+        <line x1="275" y1="150" x2="445" y2="150" stroke="#4338ca" stroke-width="2" marker-end="url(#arrH)"/>
+        <text x="360" y="140" text-anchor="middle" font-size="11" fill="#4338ca" font-weight="600">http://api:5000/</text>
+        <text x="360" y="168" text-anchor="middle" font-size="10" fill="#64748b" font-style="italic">résolution par nom (DNS interne)</text>
+      </svg>
+      <div class="diagram-caption">
+        Figure 5 — Deux conteneurs attachés à un réseau bridge personnalisé peuvent
+        se joindre par leur nom de conteneur, grâce au DNS interne fourni par Docker.
+      </div>
+    </div>
+
+    <div class="tp-step">
+      <div class="tp-step-title">Étape 1 — Lister les réseaux existants</div>
+<pre data-label="bash"><span class="prm">$</span> docker network ls</pre>
+      <p>
+        Vous voyez au moins trois réseaux par défaut :
+      </p>
+      <ul>
+        <li><code>bridge</code> : le réseau par défaut des conteneurs. Suffisant mais sans DNS par nom de conteneur.</li>
+        <li><code>host</code> : le conteneur partage directement la pile réseau de l'hôte.</li>
+        <li><code>none</code> : aucun réseau, isolation totale.</li>
+      </ul>
+    </div>
+
+    <div class="tp-step">
+      <div class="tp-step-title">Étape 2 — Créer un réseau bridge personnalisé</div>
+      <p>
+        Créer son propre réseau bridge présente un avantage majeur par rapport au
+        bridge par défaut : Docker y active automatiquement la <strong>résolution
+        DNS par nom de conteneur</strong>. Les conteneurs peuvent se joindre par
+        leur nom, exactement comme des services Kubernetes.
+      </p>
+<pre data-label="bash"><span class="prm">$</span> docker network create app-network
+
+<span class="prm">$</span> docker network inspect app-network</pre>
+    </div>
+
+    <div class="tp-step">
+      <div class="tp-step-title">Étape 3 — Lancer l'API sur ce réseau</div>
+<pre data-label="bash"><span class="prm">$</span> docker stop monitor 2>/dev/null ; docker rm monitor 2>/dev/null
+
+<span class="prm">$</span> docker run -d \
+    --name api \
+    --network app-network \
+    -v monitor-logs:/app/logs \
+    -e APP_MESSAGE=<span class="str">"API derrière réseau personnalisé"</span> \
+    devops-monitor:1.0</pre>
+
+      <div class="callout note">
+        <strong>Notez bien.</strong> Nous n'avons <em>pas</em> publié de port avec
+        <code>-p</code>. Dans ce scénario, l'API n'est pas accessible depuis l'hôte —
+        uniquement depuis les autres conteneurs du même réseau. C'est volontaire : cela
+        illustre le principe d'un service <em>interne</em>.
+      </div>
+    </div>
+
+    <div class="tp-step">
+      <div class="tp-step-title">Étape 4 — Lancer un conteneur client sur le même réseau</div>
+      <p>
+        On va créer un second conteneur, basé sur Alpine, qui va joindre l'API par
+        son nom.
+      </p>
+<pre data-label="bash"><span class="prm">$</span> docker run -it --rm \
+    --name web \
+    --network app-network \
+    alpine:3.20 sh</pre>
+
+      <p>À l'intérieur du conteneur <code>web</code>, on installe <code>curl</code> et on teste :</p>
+<pre data-label="sh"><span class="prm">/ #</span> apk add --no-cache curl
+<span class="prm">/ #</span> curl http://api:5000/
+<span class="prm">/ #</span> curl http://api:5000/health
+<span class="prm">/ #</span> curl http://api:5000/stats
+<span class="prm">/ #</span> exit</pre>
+
+      <div class="callout expected">
+        <strong>Résultat attendu.</strong> Les trois requêtes répondent correctement.
+        Remarquez que nous avons utilisé <code>api</code> comme nom d'hôte — pas
+        d'IP, pas de <code>localhost</code>. Docker a fait la résolution DNS pour nous.
+      </div>
+    </div>
+
+    <div class="tp-step">
+      <div class="tp-step-title">Étape 5 — Démonstration de l'isolation</div>
+      <p>
+        Prouvons que les réseaux Docker isolent réellement. On crée un second
+        conteneur, <em>sans</em> le joindre à <code>app-network</code> : il ne
+        pourra pas joindre <code>api</code>.
+      </p>
+<pre data-label="bash"><span class="prm">$</span> docker run -it --rm alpine:3.20 sh
+<span class="prm">/ #</span> apk add --no-cache curl
+<span class="prm">/ #</span> curl --max-time 3 http://api:5000/
+<span class="cmt"># → curl: (6) Could not resolve host: api</span>
+<span class="prm">/ #</span> exit</pre>
+
+      <div class="callout tip">
+        <strong>Pont vers Kubernetes.</strong> Ce que vous venez de faire — isoler des
+        conteneurs par réseau, leur donner des noms DNS stables, n'exposer qu'une partie
+        à l'extérieur — c'est <em>exactement</em> ce que fait Kubernetes avec ses
+        <code>Service</code>, ses <code>NetworkPolicy</code> et ses namespaces.
+      </div>
+    </div>
+
+    <div class="callout synthesis">
+      <strong>Mini-synthèse.</strong> Les réseaux Docker fournissent trois choses
+      essentielles : <em>l'isolation</em>, <em>la résolution DNS par nom</em>, et
+      <em>la possibilité de décider qui communique avec qui</em>. Ce sont les fondations
+      conceptuelles du réseau Kubernetes.
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- TP 13 : Nettoyage                                             -->
+<!-- ============================================================ -->
+<section id="tp13" class="section">
+  <div class="tp-block">
+    <div class="tp-header">
+      <h2>TP 13 — Nettoyage de l'environnement</h2>
+      <span class="tp-duration">⏱ 10 min</span>
+    </div>
+
+    <p>
+      Un bon administrateur laisse toujours son environnement propre. Docker a
+      tendance à accumuler rapidement des conteneurs arrêtés, des images intermédiaires
+      et des volumes orphelins qui consomment plusieurs Go sans qu'on s'en rende
+      compte. Voyons comment remettre de l'ordre proprement.
+    </p>
+
+    <div class="tp-step">
+      <div class="tp-step-title">Étape 1 — État des lieux</div>
+<pre data-label="bash"><span class="prm">$</span> docker ps -a
+<span class="prm">$</span> docker images
+<span class="prm">$</span> docker volume ls
+<span class="prm">$</span> docker network ls
+<span class="prm">$</span> docker system df</pre>
+
+      <p>
+        La commande <code>docker system df</code> est particulièrement utile : elle
+        vous indique combien d'espace est occupé par chaque type d'objet et combien
+        est <em>récupérable</em>.
+      </p>
+    </div>
+
+    <div class="tp-step">
+      <div class="tp-step-title">Étape 2 — Arrêter et supprimer tous les conteneurs du TP</div>
+<pre data-label="bash"><span class="prm">$</span> docker stop api 2>/dev/null
+<span class="prm">$</span> docker rm api 2>/dev/null
+
+<span class="cmt"># Alternative brutale : tout arrêter en une commande</span>
+<span class="prm">$</span> docker stop $(docker ps -q) 2>/dev/null
+<span class="prm">$</span> docker rm $(docker ps -aq) 2>/dev/null</pre>
+
+      <div class="callout warning">
+        <strong>Attention.</strong> La commande <code>docker rm $(docker ps -aq)</code>
+        supprime <em>tous</em> les conteneurs de la machine, y compris ceux qui ne
+        font pas partie du TP. Sur un poste partagé ou une VM de production, on
+        préfère toujours supprimer nommément.
+      </div>
+    </div>
+
+    <div class="tp-step">
+      <div class="tp-step-title">Étape 3 — Supprimer les images inutilisées</div>
+<pre data-label="bash"><span class="prm">$</span> docker image prune        <span class="cmt"># supprime les images <none> (dangling)</span>
+<span class="prm">$</span> docker image prune -a     <span class="cmt"># supprime toutes les images non utilisées</span></pre>
+
+      <p>Ou sélectivement, image par image :</p>
+<pre data-label="bash"><span class="prm">$</span> docker rmi devops-monitor:1.0
+<span class="prm">$</span> docker rmi alpine:3.20 nginx:1.27-alpine hello-world</pre>
+    </div>
+
+    <div class="tp-step">
+      <div class="tp-step-title">Étape 4 — Supprimer le réseau et le volume créés pour le TP</div>
+<pre data-label="bash"><span class="prm">$</span> docker network rm app-network
+<span class="prm">$</span> docker volume rm monitor-logs</pre>
+
+      <div class="callout error">
+        <strong>Erreur fréquente.</strong> Docker refusera de supprimer un volume
+        encore attaché à un conteneur (même arrêté). Il faut d'abord supprimer le
+        conteneur. Même principe pour un réseau : aucun conteneur ne doit y être
+        rattaché.
+      </div>
+    </div>
+
+    <div class="tp-step">
+      <div class="tp-step-title">Étape 5 — La commande "remise à zéro" complète</div>
+      <p>
+        Pour un nettoyage global en fin de séance :
+      </p>
+<pre data-label="bash"><span class="prm">$</span> docker system prune -a --volumes</pre>
+
+      <p>
+        Cette commande supprime : tous les conteneurs arrêtés, tous les réseaux non
+        utilisés, toutes les images non associées à un conteneur, et tous les
+        volumes anonymes. Docker demande une confirmation explicite — prenez
+        l'habitude de <em>toujours</em> lire ce qu'il s'apprête à faire avant de
+        taper <code>y</code>.
+      </p>
+    </div>
+
+    <div class="callout tip">
+      <strong>Bonne pratique professionnelle.</strong> Mettez en place un petit cron
+      hebdomadaire sur vos hôtes Docker de dev :
+      <code>docker system prune -f --filter "until=168h"</code>
+      (supprime ce qui n'a pas été utilisé depuis 7 jours). Sur un cluster Kubernetes,
+      ce travail est fait automatiquement par le <em>kubelet</em> — vous le verrez
+      en Séance 2.
+    </div>
+
+    <div class="callout synthesis">
+      <strong>Mini-synthèse.</strong> Savoir créer des conteneurs ne suffit pas : il
+      faut aussi savoir les <em>ranger</em>. Un cluster Kubernetes en production,
+      c'est des milliers de conteneurs lancés et détruits par jour. Sans une bonne
+      hygiène opérationnelle, l'infrastructure devient vite ingérable.
+    </div>
+  </div>
+</section>
+<!-- ============================================================ -->
+<!-- Section : Synthèse de fin de séance                          -->
+<!-- ============================================================ -->
+<section id="synthese" class="section">
+  <h1>6. Synthèse de fin de séance</h1>
+
+  <p>
+    Nous avons parcouru, en quatre heures, l'essentiel de ce qu'il faut maîtriser
+    pour aborder sereinement Kubernetes. Prenons un moment pour remettre les idées
+    dans l'ordre et cristalliser ce qui doit absolument être retenu.
+  </p>
+
+  <h2>6.1 Les grandes idées à retenir</h2>
+  <ul class="pedagogy-list">
+    <li>
+      <strong>Un conteneur n'est pas une VM.</strong> Il partage le noyau de l'hôte,
+      démarre en quelques secondes, consomme peu de ressources, et offre une
+      isolation par <em>namespaces</em> et <em>cgroups</em>. La VM reste utile, mais
+      pour déployer des applications, le conteneur est l'outil adapté.
+    </li>
+    <li>
+      <strong>Une image est immuable, un conteneur est éphémère.</strong> L'image
+      est un modèle qu'on produit une fois et qu'on exécute autant de fois qu'on
+      veut. Le conteneur peut être détruit sans état d'âme : c'est même le but.
+    </li>
+    <li>
+      <strong>La configuration vit à l'extérieur de l'image.</strong> Variables
+      d'environnement au runtime, pas de secrets dans le <code>Dockerfile</code>,
+      pas d'URL codées en dur. Cette règle prépare directement les
+      <code>ConfigMap</code> et <code>Secret</code> de Kubernetes.
+    </li>
+    <li>
+      <strong>Les données persistantes vivent dans des volumes.</strong> Le
+      système de fichiers d'un conteneur est jetable. Tout ce qui doit survivre
+      doit être explicitement monté dans un volume.
+    </li>
+    <li>
+      <strong>Les conteneurs communiquent via des réseaux nommés.</strong> Un
+      réseau bridge personnalisé fournit résolution DNS et isolation. Ces deux
+      concepts seront au cœur des <code>Service</code> Kubernetes.
+    </li>
+    <li>
+      <strong>Un <code>Dockerfile</code> est une recette reproductible.</strong>
+      Il encapsule tout ce qu'il faut pour que l'application tourne : version de
+      Python, dépendances, code, utilisateur non-root, port exposé, commande de
+      démarrage. Le principe de reproductibilité est garanti par les couches et
+      le cache.
+    </li>
+  </ul>
+
+  <h2>6.2 Ce que vous savez faire maintenant</h2>
+  <div class="compare-grid">
+    <div class="compare-card compare-docker">
+      <h3>✓ Compétences acquises</h3>
+      <ul>
+        <li>Installer et administrer Docker Engine sur Ubuntu Server</li>
+        <li>Manipuler images, conteneurs, volumes et réseaux</li>
+        <li>Écrire un <code>Dockerfile</code> correct pour une application Python</li>
+        <li>Construire une image avec <code>docker build</code> et comprendre les couches</li>
+        <li>Lancer une application conteneurisée avec la bonne configuration</li>
+        <li>Injecter des variables d'environnement</li>
+        <li>Assurer la persistance des données via un volume</li>
+        <li>Faire communiquer deux conteneurs via un réseau bridge personnalisé</li>
+        <li>Nettoyer proprement un environnement Docker</li>
+      </ul>
+    </div>
+    <div class="compare-card compare-vm">
+      <h3>✗ Erreurs conceptuelles à éviter</h3>
+      <ul>
+        <li>Croire qu'un conteneur est une « mini-VM »</li>
+        <li>Mettre des secrets ou des mots de passe dans le <code>Dockerfile</code></li>
+        <li>Utiliser le tag <code>:latest</code> en production</li>
+        <li>Compter sur le système de fichiers du conteneur pour conserver des données</li>
+        <li>Utiliser <code>docker exec</code> pour modifier durablement une application (elle sera perdue au prochain <code>docker run</code>)</li>
+        <li>Faire tourner le processus principal en <code>root</code> à l'intérieur du conteneur</li>
+        <li>Utiliser le réseau <code>bridge</code> par défaut alors qu'un bridge personnalisé offre la résolution DNS</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>6.3 Pourquoi Kubernetes est la suite logique</h2>
+  <p>
+    Revenons au constat que nous avions posé dans la section 2.5 : Docker règle le
+    problème de <em>l'empaquetage</em> d'une application, mais pas celui de
+    <em>l'exploitation à l'échelle</em>. Observez votre VM : vous y avez fait tourner
+    deux ou trois conteneurs, à la main. Imaginez maintenant devoir faire tourner :
+  </p>
+  <ul>
+    <li>50 microservices, chacun en 3 exemplaires pour la redondance ;</li>
+    <li>réparti sur 10 hôtes ESXi ;</li>
+    <li>avec redémarrage automatique en cas de crash ;</li>
+    <li>avec mise à jour progressive sans coupure ;</li>
+    <li>avec montée en charge automatique selon le trafic ;</li>
+    <li>avec supervision centralisée et logs agrégés.</li>
+  </ul>
+  <p>
+    Aucun humain ne peut gérer cela à la main. Il faut un <strong>orchestrateur</strong>.
+    C'est précisément le rôle de Kubernetes, que nous aborderons dès la séance
+    suivante.
+  </p>
+</section>
+
+<!-- ============================================================ -->
+<!-- Section : Ouverture vers la Séance 2                         -->
+<!-- ============================================================ -->
+<section id="ouverture" class="section">
+  <h1>7. Ouverture : de Docker à Kubernetes, puis à Kubeflow/MLOps</h1>
+
+  <p>
+    La séance 1 vous a donné la <em>brique élémentaire</em> de toute plate-forme
+    cloud-native moderne : le conteneur. La séance 2 va vous apprendre à les
+    <em>orchestrer</em>, et les séances ultérieures à construire un véritable
+    pipeline MLOps par-dessus. Voici la carte mentale de la suite.
+  </p>
+
+  <h2>7.1 Aperçu des concepts Kubernetes à venir</h2>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Concept K8s</th>
+        <th>Rôle</th>
+        <th>Lien avec ce que vous venez d'apprendre</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>Pod</code></td>
+        <td>Plus petite unité déployable : un ou plusieurs conteneurs co-localisés.</td>
+        <td>Un pod contient des conteneurs Docker (ou compatibles OCI). C'est l'évolution directe du <code>docker run</code>.</td>
+      </tr>
+      <tr>
+        <td><code>Deployment</code></td>
+        <td>Gère un ensemble de pods identiques, avec redémarrage automatique et mises à jour progressives.</td>
+        <td>Remplace le <code>docker run --restart=always</code> multiplié par N exemplaires sur plusieurs hôtes.</td>
+      </tr>
+      <tr>
+        <td><code>Service</code></td>
+        <td>Point d'accès stable (IP + nom DNS) vers un groupe de pods.</td>
+        <td>Extension naturelle du réseau Docker personnalisé que vous avez utilisé en TP 12.</td>
+      </tr>
+      <tr>
+        <td><code>ConfigMap</code> / <code>Secret</code></td>
+        <td>Externalisation de la configuration et des secrets.</td>
+        <td>Généralisation des options <code>-e</code> et <code>--env-file</code> de Docker.</td>
+      </tr>
+      <tr>
+        <td><code>PersistentVolume</code></td>
+        <td>Stockage persistant monté dans les pods.</td>
+        <td>Généralisation des volumes Docker, avec support des backends réseau (NFS, Ceph, CSI…).</td>
+      </tr>
+      <tr>
+        <td><code>HorizontalPodAutoscaler</code></td>
+        <td>Ajuste automatiquement le nombre de pods selon la charge.</td>
+        <td>Ce qu'on ne peut pas faire avec Docker seul : la montée en charge dynamique.</td>
+      </tr>
+      <tr>
+        <td><code>Namespace</code></td>
+        <td>Cloisonnement logique des ressources dans le cluster.</td>
+        <td>Comparable à l'isolation qu'offre un réseau Docker, mais à l'échelle du cluster.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>7.2 Le chemin long : vers Kubeflow et MLOps</h2>
+  <p>
+    Une fois Kubernetes maîtrisé, nous pourrons construire par-dessus une plate-forme
+    spécialisée : <strong>Kubeflow</strong>. Elle permet de gérer tout le cycle de vie
+    d'un modèle de machine learning — entraînement distribué, versioning,
+    pipelines reproductibles, servir des modèles en production — le tout en
+    conteneurs orchestrés par Kubernetes.
+  </p>
+  <p>
+    Gardez en tête cette perspective à chaque séance : les notions que nous
+    abordons ne sont pas des compétences isolées, elles sont les <em>marches d'un
+    escalier</em> qui mène vers des architectures cloud-native complètes, utilisées
+    aujourd'hui par Google, Netflix, Spotify, les grandes banques, et de plus en
+    plus par les laboratoires de recherche en IA.
+  </p>
+
+  <div class="callout note">
+    <strong>Préparation à la séance 2.</strong>
+    <ul>
+      <li>Conservez votre VM Ubuntu opérationnelle.</li>
+      <li>Reproduisez sans le support le TP 6 à 9 (écrire un Dockerfile, builder, lancer).</li>
+      <li>Si possible, installez <code>kubectl</code> et testez <code>minikube</code> ou <code>kind</code> en prévision — nous commencerons la Séance 2 par la mise en place d'un petit cluster local.</li>
+    </ul>
+  </div>
+
+  <div class="conclusion-box">
+    <h2>En un mot</h2>
+    <p>
+      Docker vous a appris à <em>empaqueter</em> une application proprement.
+      Kubernetes vous apprendra à les <em>faire vivre</em> à l'échelle. Kubeflow
+      vous apprendra à <em>faire apprendre des modèles</em> dans cet écosystème.
+      Cette séance était la première marche — la plus importante, parce que toutes
+      les suivantes en dépendent.
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- Section : Évaluation rapide                                   -->
+<!-- ============================================================ -->
+<section id="evaluation" class="section">
+  <h1>8. Évaluation rapide</h1>
+
+  <p>
+    Les questions ci-dessous vous permettent de vérifier votre compréhension.
+    Essayez d'y répondre <em>sans</em> revenir en arrière dans le support — c'est
+    ainsi qu'on mesure une vraie acquisition. Les questions de réflexion n'ont
+    pas de réponse unique : elles servent à construire votre intuition d'ingénieur.
+  </p>
+
+  <h2>8.1 Questions de vérification</h2>
+  <ol class="eval-list">
+    <li class="eval-question">
+      Quelle est la différence fondamentale entre une machine virtuelle et un
+      conteneur en termes de <em>système d'exploitation</em> ?
+    </li>
+    <li class="eval-question">
+      Que fait exactement la commande <code>docker pull nginx:1.27-alpine</code> ?
+      D'où vient l'image et où est-elle stockée localement ?
+    </li>
+    <li class="eval-question">
+      Quelle est la différence entre une <strong>image</strong> et un <strong>conteneur</strong> ?
+      Peut-on avoir plusieurs conteneurs à partir d'une seule image ? Justifiez.
+    </li>
+    <li class="eval-question">
+      Dans la ligne <code>docker run -p 8080:5000 mon-app</code>, que signifient
+      chacun des deux ports ? Lequel correspond à l'hôte, lequel au conteneur ?
+    </li>
+    <li class="eval-question">
+      Pourquoi ordonner <code>COPY requirements.txt</code> puis
+      <code>RUN pip install</code> <em>avant</em> <code>COPY app.py</code> dans un
+      <code>Dockerfile</code> ?
+    </li>
+    <li class="eval-question">
+      Si je lance un conteneur, j'écris des fichiers dans <code>/tmp</code>,
+      j'arrête le conteneur avec <code>docker stop</code>, puis je le redémarre
+      avec <code>docker start</code>, mes fichiers sont-ils toujours là ? Et si je
+      fais <code>docker rm</code> puis <code>docker run</code> à nouveau ?
+    </li>
+    <li class="eval-question">
+      Pourquoi vaut-il mieux créer un réseau bridge personnalisé plutôt que
+      d'utiliser le réseau <code>bridge</code> par défaut ?
+    </li>
+    <li class="eval-question">
+      Citez trois limites de Docker utilisé seul, qui justifient l'emploi d'un
+      orchestrateur comme Kubernetes.
+    </li>
+    <li class="eval-question">
+      Quelle est la différence entre un <strong>volume nommé</strong> et un
+      <strong>bind mount</strong> ? Dans quel cas préfère-t-on l'un à l'autre ?
+    </li>
+    <li class="eval-question">
+      Que fait la commande <code>docker system prune -a --volumes</code> ?
+      Pourquoi faut-il s'en méfier en production ?
+    </li>
+  </ol>
+
+  <h2>8.2 Questions de réflexion</h2>
+  <div class="callout question">
+    <strong>Question 1.</strong> Votre employeur vous demande : « Puisque nous
+    avons déjà vCenter et ESXi, pourquoi avons-nous <em>aussi</em> besoin de
+    Docker et de Kubernetes ? Ne fait-on pas le même travail deux fois ? »
+    Construisez une réponse structurée, en distinguant clairement les niveaux
+    d'abstraction (matériel → VM → conteneur → orchestration).
+  </div>
+
+  <div class="callout question">
+    <strong>Question 2.</strong> Dans l'application fil rouge, le compteur de
+    visites est stocké dans un fichier. Quelle limite cela pose-t-il si l'on
+    passe à 3 conteneurs derrière un <em>load balancer</em> ? Proposez deux
+    architectures alternatives.
+  </div>
+
+  <div class="callout question">
+    <strong>Question 3.</strong> On vous dit qu'une image Docker « est immuable ».
+    Pourtant, deux <code>docker build</code> successifs sur le même
+    <code>Dockerfile</code> peuvent produire des images différentes. Comment
+    expliquez-vous ce paradoxe ? Comment garantir une vraie reproductibilité ?
+  </div>
+
+  <h2>8.3 Exercice à faire à la maison</h2>
+  <div class="callout objective">
+    <strong>Exercice — Conteneuriser une petite API à deux routes.</strong>
+    <p>
+      Écrivez de zéro une petite application Flask (ou Node.js/Express, au choix)
+      exposant deux routes :
+    </p>
+    <ul>
+      <li><code>GET /</code> : renvoie un message JSON contenant le nom de l'étudiant et le hostname du conteneur.</li>
+      <li><code>GET /count</code> : renvoie le nombre total d'appels reçus depuis le démarrage du conteneur, <strong>persisté</strong> dans un fichier.</li>
+    </ul>
+    <p><strong>Consignes :</strong></p>
+    <ol>
+      <li>Écrire le <code>Dockerfile</code> en respectant les bonnes pratiques (image <em>slim</em>, ordre des <code>COPY</code>, utilisateur non-root, <code>EXPOSE</code>).</li>
+      <li>Builder l'image avec le tag <code>tp1-api:1.0</code>.</li>
+      <li>Lancer le conteneur avec un volume nommé qui assure la persistance du compteur.</li>
+      <li>Détruire le conteneur, en recréer un, et vérifier que le compteur reprend là où il s'était arrêté.</li>
+      <li>Livrer un rapport court (2 pages max) contenant : le code de l'application, le <code>Dockerfile</code> commenté, les commandes utilisées, et une capture d'écran prouvant la persistance.</li>
+    </ol>
+    <p>
+      <strong>Ce que j'évaluerai :</strong> la propreté du <code>Dockerfile</code>,
+      le bon usage du volume, la clarté des explications, et votre capacité à
+      anticiper au moins un piège (ex. permissions, user non-root qui ne peut
+      écrire dans <code>/app/data</code>, etc.).
+    </p>
+  </div>
+
+  <div class="callout tip">
+    <strong>Conseil.</strong> Cet exercice reprend volontairement tout ce que vous
+    avez vu en TP. Si quelque chose bloque, relisez le support plutôt que de
+    chercher sur Stack Overflow : l'objectif est que vous maîtrisiez la démarche,
+    pas la recette.
+  </div>
+</section>
+
+</main>
+</div>
+</body>
+</html>

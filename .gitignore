@@ -1,0 +1,30 @@
+# === Fichiers originaux en vrac (déjà copiés dans les bons dossiers) ===
+/A.R CS.html
+/ar cs1(3).html
+/seance1_introduction_docker.html
+/seance2-kubernetes-kubeflow.html
+/seance7-serialisation-marshalling.html
+/seance10_objets_distants_python.html
+/TP - HYPERVISEUR(1).html
+/TP2_vCenter_Proxmox_Datacenter.html
+
+# === Anciens dossiers non structurés ===
+/TP APP DIS/
+/Cloud et distrubee/
+
+# === Fichiers temporaires ===
+/consignes_output.txt
+/consignes_travail_fin_semestre.pdf
+
+# === OS / IDE ===
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+__pycache__/
+*.pyc
+*.pyo

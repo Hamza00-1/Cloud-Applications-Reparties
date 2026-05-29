@@ -1,0 +1,2060 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Séance 2 — Kubernetes et démarrage de l'installation de Kubeflow</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+
+  :root {
+    --primary: #1a5276;
+    --primary-light: #2980b9;
+    --primary-lighter: #d4e6f1;
+    --primary-bg: #eaf2f8;
+    --accent: #e67e22;
+    --accent-light: #fdebd0;
+    --success: #1e8449;
+    --success-light: #d5f5e3;
+    --danger: #c0392b;
+    --danger-light: #fadbd8;
+    --warning: #f39c12;
+    --warning-light: #fef9e7;
+    --info: #2471a3;
+    --info-light: #d6eaf8;
+    --text: #2c3e50;
+    --text-light: #5d6d7e;
+    --bg: #fdfdfd;
+    --bg-alt: #f4f6f7;
+    --border: #d5d8dc;
+    --code-bg: #1e2a38;
+    --code-text: #e8ecf1;
+    --radius: 8px;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    --shadow-lg: 0 4px 20px rgba(0,0,0,0.12);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.75;
+    color: var(--text);
+    background: var(--bg);
+    margin: 0;
+    padding: 0;
+  }
+
+  /* ─── Navigation latérale ─── */
+  nav#sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--primary);
+    color: #fff;
+    overflow-y: auto;
+    z-index: 100;
+    padding: 1.5rem 0;
+    font-size: 0.85rem;
+    transition: transform 0.3s;
+  }
+  nav#sidebar .nav-title {
+    font-family: 'Source Serif 4', serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    padding: 0 1.2rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+    margin-bottom: 0.8rem;
+    line-height: 1.4;
+  }
+  nav#sidebar a {
+    display: block;
+    color: rgba(255,255,255,0.82);
+    text-decoration: none;
+    padding: 0.35rem 1.2rem;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+  }
+  nav#sidebar a:hover, nav#sidebar a:focus {
+    color: #fff;
+    background: rgba(255,255,255,0.08);
+    border-left-color: var(--accent);
+  }
+  nav#sidebar a.sub { padding-left: 2rem; font-size: 0.8rem; }
+  nav#sidebar a.sub2 { padding-left: 2.8rem; font-size: 0.78rem; opacity: 0.85; }
+
+  .nav-toggle {
+    display: none;
+    position: fixed;
+    top: 12px; left: 12px;
+    z-index: 200;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 1.2rem;
+    cursor: pointer;
+  }
+
+  /* ─── Contenu principal ─── */
+  main {
+    margin-left: 280px;
+    max-width: 960px;
+    padding: 2rem 3rem 4rem;
+  }
+
+  @media (max-width: 1080px) {
+    nav#sidebar { transform: translateX(-100%); }
+    nav#sidebar.open { transform: translateX(0); }
+    .nav-toggle { display: block; }
+    main { margin-left: 0; padding: 2rem 1.5rem 4rem; }
+  }
+
+  /* ─── Typographie ─── */
+  h1, h2, h3, h4 { font-family: 'Source Serif 4', serif; color: var(--primary); margin-top: 2.5rem; }
+  h1 { font-size: 2rem; margin-top: 0; }
+  h2 { font-size: 1.55rem; border-bottom: 2px solid var(--primary-lighter); padding-bottom: 0.4rem; }
+  h3 { font-size: 1.25rem; color: var(--primary-light); }
+  h4 { font-size: 1.05rem; }
+
+  p { margin: 0.8rem 0; }
+  strong { color: var(--primary); }
+
+  /* ─── Page d'ouverture ─── */
+  .cover {
+    background: linear-gradient(135deg, var(--primary) 0%, #1a3c5e 100%);
+    color: #fff;
+    padding: 3rem 2.5rem;
+    border-radius: var(--radius);
+    margin-bottom: 2.5rem;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::after {
+    content: '';
+    position: absolute;
+    top: -50%; right: -30%;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(230,126,34,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .cover h1 { color: #fff; font-size: 2.2rem; margin-bottom: 0.3rem; position: relative; z-index: 1; }
+  .cover .subtitle { font-size: 1.15rem; opacity: 0.9; margin-bottom: 1.5rem; position: relative; z-index: 1; }
+  .cover-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    position: relative;
+    z-index: 1;
+  }
+  .cover-card {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(4px);
+    border-radius: 6px;
+    padding: 1rem 1.2rem;
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .cover-card h4 { color: var(--accent); font-size: 0.9rem; margin: 0 0 0.4rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .cover-card ul { margin: 0; padding-left: 1.2rem; font-size: 0.92rem; }
+  .cover-card li { margin-bottom: 0.2rem; }
+
+  @media (max-width: 640px) { .cover-grid { grid-template-columns: 1fr; } }
+
+  /* ─── Encadrés pédagogiques ─── */
+  .box {
+    border-radius: var(--radius);
+    padding: 1.1rem 1.3rem;
+    margin: 1.2rem 0;
+    border-left: 4px solid;
+    font-size: 0.95rem;
+  }
+  .box-title {
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .box.info     { background: var(--info-light); border-color: var(--info); }
+  .box.success  { background: var(--success-light); border-color: var(--success); }
+  .box.warning  { background: var(--warning-light); border-color: var(--warning); }
+  .box.danger   { background: var(--danger-light); border-color: var(--danger); }
+  .box.note     { background: var(--primary-bg); border-color: var(--primary-light); }
+  .box.accent   { background: var(--accent-light); border-color: var(--accent); }
+
+  .box.info .box-title    { color: var(--info); }
+  .box.success .box-title { color: var(--success); }
+  .box.warning .box-title { color: var(--warning); }
+  .box.danger .box-title  { color: var(--danger); }
+  .box.note .box-title    { color: var(--primary); }
+  .box.accent .box-title  { color: var(--accent); }
+
+  /* ─── Tableaux ─── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.92rem;
+    box-shadow: var(--shadow);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  thead { background: var(--primary); color: #fff; }
+  th { padding: 0.75rem 1rem; text-align: left; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.3px; }
+  td { padding: 0.7rem 1rem; border-bottom: 1px solid var(--border); }
+  tbody tr:nth-child(even) { background: var(--bg-alt); }
+  tbody tr:hover { background: var(--primary-lighter); }
+
+  /* ─── Blocs code / YAML / commandes ─── */
+  pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.3rem;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    margin: 1rem 0;
+    position: relative;
+    box-shadow: var(--shadow);
+  }
+  pre .label {
+    position: absolute;
+    top: 0; right: 0;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.7rem;
+    padding: 2px 10px;
+    border-radius: 0 var(--radius) 0 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88em;
+    background: #ebedef;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--primary);
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+
+  /* ─── Commande terminal ─── */
+  .cmd {
+    background: var(--code-bg);
+    color: #a3e4d7;
+    border-radius: var(--radius);
+    padding: 0.7rem 1rem;
+    margin: 0.6rem 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    overflow-x: auto;
+    border-left: 4px solid #27ae60;
+  }
+  .cmd::before { content: '$ '; color: #f39c12; font-weight: 700; }
+
+  /* ─── Résultat attendu ─── */
+  .result {
+    background: #f0f3f4;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 0.8rem 1rem;
+    margin: 0.6rem 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--text-light);
+  }
+  .result::before { content: '↳ Résultat attendu :'; display: block; font-family: 'DM Sans', sans-serif; font-weight: 600; color: var(--success); margin-bottom: 0.3rem; font-size: 0.8rem; }
+
+  /* ─── Synthèse ─── */
+  .synthese {
+    background: linear-gradient(135deg, var(--primary-bg), #fff);
+    border: 2px solid var(--primary-lighter);
+    border-radius: var(--radius);
+    padding: 1.3rem 1.5rem;
+    margin: 1.5rem 0;
+  }
+  .synthese h4 { color: var(--primary); margin-top: 0; }
+
+  /* ─── SVG ─── */
+  .svg-container {
+    text-align: center;
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .svg-container svg { max-width: 100%; height: auto; }
+
+  /* ─── TP header ─── */
+  .tp-header {
+    background: linear-gradient(90deg, var(--accent), #d35400);
+    color: #fff;
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius);
+    margin: 2rem 0 1rem;
+    font-family: 'Source Serif 4', serif;
+  }
+  .tp-header h3 { color: #fff; margin: 0; font-size: 1.2rem; }
+  .tp-header p { margin: 0.3rem 0 0; opacity: 0.9; font-size: 0.9rem; font-family: 'DM Sans', sans-serif; }
+
+  /* ─── Évaluation ─── */
+  .quiz { counter-reset: quiz; }
+  .quiz .q {
+    padding: 0.8rem 1rem;
+    margin: 0.5rem 0;
+    background: var(--bg-alt);
+    border-radius: var(--radius);
+    border-left: 3px solid var(--primary-light);
+    counter-increment: quiz;
+  }
+  .quiz .q::before {
+    content: 'Q' counter(quiz) ' — ';
+    font-weight: 700;
+    color: var(--primary);
+  }
+
+  /* ─── Divers ─── */
+  hr { border: none; border-top: 2px solid var(--primary-lighter); margin: 2.5rem 0; }
+  .duration { display: inline-block; background: var(--accent); color: #fff; padding: 2px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+  .step-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    font-weight: 700; font-size: 0.85rem; margin-right: 0.5rem;
+    flex-shrink: 0;
+  }
+  .step { display: flex; align-items: flex-start; margin: 0.8rem 0; }
+  .step-content { flex: 1; }
+  ul.clean { list-style: none; padding-left: 0; }
+  ul.clean li::before { content: '→ '; color: var(--accent); font-weight: 700; }
+  .tag { display: inline-block; background: var(--primary-lighter); color: var(--primary); padding: 1px 8px; border-radius: 4px; font-size: 0.82rem; font-weight: 600; }
+  .highlight { background: #fef9e7; padding: 0.15rem 0.4rem; border-radius: 3px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<button class="nav-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')" aria-label="Menu">☰</button>
+
+<nav id="sidebar">
+  <div class="nav-title">Séance 2<br>Kubernetes &amp; Kubeflow</div>
+  <a href="#cover">Page d'ouverture</a>
+  <a href="#intro" class="sub">Introduction</a>
+  <a href="#theorie">Partie théorique</a>
+  <a href="#k8s-vs-docker" class="sub">Pourquoi K8s après Docker ?</a>
+  <a href="#def-k8s" class="sub">Définition de Kubernetes</a>
+  <a href="#archi-k8s" class="sub">Architecture d'un cluster</a>
+  <a href="#objets-k8s" class="sub">Objets essentiels</a>
+  <a href="#kubeflow-briques" class="sub">Kubeflow et ces briques</a>
+  <a href="#objectif-tp" class="sub">Objectif du TP</a>
+  <a href="#commandes">Commandes kubectl</a>
+  <a href="#kubeflow-overview">Kubeflow : vue d'ensemble</a>
+  <a href="#archi-lab">Architecture du labo</a>
+  <a href="#tp">TP guidé</a>
+  <a href="#tp1" class="sub">TP 1 — Infra de labo</a>
+  <a href="#tp2" class="sub">TP 2 — Cluster K8s</a>
+  <a href="#tp3" class="sub">TP 3 — Ressource simple</a>
+  <a href="#tp4" class="sub">TP 4 — Préparation Kubeflow</a>
+  <a href="#tp5" class="sub">TP 5 — Installation Kubeflow</a>
+  <a href="#tp6" class="sub">TP 6 — Observation</a>
+  <a href="#tp7" class="sub">TP 7 — Vérification</a>
+  <a href="#tp8" class="sub">TP 8 — Accès initial</a>
+  <a href="#tp9" class="sub">TP 9 — Comprendre l'installé</a>
+  <a href="#tp10" class="sub">TP 10 — Conservation / nettoyage</a>
+  <a href="#lire-install">Lire une installation Kubeflow</a>
+  <a href="#synthese">Synthèse</a>
+  <a href="#suite">Ouverture sur la suite</a>
+  <a href="#eval">Évaluation</a>
+</nav>
+
+<main>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PAGE D'OUVERTURE                                       -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section id="cover">
+<div class="cover">
+  <h1>Séance 2 — Kubernetes et démarrage de l'installation de Kubeflow</h1>
+  <div class="subtitle">Du conteneur isolé au cluster d'orchestration : poser les fondations de la plateforme MLOps</div>
+  <div class="cover-grid">
+    <div class="cover-card">
+      <h4>Objectifs de la séance</h4>
+      <ul>
+        <li>Comprendre pourquoi Kubernetes est la suite logique après Docker</li>
+        <li>Maîtriser l'architecture et les objets essentiels d'un cluster</li>
+        <li>Préparer un cluster de laboratoire pour Kubeflow</li>
+        <li>Démarrer réellement l'installation de Kubeflow</li>
+        <li>Observer et comprendre ce qui est déployé</li>
+      </ul>
+    </div>
+    <div class="cover-card">
+      <h4>Prérequis</h4>
+      <ul>
+        <li>Séance 1 : Docker, images, conteneurs, Dockerfile</li>
+        <li>Connaissances de base en Linux (terminal, SSH)</li>
+        <li>Compréhension des concepts de virtualisation (ESXi)</li>
+        <li>Infrastructure de labo disponible (2 hôtes ESXi)</li>
+      </ul>
+    </div>
+    <div class="cover-card">
+      <h4>Compétences visées</h4>
+      <ul>
+        <li>Expliquer le rôle de Kubernetes dans un parcours cloud</li>
+        <li>Utiliser les commandes kubectl fondamentales</li>
+        <li>Installer et vérifier un déploiement Kubeflow</li>
+        <li>Lire et interpréter l'état d'un cluster post-installation</li>
+      </ul>
+    </div>
+    <div class="cover-card">
+      <h4>Informations pratiques</h4>
+      <ul>
+        <li><strong>Durée :</strong> 4 heures (240 min)</li>
+        <li><strong>Public :</strong> Étudiants cloud / infrastructure</li>
+        <li><strong>Niveau :</strong> Débutant → Intermédiaire</li>
+        <li><strong>Contexte :</strong> Après Docker, vers Kubeflow &amp; MLOps</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- INTRODUCTION                                           -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section id="intro">
+<h2>1. Introduction — Pourquoi cette séance est essentielle</h2>
+
+<p>Dans la séance précédente, nous avons découvert Docker. Nous avons appris à créer des images, lancer des conteneurs, écrire un <code>Dockerfile</code>, et comprendre la différence fondamentale entre une machine virtuelle et un conteneur. C'était une première étape essentielle.</p>
+
+<p>Mais posons-nous une question honnête : <strong>est-ce que Docker seul suffit pour gérer une vraie plateforme en production ?</strong></p>
+
+<p>Imaginez la situation suivante. Vous avez une application découpée en 15 micro-services, chacun dans son conteneur. Il faut :</p>
+<ul>
+  <li>S'assurer que chaque conteneur tourne en permanence</li>
+  <li>Redémarrer automatiquement ceux qui tombent</li>
+  <li>Gérer la communication entre les services</li>
+  <li>Répartir la charge quand le trafic augmente</li>
+  <li>Exposer certains services à l'extérieur, d'autres non</li>
+  <li>Gérer la configuration et les secrets</li>
+  <li>Stocker des données de façon persistante</li>
+</ul>
+
+<p>Avec Docker seul, tout cela se fait <strong>manuellement</strong>. C'est là qu'intervient <strong>Kubernetes</strong> : un système d'orchestration qui automatise la gestion de vos conteneurs à grande échelle.</p>
+
+<p>Et pour nous, Kubernetes n'est pas une fin en soi. C'est la <strong>fondation</strong> sur laquelle nous allons installer <strong>Kubeflow</strong>, une plateforme complète de Machine Learning Operations (MLOps). La progression est logique et chaque couche s'appuie sur la précédente :</p>
+
+<div class="svg-container">
+<svg viewBox="0 0 820 220" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans, sans-serif">
+  <!-- Fond -->
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#1a5276"/>
+      <stop offset="100%" stop-color="#2980b9"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#e67e22"/>
+    </marker>
+  </defs>
+  <!-- Blocs -->
+  <rect x="10" y="70" width="140" height="80" rx="8" fill="#7f8c8d" opacity="0.85"/>
+  <text x="80" y="105" text-anchor="middle" fill="#fff" font-weight="700" font-size="14">ESXi / VMs</text>
+  <text x="80" y="125" text-anchor="middle" fill="#fff" font-size="11" opacity="0.85">Infrastructure</text>
+
+  <rect x="180" y="70" width="140" height="80" rx="8" fill="#2980b9"/>
+  <text x="250" y="105" text-anchor="middle" fill="#fff" font-weight="700" font-size="14">Docker</text>
+  <text x="250" y="125" text-anchor="middle" fill="#fff" font-size="11" opacity="0.85">Conteneurisation</text>
+
+  <rect x="350" y="70" width="140" height="80" rx="8" fill="url(#g1)"/>
+  <text x="420" y="105" text-anchor="middle" fill="#fff" font-weight="700" font-size="14">Kubernetes</text>
+  <text x="420" y="125" text-anchor="middle" fill="#fff" font-size="11" opacity="0.85">Orchestration</text>
+
+  <rect x="520" y="70" width="140" height="80" rx="8" fill="#e67e22"/>
+  <text x="590" y="105" text-anchor="middle" fill="#fff" font-weight="700" font-size="14">Kubeflow</text>
+  <text x="590" y="125" text-anchor="middle" fill="#fff" font-size="11" opacity="0.85">Plateforme ML</text>
+
+  <rect x="690" y="70" width="120" height="80" rx="8" fill="#1e8449"/>
+  <text x="750" y="105" text-anchor="middle" fill="#fff" font-weight="700" font-size="14">MLOps</text>
+  <text x="750" y="125" text-anchor="middle" fill="#fff" font-size="11" opacity="0.85">Production ML</text>
+
+  <!-- Flèches -->
+  <line x1="150" y1="110" x2="178" y2="110" stroke="#e67e22" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="320" y1="110" x2="348" y2="110" stroke="#e67e22" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="490" y1="110" x2="518" y2="110" stroke="#e67e22" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="660" y1="110" x2="688" y2="110" stroke="#e67e22" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+  <!-- Marqueurs séances -->
+  <rect x="180" y="163" width="140" height="24" rx="12" fill="#2980b9" opacity="0.2"/>
+  <text x="250" y="180" text-anchor="middle" fill="#2980b9" font-size="11" font-weight="600">Séance 1 ✓</text>
+
+  <rect x="350" y="163" width="310" height="24" rx="12" fill="#e67e22" opacity="0.2"/>
+  <text x="505" y="180" text-anchor="middle" fill="#e67e22" font-size="11" font-weight="600">Séance 2 — Aujourd'hui</text>
+
+  <rect x="520" y="30" width="290" height="24" rx="12" fill="#1e8449" opacity="0.15"/>
+  <text x="665" y="47" text-anchor="middle" fill="#1e8449" font-size="11" font-weight="600">Séances 3, 4 et suivantes →</text>
+</svg>
+</div>
+
+<p>Aujourd'hui, nous allons <strong>franchir le cap</strong>. Nous ne resterons pas dans la théorie Kubernetes. L'objectif est clair : comprendre les fondations, puis <strong>démarrer réellement l'installation de Kubeflow</strong> sur notre cluster de laboratoire. À la fin de cette séance, vous aurez un premier aperçu concret de la plateforme que nous exploiterons dans les prochaines séances.</p>
+
+<div class="box info">
+  <div class="box-title">💡 Rappel important</div>
+  Kubeflow ne fonctionne pas en dehors de Kubernetes. Chaque notebook, chaque pipeline, chaque interface que nous utiliserons plus tard s'exécute sur le cluster. C'est pour cela que la compréhension — même minimale — de Kubernetes est indispensable avant d'aller plus loin.
+</div>
+</section>
+
+<hr>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PARTIE THÉORIQUE                                       -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section id="theorie">
+<h2>2. Partie théorique — Les fondations Kubernetes</h2>
+<span class="duration">≈ 60 min</span>
+
+<p>Nous allons maintenant poser les bases théoriques indispensables. Cette partie est volontairement concise : l'objectif est de comprendre ce dont nous avons besoin pour le TP, pas de couvrir l'intégralité de Kubernetes. Nous approfondirons certains aspects dans les prochaines séances, au fur et à mesure des besoins.</p>
+
+<!-- 2.1 -->
+<h3 id="k8s-vs-docker">2.1. Pourquoi Kubernetes après Docker ?</h3>
+
+<p>Docker résout un problème fondamental : <strong>empaqueter et exécuter une application de façon isolée et reproductible</strong>. C'est formidable. Mais dès que l'on dépasse le stade du conteneur unique, de nouveaux défis apparaissent.</p>
+
+<table>
+<thead>
+  <tr><th>Défi</th><th>Docker seul</th><th>Avec Kubernetes</th></tr>
+</thead>
+<tbody>
+  <tr>
+    <td>Conteneur qui plante</td>
+    <td>Arrêté, intervention manuelle</td>
+    <td>Redémarrage automatique immédiat</td>
+  </tr>
+  <tr>
+    <td>Montée en charge</td>
+    <td>Manuellement lancer d'autres conteneurs</td>
+    <td>Auto-scaling, réplication déclarative</td>
+  </tr>
+  <tr>
+    <td>Communication inter-services</td>
+    <td>Réseaux Docker + gestion manuelle</td>
+    <td>Service discovery automatique, DNS interne</td>
+  </tr>
+  <tr>
+    <td>Mise à jour sans interruption</td>
+    <td>Stop / Remove / Run (coupure)</td>
+    <td>Rolling update transparent</td>
+  </tr>
+  <tr>
+    <td>Répartition sur plusieurs machines</td>
+    <td>Pas de mécanisme natif</td>
+    <td>Scheduling intelligent multi-nœuds</td>
+  </tr>
+  <tr>
+    <td>Configuration et secrets</td>
+    <td>Variables d'environnement manuelles</td>
+    <td>ConfigMaps et Secrets gérés par la plateforme</td>
+  </tr>
+  <tr>
+    <td>Stockage persistant</td>
+    <td>Volumes Docker (local uniquement)</td>
+    <td>PersistentVolumes, provisionning dynamique</td>
+  </tr>
+</tbody>
+</table>
+
+<p>Retenez bien ce point : Docker est l'outil de <strong>conteneurisation</strong>, Kubernetes est l'outil d'<strong>orchestration</strong>. Les deux ne sont pas en compétition — ils se complètent. Kubernetes utilise Docker (ou un autre runtime) pour exécuter les conteneurs.</p>
+
+<div class="box note">
+  <div class="box-title">📌 Point clé</div>
+  Kubernetes ne remplace pas Docker. Il s'appuie dessus. Un cluster Kubernetes exécute des conteneurs via un <em>container runtime</em> (containerd, CRI-O…). Docker reste l'outil avec lequel vous construisez vos images.
+</div>
+
+<!-- 2.2 -->
+<h3 id="def-k8s">2.2. Définition et rôle de Kubernetes</h3>
+
+<p>Kubernetes (souvent abrégé <strong>K8s</strong>) est une plateforme open source d'orchestration de conteneurs, initialement développée par Google et maintenue par la Cloud Native Computing Foundation (CNCF).</p>
+
+<p>Concrètement, Kubernetes joue trois rôles essentiels :</p>
+
+<p><strong>① Un système déclaratif.</strong> Vous décrivez l'état souhaité de votre infrastructure dans des fichiers YAML : « Je veux 3 répliques de ce service, avec 512 Mo de mémoire chacune, exposées sur le port 8080 ». Kubernetes se charge de réaliser cet état et de le maintenir en permanence.</p>
+
+<p><strong>② Une base d'exécution pour les plateformes cloud natives.</strong> De nombreuses plateformes — Istio (service mesh), Prometheus (monitoring), Argo (CI/CD), et bien sûr <strong>Kubeflow</strong> — s'installent <em>sur</em> Kubernetes. Elles utilisent ses primitives (Pods, Services, namespaces…) comme briques de base.</p>
+
+<p><strong>③ Un gestionnaire de cycle de vie.</strong> Kubernetes surveille vos applications en continu. Si un conteneur tombe, il le redémarre. Si un nœud tombe, il redéploie les conteneurs ailleurs. Il gère les mises à jour progressives, le rollback, la montée en charge.</p>
+
+<div class="box accent">
+  <div class="box-title">🎯 Pour notre parcours</div>
+  Kubernetes est la fondation technique sur laquelle Kubeflow va s'installer et fonctionner. Sans un cluster Kubernetes opérationnel, il n'y a tout simplement pas de Kubeflow possible.
+</div>
+
+<!-- 2.3 -->
+<h3 id="archi-k8s">2.3. Architecture générale d'un cluster Kubernetes</h3>
+
+<p>Un <strong>cluster Kubernetes</strong> est un ensemble de machines (physiques ou virtuelles) qui travaillent ensemble. Ce cluster est composé de deux types de nœuds :</p>
+
+<p><strong>Le Control Plane</strong> (plan de contrôle) : c'est le cerveau du cluster. Il prend les décisions, planifie les déploiements, surveille l'état global.</p>
+
+<p><strong>Les Worker Nodes</strong> (nœuds de travail) : ce sont les machines qui exécutent réellement les conteneurs. C'est sur ces nœuds que vos applications — et les composants Kubeflow — tourneront.</p>
+
+<div class="svg-container">
+<svg viewBox="0 0 800 460" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans, sans-serif">
+  <defs>
+    <linearGradient id="cpg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a5276"/>
+      <stop offset="100%" stop-color="#154360"/>
+    </linearGradient>
+    <linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2980b9"/>
+      <stop offset="100%" stop-color="#21618c"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Titre -->
+  <text x="400" y="28" text-anchor="middle" font-size="16" font-weight="700" fill="#1a5276">Architecture d'un cluster Kubernetes</text>
+
+  <!-- Control Plane -->
+  <rect x="30" y="50" width="740" height="160" rx="10" fill="url(#cpg)" opacity="0.08" stroke="#1a5276" stroke-width="1.5"/>
+  <text x="50" y="75" font-size="13" font-weight="700" fill="#1a5276">CONTROL PLANE (Master Node)</text>
+
+  <rect x="50" y="90" width="150" height="100" rx="8" fill="#1a5276"/>
+  <text x="125" y="125" text-anchor="middle" fill="#fff" font-weight="600" font-size="12">kube-apiserver</text>
+  <text x="125" y="145" text-anchor="middle" fill="#aed6f1" font-size="10">Point d'entrée API</text>
+  <text x="125" y="160" text-anchor="middle" fill="#aed6f1" font-size="10">REST / kubectl</text>
+
+  <rect x="220" y="90" width="150" height="100" rx="8" fill="#1a5276"/>
+  <text x="295" y="125" text-anchor="middle" fill="#fff" font-weight="600" font-size="12">etcd</text>
+  <text x="295" y="145" text-anchor="middle" fill="#aed6f1" font-size="10">Base de données</text>
+  <text x="295" y="160" text-anchor="middle" fill="#aed6f1" font-size="10">clé-valeur distribuée</text>
+
+  <rect x="390" y="90" width="170" height="100" rx="8" fill="#1a5276"/>
+  <text x="475" y="125" text-anchor="middle" fill="#fff" font-weight="600" font-size="12">kube-scheduler</text>
+  <text x="475" y="145" text-anchor="middle" fill="#aed6f1" font-size="10">Planifie les Pods</text>
+  <text x="475" y="160" text-anchor="middle" fill="#aed6f1" font-size="10">sur les nœuds</text>
+
+  <rect x="580" y="90" width="180" height="100" rx="8" fill="#1a5276"/>
+  <text x="670" y="125" text-anchor="middle" fill="#fff" font-weight="600" font-size="12">controller-manager</text>
+  <text x="670" y="145" text-anchor="middle" fill="#aed6f1" font-size="10">Boucles de contrôle</text>
+  <text x="670" y="160" text-anchor="middle" fill="#aed6f1" font-size="10">(réplication, nœuds…)</text>
+
+  <!-- Flèche -->
+  <line x1="400" y1="215" x2="400" y2="250" stroke="#e67e22" stroke-width="2" stroke-dasharray="6,4"/>
+  <text x="400" y="243" text-anchor="middle" font-size="10" fill="#e67e22" font-weight="600">Réseau du cluster</text>
+
+  <!-- Worker Nodes -->
+  <rect x="30" y="260" width="355" height="180" rx="10" fill="url(#wg)" opacity="0.08" stroke="#2980b9" stroke-width="1.5"/>
+  <text x="50" y="285" font-size="13" font-weight="700" fill="#2980b9">WORKER NODE 1</text>
+
+  <rect x="50" y="300" width="100" height="55" rx="6" fill="#2980b9"/>
+  <text x="100" y="325" text-anchor="middle" fill="#fff" font-weight="600" font-size="11">kubelet</text>
+  <text x="100" y="342" text-anchor="middle" fill="#aed6f1" font-size="9">Agent local</text>
+
+  <rect x="165" y="300" width="100" height="55" rx="6" fill="#2980b9"/>
+  <text x="215" y="325" text-anchor="middle" fill="#fff" font-weight="600" font-size="11">kube-proxy</text>
+  <text x="215" y="342" text-anchor="middle" fill="#aed6f1" font-size="9">Réseau / routage</text>
+
+  <rect x="280" y="300" width="90" height="55" rx="6" fill="#2980b9"/>
+  <text x="325" y="325" text-anchor="middle" fill="#fff" font-weight="600" font-size="11">containerd</text>
+  <text x="325" y="342" text-anchor="middle" fill="#aed6f1" font-size="9">Runtime</text>
+
+  <!-- Pods dans worker 1 -->
+  <rect x="50" y="370" width="70" height="50" rx="5" fill="#e67e22" opacity="0.85"/>
+  <text x="85" y="393" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">Pod A</text>
+  <text x="85" y="408" text-anchor="middle" fill="#fff" font-size="8" opacity="0.85">nginx</text>
+
+  <rect x="135" y="370" width="70" height="50" rx="5" fill="#e67e22" opacity="0.85"/>
+  <text x="170" y="393" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">Pod B</text>
+  <text x="170" y="408" text-anchor="middle" fill="#fff" font-size="8" opacity="0.85">api-ml</text>
+
+  <rect x="220" y="370" width="70" height="50" rx="5" fill="#e67e22" opacity="0.85"/>
+  <text x="255" y="393" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">Pod C</text>
+  <text x="255" y="408" text-anchor="middle" fill="#fff" font-size="8" opacity="0.85">redis</text>
+
+  <!-- Worker 2 -->
+  <rect x="415" y="260" width="355" height="180" rx="10" fill="url(#wg)" opacity="0.08" stroke="#2980b9" stroke-width="1.5"/>
+  <text x="435" y="285" font-size="13" font-weight="700" fill="#2980b9">WORKER NODE 2</text>
+
+  <rect x="435" y="300" width="100" height="55" rx="6" fill="#2980b9"/>
+  <text x="485" y="325" text-anchor="middle" fill="#fff" font-weight="600" font-size="11">kubelet</text>
+  <text x="485" y="342" text-anchor="middle" fill="#aed6f1" font-size="9">Agent local</text>
+
+  <rect x="550" y="300" width="100" height="55" rx="6" fill="#2980b9"/>
+  <text x="600" y="325" text-anchor="middle" fill="#fff" font-weight="600" font-size="11">kube-proxy</text>
+  <text x="600" y="342" text-anchor="middle" fill="#aed6f1" font-size="9">Réseau / routage</text>
+
+  <rect x="665" y="300" width="90" height="55" rx="6" fill="#2980b9"/>
+  <text x="710" y="325" text-anchor="middle" fill="#fff" font-weight="600" font-size="11">containerd</text>
+  <text x="710" y="342" text-anchor="middle" fill="#aed6f1" font-size="9">Runtime</text>
+
+  <rect x="435" y="370" width="70" height="50" rx="5" fill="#e67e22" opacity="0.85"/>
+  <text x="470" y="393" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">Pod D</text>
+  <text x="470" y="408" text-anchor="middle" fill="#fff" font-size="8" opacity="0.85">notebook</text>
+
+  <rect x="520" y="370" width="70" height="50" rx="5" fill="#e67e22" opacity="0.85"/>
+  <text x="555" y="393" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">Pod E</text>
+  <text x="555" y="408" text-anchor="middle" fill="#fff" font-size="8" opacity="0.85">pipeline</text>
+
+  <rect x="605" y="370" width="70" height="50" rx="5" fill="#e67e22" opacity="0.85"/>
+  <text x="640" y="393" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">Pod F</text>
+  <text x="640" y="408" text-anchor="middle" fill="#fff" font-size="8" opacity="0.85">dashboard</text>
+</svg>
+</div>
+
+<p>Passons en revue chaque composant du cluster :</p>
+
+<table>
+<thead>
+  <tr><th>Composant</th><th>Localisation</th><th>Rôle</th></tr>
+</thead>
+<tbody>
+  <tr><td><code>kube-apiserver</code></td><td>Control Plane</td><td>Point d'entrée unique pour toutes les interactions avec le cluster. Chaque commande <code>kubectl</code> passe par l'API server.</td></tr>
+  <tr><td><code>etcd</code></td><td>Control Plane</td><td>Base de données clé-valeur distribuée qui stocke l'état complet du cluster (configuration, secrets, état des ressources).</td></tr>
+  <tr><td><code>kube-scheduler</code></td><td>Control Plane</td><td>Décide sur quel nœud worker un Pod doit être placé, en tenant compte des ressources disponibles et des contraintes.</td></tr>
+  <tr><td><code>controller-manager</code></td><td>Control Plane</td><td>Exécute les boucles de contrôle : vérifie en permanence que l'état réel correspond à l'état déclaré (nombre de répliques, etc.).</td></tr>
+  <tr><td><code>kubelet</code></td><td>Chaque Worker</td><td>Agent local qui gère les conteneurs sur son nœud. Il reçoit les instructions du control plane et s'assure que les Pods tournent.</td></tr>
+  <tr><td><code>kube-proxy</code></td><td>Chaque Worker</td><td>Gère les règles réseau pour acheminer le trafic vers les bons Pods (service discovery, load balancing interne).</td></tr>
+  <tr><td><code>containerd</code></td><td>Chaque Worker</td><td>Runtime de conteneurs. C'est le moteur qui lance et gère les conteneurs au niveau du système d'exploitation.</td></tr>
+</tbody>
+</table>
+
+<div class="box warning">
+  <div class="box-title">⚠️ Erreur fréquente</div>
+  Ne confondez pas le <strong>control plane</strong> avec un simple « serveur d'administration ». Le control plane ne sert pas uniquement à taper des commandes : il contient les composants critiques qui font fonctionner l'ensemble du cluster. Si le control plane tombe, le cluster ne peut plus accepter de nouvelles instructions (même si les conteneurs existants continuent de tourner).
+</div>
+
+<!-- 2.4 -->
+<h3 id="objets-k8s">2.4. Objets Kubernetes essentiels avant Kubeflow</h3>
+
+<p>Dans Kubernetes, tout est représenté par des <strong>objets</strong> décrits en YAML. Nous allons passer en revue les objets que vous rencontrerez dès aujourd'hui dans le TP, et que vous reverrez constamment dans Kubeflow.</p>
+
+<h4>Pod</h4>
+<p>Le <strong>Pod</strong> est l'unité d'exécution la plus petite dans Kubernetes. Un Pod contient un ou plusieurs conteneurs qui partagent le même espace réseau et le même stockage.</p>
+<p><em>En pratique :</em> dans la plupart des cas, un Pod = un conteneur. Kubeflow crée des Pods pour chaque notebook, chaque étape de pipeline, chaque composant d'interface.</p>
+
+<pre><code><span class="label">YAML</span>apiVersion: v1
+kind: Pod
+metadata:
+  name: mon-premier-pod
+  namespace: default
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.25
+    ports:
+    - containerPort: 80</code></pre>
+
+<h4>Deployment</h4>
+<p>Un <strong>Deployment</strong> gère un ensemble de Pods identiques. Il garantit qu'un nombre souhaité de répliques tourne en permanence et permet les mises à jour progressives.</p>
+<p><em>Lien Kubeflow :</em> la plupart des composants Kubeflow (dashboard, contrôleurs, etc.) sont déployés via des Deployments.</p>
+
+<h4>Service</h4>
+<p>Un <strong>Service</strong> expose un ensemble de Pods sous une adresse réseau stable. Les Pods sont éphémères (ils peuvent être recréés à tout moment), mais le Service maintient un point d'accès permanent.</p>
+<p><em>Lien Kubeflow :</em> le dashboard Kubeflow est accessible via un Service. Les composants internes communiquent entre eux par des Services.</p>
+
+<h4>Namespace</h4>
+<p>Un <strong>Namespace</strong> est un espace de noms logique qui isole les ressources. C'est comme des « dossiers » dans le cluster.</p>
+<p><em>Lien Kubeflow :</em> chaque utilisateur Kubeflow obtient son propre namespace. Kubeflow installe ses composants dans plusieurs namespaces dédiés (<code>kubeflow</code>, <code>istio-system</code>, <code>auth</code>, etc.).</p>
+
+<h4>ConfigMap et Secret</h4>
+<p>Les <strong>ConfigMaps</strong> stockent de la configuration non sensible (paramètres, URLs). Les <strong>Secrets</strong> stockent des données sensibles (mots de passe, tokens) de façon encodée.</p>
+<p><em>Lien Kubeflow :</em> la configuration de Kubeflow repose largement sur des ConfigMaps. Les credentials d'accès sont gérés via des Secrets.</p>
+
+<h4>Volume / PersistentVolume</h4>
+<p>Par défaut, les données dans un conteneur sont éphémères. Les <strong>Volumes</strong> et <strong>PersistentVolumes (PV)</strong> permettent de stocker des données de façon durable, indépendamment du cycle de vie du Pod.</p>
+<p><em>Lien Kubeflow :</em> les notebooks Kubeflow stockent les fichiers de travail sur des PersistentVolumes. Sans stockage persistant, vous perdriez tout à chaque redémarrage.</p>
+
+<div class="synthese">
+  <h4>🔑 Mini-synthèse — Objets essentiels</h4>
+  <table>
+    <thead><tr><th>Objet</th><th>Rôle en une phrase</th><th>Pertinence Kubeflow</th></tr></thead>
+    <tbody>
+      <tr><td>Pod</td><td>Exécute un ou plusieurs conteneurs</td><td>Chaque composant Kubeflow = un Pod</td></tr>
+      <tr><td>Deployment</td><td>Gère un groupe de Pods identiques</td><td>Composants stables (dashboard, contrôleurs)</td></tr>
+      <tr><td>Service</td><td>Expose des Pods via une IP stable</td><td>Accès au dashboard, communication interne</td></tr>
+      <tr><td>Namespace</td><td>Isole logiquement des ressources</td><td>Espace par utilisateur, par composant</td></tr>
+      <tr><td>ConfigMap / Secret</td><td>Stocke configuration / données sensibles</td><td>Paramétrage Kubeflow, credentials</td></tr>
+      <tr><td>PersistentVolume</td><td>Stockage durable hors du cycle du Pod</td><td>Notebooks, données, artefacts</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 2.5 -->
+<h3 id="kubeflow-briques">2.5. Pourquoi Kubeflow repose sur ces briques ?</h3>
+
+<p>Maintenant que nous connaissons les objets Kubernetes, voyons concrètement comment Kubeflow les utilise. Ce lien est fondamental pour comprendre la suite.</p>
+
+<p>Quand un data scientist ouvre un <strong>notebook Jupyter</strong> dans Kubeflow, voici ce qui se passe dans le cluster :</p>
+<ol>
+  <li>Un <strong>Pod</strong> est créé dans le namespace de l'utilisateur</li>
+  <li>Ce Pod exécute un conteneur avec une image Jupyter (Python, TensorFlow…)</li>
+  <li>Un <strong>PersistentVolume</strong> est monté pour sauvegarder les fichiers</li>
+  <li>Un <strong>Service</strong> expose le notebook pour y accéder via le navigateur</li>
+  <li>Des <strong>ConfigMaps</strong> et <strong>Secrets</strong> fournissent la configuration nécessaire</li>
+</ol>
+
+<p>De même, quand un pipeline ML s'exécute, chaque étape du pipeline crée un Pod. Le scheduling, la gestion des ressources, le redémarrage en cas d'erreur — tout cela est géré par Kubernetes.</p>
+
+<div class="box info">
+  <div class="box-title">💡 L'analogie</div>
+  Pensez à Kubernetes comme au <strong>système d'exploitation</strong> de votre cluster, et à Kubeflow comme une <strong>application</strong> installée dessus. Tout comme une application a besoin d'un OS fonctionnel (gestion mémoire, fichiers, réseau), Kubeflow a besoin d'un cluster Kubernetes fonctionnel (pods, services, stockage, namespaces).
+</div>
+
+<!-- 2.6 -->
+<h3 id="objectif-tp">2.6. Objectif concret de notre TP</h3>
+
+<p>Dans le TP qui suit, nous n'allons pas « juste parler » de Kubeflow. Nous allons :</p>
+<ul class="clean">
+  <li>Vérifier que notre infrastructure de laboratoire est prête</li>
+  <li>Valider le fonctionnement du cluster Kubernetes</li>
+  <li>Ancrer la logique Pod / Service / Deployment par un exercice rapide</li>
+  <li>Préparer l'environnement pour l'installation de Kubeflow</li>
+  <li><strong>Démarrer réellement l'installation</strong></li>
+  <li>Observer et comprendre ce qui a été déployé</li>
+  <li>Accéder (ou préparer l'accès) à l'interface Kubeflow</li>
+</ul>
+
+<p>C'est un TP ambitieux. Mais c'est ainsi que l'on apprend réellement : en faisant, en observant, en comprenant ce que l'on fait.</p>
+</section>
+
+<hr>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- COMMANDES KUBECTL                                      -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section id="commandes">
+<h2>3. Commandes kubectl essentielles</h2>
+
+<p><code>kubectl</code> est l'outil en ligne de commande pour interagir avec un cluster Kubernetes. C'est votre interface principale avec le cluster. Familiarisons-nous avec les commandes que nous utiliserons constamment.</p>
+
+<table>
+<thead>
+  <tr><th>Commande</th><th>Rôle</th><th>Exemple</th><th>Explication</th></tr>
+</thead>
+<tbody>
+  <tr>
+    <td><code>kubectl version</code></td>
+    <td>Vérifie la version client et serveur</td>
+    <td><code>kubectl version --short</code></td>
+    <td>Confirme que kubectl est installé et communique avec le cluster. Indique la version du client (votre machine) et du serveur (le cluster).</td>
+  </tr>
+  <tr>
+    <td><code>kubectl cluster-info</code></td>
+    <td>Informations sur le cluster</td>
+    <td><code>kubectl cluster-info</code></td>
+    <td>Affiche l'adresse du control plane et du service DNS. Si cette commande échoue, votre connexion au cluster est cassée.</td>
+  </tr>
+  <tr>
+    <td><code>kubectl get nodes</code></td>
+    <td>Liste les nœuds du cluster</td>
+    <td><code>kubectl get nodes -o wide</code></td>
+    <td>Montre chaque nœud, son statut (Ready / NotReady), son rôle (control-plane, worker), sa version. L'option <code>-o wide</code> ajoute l'IP et l'OS.</td>
+  </tr>
+  <tr>
+    <td><code>kubectl get pods</code></td>
+    <td>Liste les Pods</td>
+    <td><code>kubectl get pods -A</code></td>
+    <td>Le flag <code>-A</code> (all namespaces) est crucial : il montre les Pods de tous les espaces, y compris les composants système et Kubeflow.</td>
+  </tr>
+  <tr>
+    <td><code>kubectl get ns</code></td>
+    <td>Liste les namespaces</td>
+    <td><code>kubectl get ns</code></td>
+    <td>Montre les espaces de noms existants. Après l'installation de Kubeflow, vous verrez apparaître de nouveaux namespaces.</td>
+  </tr>
+  <tr>
+    <td><code>kubectl describe</code></td>
+    <td>Détails d'une ressource</td>
+    <td><code>kubectl describe pod mon-pod -n default</code></td>
+    <td>Affiche tous les détails : événements, conditions, configuration, volumes, état des conteneurs. Indispensable pour le debug.</td>
+  </tr>
+  <tr>
+    <td><code>kubectl logs</code></td>
+    <td>Journaux d'un conteneur</td>
+    <td><code>kubectl logs mon-pod -n default</code></td>
+    <td>Affiche la sortie standard du conteneur. Ajoutez <code>-f</code> pour suivre en temps réel (comme <code>tail -f</code>).</td>
+  </tr>
+  <tr>
+    <td><code>kubectl apply -f</code></td>
+    <td>Applique une configuration YAML</td>
+    <td><code>kubectl apply -f mon-fichier.yaml</code></td>
+    <td>Crée ou met à jour les ressources décrites dans le fichier. C'est la commande d'écriture déclarative par excellence.</td>
+  </tr>
+  <tr>
+    <td><code>kubectl delete -f</code></td>
+    <td>Supprime les ressources d'un YAML</td>
+    <td><code>kubectl delete -f mon-fichier.yaml</code></td>
+    <td>Supprime exactement les ressources décrites dans le fichier.</td>
+  </tr>
+  <tr>
+    <td><code>kubectl get svc -A</code></td>
+    <td>Liste tous les Services</td>
+    <td><code>kubectl get svc -A</code></td>
+    <td>Montre tous les points d'accès réseau. Utile pour trouver l'adresse du dashboard Kubeflow.</td>
+  </tr>
+  <tr>
+    <td><code>kubectl get deployments -A</code></td>
+    <td>Liste tous les Deployments</td>
+    <td><code>kubectl get deployments -A</code></td>
+    <td>Montre les Deployments et leur nombre de répliques (READY). Si READY montre 0/1, quelque chose ne va pas.</td>
+  </tr>
+</tbody>
+</table>
+
+<div class="box success">
+  <div class="box-title">✅ Conseil pratique</div>
+  L'option <code>-o wide</code> fonctionne sur presque toutes les commandes <code>get</code> et ajoute des colonnes utiles (IP, nœud, etc.). L'option <code>--watch</code> (ou <code>-w</code>) permet de surveiller les changements en temps réel — très utile pendant l'installation de Kubeflow pour voir les Pods démarrer progressivement.
+</div>
+</section>
+
+<hr>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- KUBEFLOW VUE D'ENSEMBLE                                -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section id="kubeflow-overview">
+<h2>4. Kubeflow — Vue d'ensemble avant installation</h2>
+
+<p>Avant de lancer l'installation, prenons un moment pour comprendre ce que nous allons déployer. Kubeflow n'est pas une simple application : c'est une <strong>plateforme composée de plusieurs briques</strong>, chacune ayant un rôle dans le cycle de vie du Machine Learning.</p>
+
+<h3>4.1. Qu'est-ce que Kubeflow ?</h3>
+
+<p>Kubeflow est une plateforme open source conçue pour rendre les workflows de Machine Learning sur Kubernetes <strong>simples, portables et scalables</strong>. Elle a été initiée par Google et est maintenue par une communauté active.</p>
+
+<p>L'idée fondatrice est la suivante : au lieu de bricoler des scripts, des serveurs Jupyter isolés, des systèmes de suivi d'expériences séparés, Kubeflow offre un <strong>environnement intégré</strong> qui couvre toutes les étapes du ML — de l'exploration des données au déploiement en production.</p>
+
+<h3>4.2. Les grands composants de Kubeflow</h3>
+
+<table>
+<thead>
+  <tr><th>Composant</th><th>Rôle</th><th>Ce que vous en ferez</th></tr>
+</thead>
+<tbody>
+  <tr>
+    <td><strong>Dashboard central</strong></td>
+    <td>Interface web unifiée pour accéder à tous les composants</td>
+    <td>Point d'entrée principal. Gestion des notebooks, pipelines, volumes.</td>
+  </tr>
+  <tr>
+    <td><strong>Notebooks</strong> (Jupyter)</td>
+    <td>Environnements Jupyter directement dans le cluster</td>
+    <td>Exploration de données, prototypage de modèles, expérimentation.</td>
+  </tr>
+  <tr>
+    <td><strong>Pipelines</strong></td>
+    <td>Orchestration de workflows ML en étapes reproductibles</td>
+    <td>Automatiser le cycle entraînement → évaluation → déploiement.</td>
+  </tr>
+  <tr>
+    <td><strong>Profils / Espaces</strong></td>
+    <td>Isolation multi-utilisateurs</td>
+    <td>Chaque étudiant / équipe a son propre espace isolé.</td>
+  </tr>
+  <tr>
+    <td><strong>Volumes / Artefacts</strong></td>
+    <td>Stockage persistant des données et modèles</td>
+    <td>Conserver les datasets, modèles entraînés, résultats.</td>
+  </tr>
+  <tr>
+    <td><strong>KServe / Serving</strong></td>
+    <td>Déploiement de modèles en production</td>
+    <td>Exposer un modèle entraîné comme une API (séances futures).</td>
+  </tr>
+</tbody>
+</table>
+
+<div class="svg-container">
+<svg viewBox="0 0 780 340" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans, sans-serif">
+  <!-- Couche Kubernetes -->
+  <rect x="40" y="250" width="700" height="70" rx="10" fill="#1a5276"/>
+  <text x="390" y="280" text-anchor="middle" fill="#fff" font-weight="700" font-size="14">Kubernetes — Orchestration de conteneurs</text>
+  <text x="390" y="300" text-anchor="middle" fill="#aed6f1" font-size="11">Pods • Services • Namespaces • Volumes • ConfigMaps • Secrets</text>
+
+  <!-- Couche Kubeflow -->
+  <rect x="40" y="120" width="700" height="115" rx="10" fill="#e67e22" opacity="0.12" stroke="#e67e22" stroke-width="1.5"/>
+  <text x="60" y="145" font-size="13" font-weight="700" fill="#e67e22">KUBEFLOW — Plateforme MLOps</text>
+
+  <rect x="60" y="158" width="115" height="60" rx="6" fill="#e67e22"/>
+  <text x="117" y="185" text-anchor="middle" fill="#fff" font-weight="600" font-size="11">Dashboard</text>
+  <text x="117" y="200" text-anchor="middle" fill="#fff" font-size="9" opacity="0.85">Interface web</text>
+
+  <rect x="190" y="158" width="115" height="60" rx="6" fill="#e67e22"/>
+  <text x="247" y="185" text-anchor="middle" fill="#fff" font-weight="600" font-size="11">Notebooks</text>
+  <text x="247" y="200" text-anchor="middle" fill="#fff" font-size="9" opacity="0.85">Jupyter intégré</text>
+
+  <rect x="320" y="158" width="115" height="60" rx="6" fill="#e67e22"/>
+  <text x="377" y="185" text-anchor="middle" fill="#fff" font-weight="600" font-size="11">Pipelines</text>
+  <text x="377" y="200" text-anchor="middle" fill="#fff" font-size="9" opacity="0.85">Workflows ML</text>
+
+  <rect x="450" y="158" width="115" height="60" rx="6" fill="#e67e22"/>
+  <text x="507" y="185" text-anchor="middle" fill="#fff" font-weight="600" font-size="11">Profils</text>
+  <text x="507" y="200" text-anchor="middle" fill="#fff" font-size="9" opacity="0.85">Multi-tenant</text>
+
+  <rect x="580" y="158" width="145" height="60" rx="6" fill="#e67e22"/>
+  <text x="652" y="185" text-anchor="middle" fill="#fff" font-weight="600" font-size="11">KServe / Serving</text>
+  <text x="652" y="200" text-anchor="middle" fill="#fff" font-size="9" opacity="0.85">Déploiement modèles</text>
+
+  <!-- Couche Usages MLOps -->
+  <rect x="40" y="20" width="700" height="80" rx="10" fill="#1e8449" opacity="0.1" stroke="#1e8449" stroke-width="1.5"/>
+  <text x="60" y="45" font-size="13" font-weight="700" fill="#1e8449">USAGES MLOps</text>
+  <text x="60" y="70" font-size="12" fill="#1e8449">Exploration → Entraînement → Évaluation → Déploiement → Monitoring → Ré-entraînement</text>
+  <text x="60" y="88" font-size="11" fill="#1e8449" opacity="0.7">Cycle continu de production de modèles ML en environnement managé</text>
+
+  <!-- Flèches verticales -->
+  <line x1="390" y1="100" x2="390" y2="118" stroke="#1e8449" stroke-width="2" stroke-dasharray="4,3"/>
+  <line x1="390" y1="235" x2="390" y2="248" stroke="#e67e22" stroke-width="2" stroke-dasharray="4,3"/>
+</svg>
+</div>
+
+<div class="box accent">
+  <div class="box-title">🎯 Ce que nous allons installer aujourd'hui</div>
+  Nous allons déployer l'ensemble de la plateforme Kubeflow. Certains composants (notebooks, pipelines) ne seront <em>utilisés</em> que dans les prochaines séances. Aujourd'hui, l'objectif est que tout soit <strong>installé et opérationnel</strong> pour que nous puissions ensuite nous concentrer sur l'utilisation.
+</div>
+</section>
+
+<hr>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- ARCHITECTURE DU LABO                                   -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section id="archi-lab">
+<h2>5. Architecture de laboratoire proposée</h2>
+
+<p>Voyons maintenant comment exploiter notre infrastructure réelle pour créer un cluster de laboratoire. Pour rappel, nous disposons de :</p>
+<ul>
+  <li><strong>2 hôtes ESXi</strong>, chacun avec 32 Go de RAM et 1 To HDD</li>
+  <li>vCenter opérationnel</li>
+  <li>Veeam pour les sauvegardes</li>
+</ul>
+
+<p>Voici l'architecture que nous allons utiliser. C'est une <strong>proposition pédagogique</strong> adaptée à notre labo — en production, le dimensionnement serait différent et on utiliserait de la haute disponibilité pour le control plane.</p>
+
+<table>
+<thead>
+  <tr><th>VM</th><th>Rôle</th><th>vCPU</th><th>RAM</th><th>Disque</th><th>Hôte ESXi</th><th>OS</th></tr>
+</thead>
+<tbody>
+  <tr><td><code>k8s-master</code></td><td>Control Plane K8s + administration kubectl</td><td>4</td><td>8 Go</td><td>100 Go</td><td>ESXi-1</td><td>Ubuntu 22.04 LTS</td></tr>
+  <tr><td><code>k8s-worker1</code></td><td>Worker Node 1 (exécution des Pods)</td><td>6</td><td>16 Go</td><td>200 Go</td><td>ESXi-1</td><td>Ubuntu 22.04 LTS</td></tr>
+  <tr><td><code>k8s-worker2</code></td><td>Worker Node 2 (exécution des Pods)</td><td>6</td><td>16 Go</td><td>200 Go</td><td>ESXi-2</td><td>Ubuntu 22.04 LTS</td></tr>
+</tbody>
+</table>
+
+<div class="box info">
+  <div class="box-title">💡 Pourquoi cette répartition ?</div>
+  <p>Le control plane n'a pas besoin de beaucoup de RAM car il ne lance pas les charges de travail. En revanche, les workers ont besoin de <strong>16 Go chacun</strong> car Kubeflow est gourmand : les composants (Istio, dashboard, notebooks, pipelines, etc.) consomment facilement 8 à 12 Go au total. En répartissant les workers sur les deux hôtes ESXi, nous obtenons une certaine résilience matérielle.</p>
+</div>
+
+<div class="svg-container">
+<svg viewBox="0 0 800 380" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans, sans-serif">
+  <!-- ESXi-1 -->
+  <rect x="20" y="50" width="370" height="310" rx="10" fill="#eaf2f8" stroke="#1a5276" stroke-width="1.5"/>
+  <text x="205" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="#1a5276">🖥️ Hôte ESXi-1 (32 Go RAM / 1 To)</text>
+
+  <rect x="45" y="95" width="320" height="100" rx="8" fill="#1a5276"/>
+  <text x="205" y="120" text-anchor="middle" fill="#fff" font-weight="700" font-size="13">k8s-master</text>
+  <text x="205" y="140" text-anchor="middle" fill="#aed6f1" font-size="11">Control Plane — 4 vCPU — 8 Go RAM</text>
+  <text x="205" y="158" text-anchor="middle" fill="#aed6f1" font-size="10">kube-apiserver • etcd • scheduler • controller-manager</text>
+  <text x="205" y="175" text-anchor="middle" fill="#f9e79f" font-size="10">+ kubectl (administration)</text>
+
+  <rect x="45" y="210" width="320" height="130" rx="8" fill="#2980b9"/>
+  <text x="205" y="240" text-anchor="middle" fill="#fff" font-weight="700" font-size="13">k8s-worker1</text>
+  <text x="205" y="258" text-anchor="middle" fill="#aed6f1" font-size="11">Worker Node — 6 vCPU — 16 Go RAM</text>
+  <text x="205" y="278" text-anchor="middle" fill="#aed6f1" font-size="10">kubelet • kube-proxy • containerd</text>
+  <rect x="70" y="293" width="75" height="30" rx="4" fill="#e67e22" opacity="0.85"/>
+  <text x="107" y="312" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">Pods KF</text>
+  <rect x="155" y="293" width="75" height="30" rx="4" fill="#e67e22" opacity="0.85"/>
+  <text x="192" y="312" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">Istio</text>
+  <rect x="240" y="293" width="100" height="30" rx="4" fill="#e67e22" opacity="0.85"/>
+  <text x="290" y="312" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">Notebooks</text>
+
+  <!-- ESXi-2 -->
+  <rect x="410" y="50" width="370" height="310" rx="10" fill="#eaf2f8" stroke="#1a5276" stroke-width="1.5"/>
+  <text x="595" y="78" text-anchor="middle" font-size="13" font-weight="700" fill="#1a5276">🖥️ Hôte ESXi-2 (32 Go RAM / 1 To)</text>
+
+  <rect x="435" y="95" width="320" height="130" rx="8" fill="#2980b9"/>
+  <text x="595" y="125" text-anchor="middle" fill="#fff" font-weight="700" font-size="13">k8s-worker2</text>
+  <text x="595" y="143" text-anchor="middle" fill="#aed6f1" font-size="11">Worker Node — 6 vCPU — 16 Go RAM</text>
+  <text x="595" y="163" text-anchor="middle" fill="#aed6f1" font-size="10">kubelet • kube-proxy • containerd</text>
+  <rect x="460" y="178" width="75" height="30" rx="4" fill="#e67e22" opacity="0.85"/>
+  <text x="497" y="197" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">Pipelines</text>
+  <rect x="545" y="178" width="85" height="30" rx="4" fill="#e67e22" opacity="0.85"/>
+  <text x="587" y="197" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">Dashboard</text>
+  <rect x="640" y="178" width="90" height="30" rx="4" fill="#e67e22" opacity="0.85"/>
+  <text x="685" y="197" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">KServe</text>
+
+  <!-- RAM libre -->
+  <rect x="435" y="250" width="320" height="80" rx="8" fill="#fff" stroke="#d5d8dc" stroke-width="1" stroke-dasharray="5,3"/>
+  <text x="595" y="280" text-anchor="middle" fill="#5d6d7e" font-size="12" font-style="italic">Ressources disponibles</text>
+  <text x="595" y="300" text-anchor="middle" fill="#5d6d7e" font-size="11">~16 Go RAM libres pour VMs supplémentaires</text>
+  <text x="595" y="316" text-anchor="middle" fill="#5d6d7e" font-size="10">(futures séances, GPU passthrough, etc.)</text>
+
+  <!-- Réseau -->
+  <line x1="365" y1="200" x2="410" y2="200" stroke="#e67e22" stroke-width="2.5"/>
+  <text x="388" y="194" text-anchor="middle" fill="#e67e22" font-size="9" font-weight="600" transform="rotate(-90 388 194)">LAN</text>
+</svg>
+</div>
+
+<div class="box warning">
+  <div class="box-title">⚠️ Rappel</div>
+  C'est une architecture de <strong>laboratoire pédagogique</strong>. En production, le control plane serait en haute disponibilité (3 masters), les workers seraient plus nombreux, et le stockage utiliserait des solutions distribuées (Ceph, Longhorn…). Ici, nous privilégions la simplicité pour apprendre.
+</div>
+</section>
+
+<hr>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- TP GUIDÉ                                               -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section id="tp">
+<h2>6. TP guidé — De la vérification du cluster au démarrage de Kubeflow</h2>
+<span class="duration">≈ 160 min</span>
+
+<p>Nous entrons maintenant dans la partie pratique. Suivez chaque étape dans l'ordre. Si vous êtes bloqué, relisez les explications avant de demander de l'aide. L'objectif est de comprendre chaque étape, pas seulement de taper des commandes.</p>
+
+<div class="box note">
+  <div class="box-title">📌 Pré-requis pour le TP</div>
+  <p>Avant de commencer, assurez-vous que :</p>
+  <ul>
+    <li>Les 3 VMs (<code>k8s-master</code>, <code>k8s-worker1</code>, <code>k8s-worker2</code>) sont démarrées et accessibles en SSH</li>
+    <li>Kubernetes est installé sur les 3 VMs (via <code>kubeadm</code> — cette installation a été préparée en amont)</li>
+    <li>Vous êtes connecté sur <code>k8s-master</code> en SSH avec un utilisateur disposant des droits sudo</li>
+    <li><code>kubectl</code> est configuré et fonctionnel sur le master</li>
+  </ul>
+</div>
+
+<!-- TP 1 -->
+<div class="tp-header" id="tp1">
+  <h3>TP 1 — Vérification de l'infrastructure de labo</h3>
+  <p>Objectif : valider que notre environnement est prêt avant toute manipulation Kubernetes</p>
+</div>
+
+<p>La toute première étape — que l'on oublie souvent — est de <strong>vérifier l'infrastructure</strong>. Il est inutile de lancer une installation si les VMs n'ont pas assez de ressources ou si la connectivité réseau est cassée.</p>
+
+<h4>Étape 1.1 — Vérifier les ressources de chaque VM</h4>
+
+<p>Connectez-vous en SSH sur chaque VM et exécutez les commandes suivantes.</p>
+
+<p><strong>Vérifier la RAM disponible :</strong></p>
+<div class="cmd">free -h</div>
+<div class="result">
+               total        used        free      shared  buff/cache   available
+Mem:           15Gi       1.2Gi       12Gi       ...       2.1Gi       13Gi
+</div>
+<p>Vous devez voir environ <strong>8 Go sur le master</strong> et <strong>16 Go sur chaque worker</strong>. Si la RAM disponible est significativement inférieure, vérifiez la configuration de la VM dans vCenter.</p>
+
+<p><strong>Vérifier les CPU :</strong></p>
+<div class="cmd">nproc</div>
+<div class="result">6</div>
+
+<p><strong>Vérifier l'espace disque :</strong></p>
+<div class="cmd">df -h /</div>
+<div class="result">
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda2       196G   12G  175G   7% /
+</div>
+<p>Kubeflow télécharge beaucoup d'images Docker. Vérifiez qu'il reste <strong>au moins 80 Go</strong> disponibles sur chaque worker.</p>
+
+<h4>Étape 1.2 — Vérifier la connectivité réseau</h4>
+
+<p>Depuis le master, vérifiez que vous pouvez atteindre les deux workers :</p>
+<div class="cmd">ping -c 3 k8s-worker1</div>
+<div class="cmd">ping -c 3 k8s-worker2</div>
+
+<p>Si le DNS ne résout pas les noms, utilisez les adresses IP directement. Vérifiez aussi la résolution DNS externe :</p>
+<div class="cmd">ping -c 3 google.com</div>
+
+<div class="box danger">
+  <div class="box-title">🚫 Erreur fréquente</div>
+  Si la résolution DNS externe échoue, l'installation de Kubeflow ne pourra pas télécharger les images Docker. Vérifiez la configuration DNS dans <code>/etc/resolv.conf</code> et assurez-vous que les VMs ont accès à Internet.
+</div>
+
+<h4>Étape 1.3 — Vérifier que le runtime de conteneurs fonctionne</h4>
+
+<p>Sur chaque nœud, vérifiez que <code>containerd</code> est actif :</p>
+<div class="cmd">sudo systemctl status containerd</div>
+<div class="result">
+● containerd.service - containerd container runtime
+     Loaded: loaded (/lib/systemd/system/containerd.service; enabled)
+     Active: active (running) since ...
+</div>
+
+<div class="synthese">
+  <h4>🔑 Pourquoi cette étape est indispensable</h4>
+  <p>Une installation de Kubeflow échouera silencieusement si le cluster manque de ressources, si la connectivité est cassée, ou si le runtime de conteneurs ne fonctionne pas. Ces vérifications prennent 5 minutes et vous éviteront des heures de debugging.</p>
+</div>
+
+<!-- TP 2 -->
+<div class="tp-header" id="tp2">
+  <h3>TP 2 — Vérification du cluster Kubernetes</h3>
+  <p>Objectif : confirmer que le cluster est sain et prêt à accueillir Kubeflow</p>
+</div>
+
+<p>Maintenant que l'infrastructure est validée, vérifions que le cluster Kubernetes lui-même est opérationnel.</p>
+
+<h4>Étape 2.1 — Vérifier les nœuds</h4>
+<div class="cmd">kubectl get nodes -o wide</div>
+<div class="result">
+NAME          STATUS   ROLES           AGE   VERSION   INTERNAL-IP     OS-IMAGE
+k8s-master    Ready    control-plane   2d    v1.28.4   192.168.1.10    Ubuntu 22.04 LTS
+k8s-worker1   Ready    &lt;none&gt;          2d    v1.28.4   192.168.1.11    Ubuntu 22.04 LTS
+k8s-worker2   Ready    &lt;none&gt;          2d    v1.28.4   192.168.1.12    Ubuntu 22.04 LTS
+</div>
+
+<p>Trois points à vérifier :</p>
+<ol>
+  <li><strong>STATUS = Ready</strong> pour les 3 nœuds. Si un nœud est <code>NotReady</code>, la kubelet ne communique pas correctement avec le control plane.</li>
+  <li><strong>VERSION</strong> identique sur tous les nœuds. Des versions différentes peuvent causer des problèmes de compatibilité.</li>
+  <li><strong>ROLES</strong> : le master doit avoir <code>control-plane</code>, les workers sont sans rôle explicite ou marqués <code>worker</code>.</li>
+</ol>
+
+<h4>Étape 2.2 — Vérifier les composants système</h4>
+<div class="cmd">kubectl get pods -n kube-system</div>
+<div class="result">
+NAME                                  READY   STATUS    RESTARTS   AGE
+coredns-5dd5756b68-xxxxx              1/1     Running   0          2d
+coredns-5dd5756b68-yyyyy              1/1     Running   0          2d
+etcd-k8s-master                       1/1     Running   0          2d
+kube-apiserver-k8s-master             1/1     Running   0          2d
+kube-controller-manager-k8s-master    1/1     Running   0          2d
+kube-proxy-xxxxx                      1/1     Running   0          2d
+kube-proxy-yyyyy                      1/1     Running   0          2d
+kube-proxy-zzzzz                      1/1     Running   0          2d
+kube-scheduler-k8s-master             1/1     Running   0          2d
+calico-node-xxxxx                     1/1     Running   0          2d
+...
+</div>
+
+<p>Tous les Pods du namespace <code>kube-system</code> doivent être en <code>Running</code>. Retrouvons ce que nous avons vu en théorie :</p>
+<ul>
+  <li><code>kube-apiserver</code>, <code>etcd</code>, <code>kube-scheduler</code>, <code>kube-controller-manager</code> → composants du control plane</li>
+  <li><code>kube-proxy</code> → un par nœud, pour le routage réseau</li>
+  <li><code>coredns</code> → DNS interne du cluster</li>
+  <li><code>calico-node</code> (ou votre plugin réseau) → gestion du réseau inter-pods</li>
+</ul>
+
+<h4>Étape 2.3 — Vérifier les namespaces existants</h4>
+<div class="cmd">kubectl get ns</div>
+<div class="result">
+NAME              STATUS   AGE
+default           Active   2d
+kube-node-lease   Active   2d
+kube-public       Active   2d
+kube-system       Active   2d
+</div>
+<p>À ce stade, vous ne devez voir que les namespaces par défaut de Kubernetes. Après l'installation de Kubeflow, cette liste sera beaucoup plus longue.</p>
+
+<h4>Étape 2.4 — Vérifier les informations du cluster</h4>
+<div class="cmd">kubectl cluster-info</div>
+<div class="result">
+Kubernetes control plane is running at https://192.168.1.10:6443
+CoreDNS is running at https://192.168.1.10:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+</div>
+
+<div class="box success">
+  <div class="box-title">✅ Point de validation</div>
+  Si toutes les commandes ci-dessus retournent des résultats corrects, votre cluster est <strong>sain et prêt</strong> pour la suite. Si quelque chose ne va pas, ne continuez pas — résolvez le problème d'abord.
+</div>
+
+<!-- TP 3 -->
+<div class="tp-header" id="tp3">
+  <h3>TP 3 — Rappel rapide : créer une ressource simple Kubernetes</h3>
+  <p>Objectif : ancrer la logique Pod / Service avant Kubeflow (exercice court)</p>
+</div>
+
+<p>Avant de plonger dans Kubeflow, faisons un exercice très rapide pour s'assurer que vous maîtrisez le cycle de base : créer un Pod, l'exposer via un Service, vérifier que tout fonctionne.</p>
+
+<h4>Étape 3.1 — Créer un Deployment nginx</h4>
+
+<p>Créez un fichier <code>test-nginx.yaml</code> sur le master :</p>
+<pre><code><span class="label">YAML</span>apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-nginx
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: test-nginx
+  template:
+    metadata:
+      labels:
+        app: test-nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.25
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-nginx-svc
+  namespace: default
+spec:
+  type: NodePort
+  selector:
+    app: test-nginx
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 30080</code></pre>
+
+<p>Appliquons ce fichier :</p>
+<div class="cmd">kubectl apply -f test-nginx.yaml</div>
+<div class="result">
+deployment.apps/test-nginx created
+service/test-nginx-svc created
+</div>
+
+<h4>Étape 3.2 — Vérifier le déploiement</h4>
+<div class="cmd">kubectl get pods -o wide</div>
+<div class="result">
+NAME                          READY   STATUS    RESTARTS   AGE   IP            NODE
+test-nginx-7d8f9c6b4-abc12   1/1     Running   0          30s   10.244.1.5    k8s-worker1
+test-nginx-7d8f9c6b4-def34   1/1     Running   0          30s   10.244.2.8    k8s-worker2
+</div>
+
+<p>Observez : Kubernetes a automatiquement réparti les 2 répliques sur les 2 workers. C'est exactement le rôle du scheduler. Chaque Pod a reçu une IP interne attribuée par le plugin réseau.</p>
+
+<div class="cmd">kubectl get svc test-nginx-svc</div>
+<div class="result">
+NAME             TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
+test-nginx-svc   NodePort   10.96.45.123   &lt;none&gt;         80:30080/TCP   45s
+</div>
+
+<p>Testez l'accès :</p>
+<div class="cmd">curl http://192.168.1.11:30080</div>
+<p>Vous devez voir la page d'accueil nginx. Ce Service de type <code>NodePort</code> est accessible sur le port 30080 de n'importe quel nœud du cluster.</p>
+
+<h4>Étape 3.3 — Nettoyage</h4>
+<p>Cet exercice était juste un rappel. Nettoyons :</p>
+<div class="cmd">kubectl delete -f test-nginx.yaml</div>
+
+<div class="box info">
+  <div class="box-title">💡 Pourquoi cet exercice ?</div>
+  Quand Kubeflow sera installé, vous verrez des dizaines de Deployments et Services. Cette manipulation vous a permis de comprendre le mécanisme de base : un Deployment crée des Pods, un Service les expose. Kubeflow fait exactement la même chose, à plus grande échelle.
+</div>
+
+<!-- TP 4 -->
+<div class="tp-header" id="tp4">
+  <h3>TP 4 — Préparation de l'environnement pour Kubeflow</h3>
+  <p>Objectif : installer les outils nécessaires et préparer le cluster</p>
+</div>
+
+<p>L'installation de Kubeflow nécessite quelques prérequis. Préparons-les méthodiquement.</p>
+
+<h4>Étape 4.1 — Comprendre la méthode d'installation</h4>
+
+<p>Il existe plusieurs méthodes pour installer Kubeflow. Pour notre labo, nous allons utiliser les <strong>manifests officiels Kubeflow</strong> avec <code>kustomize</code>. C'est la méthode la plus transparente : vous voyez exactement ce qui est déployé.</p>
+
+<div class="box note">
+  <div class="box-title">📌 Kustomize en bref</div>
+  <code>kustomize</code> est un outil intégré à <code>kubectl</code> qui permet de personnaliser des configurations YAML sans les modifier directement. On applique des « overlays » (modifications) sur une base de manifests. C'est ainsi que Kubeflow organise ses fichiers de déploiement.
+</div>
+
+<p>La différence entre « préparer le cluster » et « installer la plateforme » est importante :</p>
+<table>
+<thead>
+  <tr><th>Préparer le cluster</th><th>Installer Kubeflow</th></tr>
+</thead>
+<tbody>
+  <tr><td>S'assurer que Kubernetes fonctionne</td><td>Déployer les composants Kubeflow sur le cluster</td></tr>
+  <tr><td>Vérifier les ressources suffisantes</td><td>Créer les namespaces, Pods, Services, ConfigMaps</td></tr>
+  <tr><td>Installer les outils nécessaires (kustomize, git)</td><td>Configurer Istio, l'authentification, le dashboard</td></tr>
+  <tr><td>Configurer le stockage persistant</td><td>Lier tous les composants entre eux</td></tr>
+</tbody>
+</table>
+
+<h4>Étape 4.2 — Installer les outils requis</h4>
+
+<p>Sur le nœud master, vérifions et installons les outils nécessaires :</p>
+
+<p><strong>Vérifier la version de kubectl et kustomize :</strong></p>
+<div class="cmd">kubectl version --short</div>
+<div class="cmd">kubectl kustomize --help | head -3</div>
+<p><code>kustomize</code> est intégré dans <code>kubectl</code> depuis la version 1.14. Mais pour Kubeflow, il est recommandé d'utiliser une version standalone récente :</p>
+
+<div class="cmd">curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash</div>
+<div class="cmd">sudo mv kustomize /usr/local/bin/</div>
+<div class="cmd">kustomize version</div>
+
+<p><strong>Installer git (si ce n'est pas déjà fait) :</strong></p>
+<div class="cmd">sudo apt update && sudo apt install -y git</div>
+
+<h4>Étape 4.3 — Configurer le provisionnement de volumes persistants</h4>
+
+<p>Kubeflow a besoin de <strong>stockage persistant</strong> (PersistentVolumes). Pour un labo, nous allons utiliser un provisionneur simple basé sur le stockage local. Installons <code>local-path-provisioner</code> de Rancher :</p>
+
+<div class="cmd">kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.26/deploy/local-path-storage.yaml</div>
+
+<p>Puis définissons-le comme StorageClass par défaut :</p>
+<div class="cmd">kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'</div>
+
+<p>Vérifions :</p>
+<div class="cmd">kubectl get storageclass</div>
+<div class="result">
+NAME                   PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE
+local-path (default)   rancher.io/local-path   Delete          WaitForFirstConsumer
+</div>
+
+<div class="box warning">
+  <div class="box-title">⚠️ Point de vigilance</div>
+  Le <code>local-path-provisioner</code> stocke les données directement sur le disque du nœud worker. Ce n'est pas adapté à la production (pas de réplication), mais c'est parfait pour un labo. Si un worker est perdu, les données stockées dessus sont perdues aussi.
+</div>
+
+<h4>Étape 4.4 — Récupérer les manifests Kubeflow</h4>
+
+<p>Nous allons cloner le dépôt officiel des manifests :</p>
+<div class="cmd">cd ~</div>
+<div class="cmd">git clone https://github.com/kubeflow/manifests.git</div>
+<div class="cmd">cd manifests</div>
+<div class="cmd">git checkout v1.9-branch</div>
+
+<div class="box info">
+  <div class="box-title">💡 Pourquoi une branche spécifique ?</div>
+  Nous utilisons une branche stable (v1.9) plutôt que <code>main</code> pour éviter les régressions. En production, on épinglerait une version exacte (tag). Pour un labo pédagogique, la branche stable est un bon compromis.
+</div>
+
+<p>Explorons la structure :</p>
+<div class="cmd">ls -la</div>
+<div class="result">
+apps/           common/         contrib/        example/
+tests/          Makefile        README.md       ...
+</div>
+
+<p>Les dossiers principaux :</p>
+<ul>
+  <li><code>common/</code> — composants partagés : Istio, cert-manager, OIDC, namespaces</li>
+  <li><code>apps/</code> — composants applicatifs : dashboard, notebooks, pipelines, etc.</li>
+  <li><code>contrib/</code> — extensions optionnelles</li>
+</ul>
+
+<div class="synthese">
+  <h4>🔑 Bilan TP 4</h4>
+  <p>Notre environnement est maintenant prêt : les outils sont installés, le stockage persistant est configuré, et les manifests Kubeflow sont récupérés. Nous pouvons passer à l'installation proprement dite.</p>
+</div>
+
+<!-- TP 5 -->
+<div class="tp-header" id="tp5">
+  <h3>TP 5 — Démarrage de l'installation de Kubeflow</h3>
+  <p>Objectif : lancer le déploiement complet de Kubeflow — c'est le cœur du TP</p>
+</div>
+
+<p>Nous y sommes. C'est le moment le plus important de la séance. Nous allons lancer l'installation de l'ensemble de la plateforme Kubeflow sur notre cluster.</p>
+
+<h4>Étape 5.1 — Comprendre ce que nous allons déployer</h4>
+
+<p>L'installation via les manifests officiels déploie <strong>l'intégralité de Kubeflow</strong> en une seule commande. Cela inclut :</p>
+<ul>
+  <li><strong>Istio</strong> — service mesh pour la gestion du trafic et la sécurité réseau</li>
+  <li><strong>cert-manager</strong> — gestion automatique des certificats TLS</li>
+  <li><strong>Dex</strong> — authentification et gestion d'identité (OIDC)</li>
+  <li><strong>OIDC AuthService</strong> — middleware d'authentification</li>
+  <li><strong>Kubeflow namespace</strong> — espace dédié aux composants</li>
+  <li><strong>Central Dashboard</strong> — interface web principale</li>
+  <li><strong>Notebooks Controller</strong> — gestion des notebooks Jupyter</li>
+  <li><strong>Kubeflow Pipelines</strong> — orchestration de workflows ML</li>
+  <li><strong>KServe</strong> — déploiement de modèles (model serving)</li>
+  <li><strong>Katib</strong> — optimisation d'hyperparamètres</li>
+  <li><strong>Training Operator</strong> — gestion des jobs d'entraînement distribués</li>
+  <li><strong>Profils / KFAM</strong> — gestion multi-utilisateurs</li>
+  <li><strong>Volumes Web App</strong> — interface de gestion du stockage</li>
+</ul>
+
+<p>C'est beaucoup de composants, et c'est normal. Kubeflow est une <strong>plateforme complète</strong>. Nous n'utiliserons pas tout immédiatement, mais tout sera en place pour les prochaines séances.</p>
+
+<h4>Étape 5.2 — Lancer l'installation</h4>
+
+<p>Depuis le répertoire <code>~/manifests</code>, exécutez :</p>
+
+<div class="cmd">cd ~/manifests</div>
+
+<pre><code><span class="label">BASH</span># Installation complète — cette commande peut prendre 10 à 20 minutes
+while ! kustomize build example | kubectl apply -f -; do
+  echo "Retrying to apply resources..."
+  sleep 10
+done</code></pre>
+
+<div class="box warning">
+  <div class="box-title">⚠️ Pourquoi une boucle while ?</div>
+  <p>L'installation crée des ressources dans un ordre spécifique. Certaines ressources dépendent d'autres (CRDs — Custom Resource Definitions) qui doivent être créées en premier. La boucle <code>while</code> ré-applique automatiquement les manifests jusqu'à ce que toutes les dépendances soient satisfaites. C'est normal de voir des erreurs temporaires lors des premières itérations.</p>
+</div>
+
+<p>Pendant que l'installation tourne, ouvrez un <strong>second terminal SSH</strong> sur le master et surveillez l'évolution :</p>
+<div class="cmd">watch -n 5 "kubectl get pods -A | grep -v Running | grep -v Completed"</div>
+
+<p>Cette commande rafraîchit toutes les 5 secondes et affiche uniquement les Pods qui ne sont <strong>pas encore en Running</strong>. Au début, vous verrez beaucoup de Pods en <code>ContainerCreating</code> ou <code>Init</code>. Progressivement, ils passeront en <code>Running</code>.</p>
+
+<h4>Étape 5.3 — Comprendre ce qui se passe pendant l'installation</h4>
+
+<p>Pendant que les Pods démarrent, expliquons les phases de l'installation :</p>
+
+<p><strong>Phase 1 — CRDs et namespaces</strong> (premières secondes)</p>
+<p>Kubernetes crée les Custom Resource Definitions (nouveaux types d'objets) et les namespaces nécessaires. C'est la fondation sur laquelle tout le reste repose.</p>
+
+<p><strong>Phase 2 — Composants infrastructure</strong> (1-5 min)</p>
+<p>Istio, cert-manager et Dex démarrent. Ce sont les « services de support » dont Kubeflow a besoin. Istio en particulier est complexe et prend du temps.</p>
+
+<p><strong>Phase 3 — Composants Kubeflow</strong> (5-15 min)</p>
+<p>Les composants applicatifs démarrent : dashboard, notebooks controller, pipelines, KServe, etc. Ils téléchargent leurs images Docker, s'initialisent, et se connectent aux services d'infrastructure.</p>
+
+<p><strong>Phase 4 — Stabilisation</strong> (15-20 min)</p>
+<p>Tous les Pods atteignent l'état <code>Running</code>. Les contrôleurs vérifient que tout est fonctionnel. Les readiness probes confirment que les services sont prêts.</p>
+
+<div class="box danger">
+  <div class="box-title">🚫 Problèmes fréquents pendant l'installation</div>
+  <ul>
+    <li><strong>ImagePullBackOff</strong> — le cluster n'arrive pas à télécharger une image Docker. Vérifiez la connectivité Internet et le DNS.</li>
+    <li><strong>Pending</strong> prolongé — pas assez de ressources (RAM, CPU). Vérifiez avec <code>kubectl describe pod &lt;nom&gt; -n &lt;namespace&gt;</code>.</li>
+    <li><strong>CrashLoopBackOff</strong> — le conteneur démarre et plante en boucle. Consultez les logs avec <code>kubectl logs &lt;pod&gt; -n &lt;namespace&gt;</code>.</li>
+    <li><strong>Erreurs de dépendances</strong> — certaines ressources ne trouvent pas leurs CRDs. La boucle <code>while</code> résout généralement ce problème. Si ça persiste, relancez la commande.</li>
+  </ul>
+</div>
+
+<!-- TP 6 -->
+<div class="tp-header" id="tp6">
+  <h3>TP 6 — Observation du déploiement</h3>
+  <p>Objectif : apprendre à lire l'état du cluster pendant et après le déploiement</p>
+</div>
+
+<p>L'installation est en cours (ou terminée). Observons ce qui a été créé et apprenons à lire le cluster.</p>
+
+<h4>Étape 6.1 — Observer les namespaces créés par Kubeflow</h4>
+<div class="cmd">kubectl get ns</div>
+<div class="result">
+NAME                   STATUS   AGE
+auth                   Active   8m
+cert-manager           Active   10m
+default                Active   2d
+istio-system           Active   10m
+knative-eventing       Active   6m
+knative-serving        Active   6m
+kube-node-lease        Active   2d
+kube-public            Active   2d
+kube-system            Active   2d
+kubeflow               Active   7m
+kubeflow-user-example  Active   5m
+</div>
+
+<p>Comparons avec ce que nous avions avant (4 namespaces par défaut). Kubeflow a créé plusieurs espaces :</p>
+
+<table>
+<thead>
+  <tr><th>Namespace</th><th>Rôle</th></tr>
+</thead>
+<tbody>
+  <tr><td><code>istio-system</code></td><td>Service mesh Istio — gère le trafic réseau, la sécurité, l'observabilité</td></tr>
+  <tr><td><code>cert-manager</code></td><td>Gestion automatique des certificats TLS</td></tr>
+  <tr><td><code>auth</code></td><td>Authentification (Dex + OIDC AuthService)</td></tr>
+  <tr><td><code>kubeflow</code></td><td>Composants principaux de la plateforme (dashboard, contrôleurs, pipelines)</td></tr>
+  <tr><td><code>knative-serving</code></td><td>Serverless computing pour KServe (model serving)</td></tr>
+  <tr><td><code>knative-eventing</code></td><td>Gestion des événements pour Knative</td></tr>
+  <tr><td><code>kubeflow-user-example</code></td><td>Espace de travail du profil utilisateur par défaut</td></tr>
+</tbody>
+</table>
+
+<h4>Étape 6.2 — Observer les Pods par namespace</h4>
+
+<p>Examinons les Pods dans les namespaces clés :</p>
+<div class="cmd">kubectl get pods -n kubeflow</div>
+
+<p>Vous devriez voir des Pods comme :</p>
+<div class="result">
+NAME                                                READY   STATUS    AGE
+centraldashboard-xxxxxxxxx-xxxxx                    2/2     Running   7m
+jupyter-web-app-deployment-xxxxxxxxx-xxxxx          2/2     Running   6m
+katib-controller-xxxxxxxxx-xxxxx                    1/1     Running   5m
+katib-db-manager-xxxxxxxxx-xxxxx                    1/1     Running   5m
+katib-mysql-xxxxxxxxx-xxxxx                         1/1     Running   5m
+kserve-controller-manager-xxxxxxxxx-xxxxx           2/2     Running   6m
+kubeflow-pipelines-profile-controller-xxxxx-xxxxx   1/1     Running   5m
+ml-pipeline-xxxxxxxxx-xxxxx                         2/2     Running   6m
+ml-pipeline-ui-xxxxxxxxx-xxxxx                      2/2     Running   6m
+notebook-controller-deployment-xxxxxxxxx-xxxxx      2/2     Running   6m
+profiles-deployment-xxxxxxxxx-xxxxx                 3/3     Running   6m
+training-operator-xxxxxxxxx-xxxxx                   1/1     Running   5m
+volumes-web-app-deployment-xxxxxxxxx-xxxxx          2/2     Running   6m
+...
+</div>
+
+<div class="cmd">kubectl get pods -n istio-system</div>
+<div class="cmd">kubectl get pods -n auth</div>
+<div class="cmd">kubectl get pods -n cert-manager</div>
+
+<h4>Étape 6.3 — Repérer les états problématiques</h4>
+
+<p>Pour avoir une vue globale de tout le cluster :</p>
+<div class="cmd">kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded</div>
+
+<p>Cette commande affiche <strong>uniquement les Pods qui ne sont pas en bon état</strong>. Si la liste est vide, c'est que tout va bien. Si des Pods apparaissent, nous verrons comment les diagnostiquer.</p>
+
+<div class="box success">
+  <div class="box-title">✅ Indicateur de santé</div>
+  Si la grande majorité des Pods sont en <code>Running</code> avec READY au maximum (ex: 2/2, 1/1), l'installation est réussie. Il est normal que quelques Pods soient en <code>Completed</code> — ce sont des jobs d'initialisation qui ont terminé leur travail.
+</div>
+
+<!-- TP 7 -->
+<div class="tp-header" id="tp7">
+  <h3>TP 7 — Vérification des composants essentiels</h3>
+  <p>Objectif : valider que les briques clés sont opérationnelles</p>
+</div>
+
+<p>Nous allons maintenant vérifier de manière ciblée que les composants clés fonctionnent.</p>
+
+<h4>Étape 7.1 — Vérifier le Central Dashboard</h4>
+<div class="cmd">kubectl get pods -n kubeflow -l app=centraldashboard</div>
+<div class="cmd">kubectl get svc -n kubeflow centraldashboard</div>
+
+<h4>Étape 7.2 — Vérifier Kubeflow Pipelines</h4>
+<div class="cmd">kubectl get pods -n kubeflow -l app=ml-pipeline</div>
+<div class="cmd">kubectl get svc -n kubeflow ml-pipeline</div>
+<div class="cmd">kubectl get svc -n kubeflow ml-pipeline-ui</div>
+
+<h4>Étape 7.3 — Vérifier le Notebook Controller</h4>
+<div class="cmd">kubectl get pods -n kubeflow -l app=notebook-controller</div>
+
+<h4>Étape 7.4 — Vérifier Istio (gateway)</h4>
+<div class="cmd">kubectl get pods -n istio-system</div>
+<div class="cmd">kubectl get svc -n istio-system istio-ingressgateway</div>
+<div class="result">
+NAME                    TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)
+istio-ingressgateway    ClusterIP      10.96.xxx.xxx   &lt;none&gt;        80:xxxxx/TCP,443:xxxxx/TCP
+</div>
+
+<p>L'Istio Ingress Gateway est le <strong>point d'entrée réseau</strong> principal pour accéder à Kubeflow. C'est à travers ce service que nous atteindrons le dashboard.</p>
+
+<h4>Étape 7.5 — Vérifier les Deployments</h4>
+<div class="cmd">kubectl get deployments -n kubeflow</div>
+
+<p>Vérifiez la colonne READY. Par exemple, <code>1/1</code> signifie que 1 réplique sur 1 demandée est prête. Si vous voyez <code>0/1</code>, quelque chose ne va pas — utilisez <code>kubectl describe deployment &lt;nom&gt; -n kubeflow</code> pour diagnostiquer.</p>
+
+<div class="synthese">
+  <h4>🔑 Checklist de vérification</h4>
+  <table>
+    <thead><tr><th>Composant</th><th>Namespace</th><th>Status attendu</th></tr></thead>
+    <tbody>
+      <tr><td>Central Dashboard</td><td>kubeflow</td><td>Running (2/2)</td></tr>
+      <tr><td>ML Pipeline</td><td>kubeflow</td><td>Running (2/2)</td></tr>
+      <tr><td>Pipeline UI</td><td>kubeflow</td><td>Running (2/2)</td></tr>
+      <tr><td>Notebook Controller</td><td>kubeflow</td><td>Running (2/2)</td></tr>
+      <tr><td>Istio Ingress Gateway</td><td>istio-system</td><td>Running</td></tr>
+      <tr><td>Dex</td><td>auth</td><td>Running</td></tr>
+      <tr><td>cert-manager</td><td>cert-manager</td><td>Running</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- TP 8 -->
+<div class="tp-header" id="tp8">
+  <h3>TP 8 — Accès initial à Kubeflow</h3>
+  <p>Objectif : accéder à l'interface web du Central Dashboard</p>
+</div>
+
+<p>L'installation est terminée, les composants sont en place. Il est temps d'accéder à l'interface Kubeflow.</p>
+
+<h4>Étape 8.1 — Mettre en place le port-forwarding</h4>
+
+<p>Dans notre labo, le service Istio Ingress Gateway n'a pas d'IP externe (pas de load balancer). Nous allons utiliser le <strong>port-forwarding</strong> de kubectl pour accéder au dashboard depuis notre poste de travail :</p>
+
+<div class="cmd">kubectl port-forward svc/istio-ingressgateway -n istio-system 8080:80 --address 0.0.0.0</div>
+
+<p>L'option <code>--address 0.0.0.0</code> rend le port-forward accessible depuis d'autres machines du réseau (pas seulement localhost). Maintenant, ouvrez votre navigateur et accédez à :</p>
+
+<pre><code><span class="label">URL</span>http://&lt;IP-du-master&gt;:8080</code></pre>
+
+<h4>Étape 8.2 — Se connecter</h4>
+
+<p>Vous arriverez sur la page de connexion de <strong>Dex</strong> (le système d'authentification). Les identifiants par défaut sont :</p>
+
+<table>
+<thead>
+  <tr><th>Champ</th><th>Valeur par défaut</th></tr>
+</thead>
+<tbody>
+  <tr><td>Email</td><td><code>user@example.com</code></td></tr>
+  <tr><td>Mot de passe</td><td><code>12341234</code></td></tr>
+</tbody>
+</table>
+
+<div class="box danger">
+  <div class="box-title">🚫 Important — Sécurité</div>
+  Ces identifiants par défaut sont <strong>uniquement pour le laboratoire</strong>. En production, il est impératif de configurer un vrai fournisseur d'identité (LDAP, OAuth2) et de désactiver les identifiants par défaut.
+</div>
+
+<h4>Étape 8.3 — Découvrir le dashboard</h4>
+
+<p>Une fois connecté, vous arrivez sur le <strong>Central Dashboard</strong>. Prenons un moment pour repérer les éléments principaux :</p>
+
+<ul>
+  <li><strong>Menu latéral gauche</strong> — navigation entre les composants : Notebooks, Pipelines, Experiments, Runs, Volumes, etc.</li>
+  <li><strong>Namespace selector</strong> — en haut, vous pouvez changer de namespace utilisateur</li>
+  <li><strong>Notebooks</strong> — c'est ici que nous créerons des environnements Jupyter dans les prochaines séances</li>
+  <li><strong>Pipelines</strong> — c'est ici que nous définirons et exécuterons des workflows ML</li>
+  <li><strong>Volumes</strong> — gestion du stockage persistant</li>
+</ul>
+
+<div class="box success">
+  <div class="box-title">✅ Bravo !</div>
+  Si vous voyez le dashboard Kubeflow dans votre navigateur, <strong>l'installation est réussie</strong>. Vous avez un cluster Kubernetes avec une plateforme MLOps complète et opérationnelle. Nous allons l'exploiter dans les prochaines séances.
+</div>
+
+<!-- TP 9 -->
+<div class="tp-header" id="tp9">
+  <h3>TP 9 — Comprendre ce qui a été installé</h3>
+  <p>Objectif : prendre du recul sur l'installation et savoir ce que fait chaque composant</p>
+</div>
+
+<p>Cette section est très importante. Maintenant que tout est installé, prenons du recul pour comprendre ce que nous avons réellement déployé.</p>
+
+<h4>Étape 9.1 — Inventaire des composants déployés</h4>
+
+<p>Comptabilisons ce qui tourne dans notre cluster :</p>
+<div class="cmd">kubectl get pods -A | wc -l</div>
+<p>Vous devriez obtenir plusieurs dizaines de Pods. C'est normal — Kubeflow est une plateforme complète.</p>
+
+<div class="cmd">kubectl get pods -A --no-headers | awk '{print $1}' | sort | uniq -c | sort -rn</div>
+<div class="result">
+  18  kubeflow
+   8  istio-system
+   5  cert-manager
+   5  kube-system
+   3  auth
+   3  knative-serving
+   2  knative-eventing
+   1  kubeflow-user-example
+   ...
+</div>
+
+<p>Cela vous montre la répartition des Pods par namespace. Le namespace <code>kubeflow</code> contient le plus de composants.</p>
+
+<h4>Étape 9.2 — Comprendre chaque couche</h4>
+
+<table>
+<thead>
+  <tr><th>Couche</th><th>Composants</th><th>Rôle</th><th>Quand l'utiliserons-nous ?</th></tr>
+</thead>
+<tbody>
+  <tr>
+    <td><strong>Infrastructure</strong></td>
+    <td>Istio, cert-manager</td>
+    <td>Réseau sécurisé, certificats, routage</td>
+    <td>Transparent — toujours actif en arrière-plan</td>
+  </tr>
+  <tr>
+    <td><strong>Authentification</strong></td>
+    <td>Dex, OIDC AuthService</td>
+    <td>Gestion des identités et connexion</td>
+    <td>À chaque connexion au dashboard</td>
+  </tr>
+  <tr>
+    <td><strong>Interface</strong></td>
+    <td>Central Dashboard</td>
+    <td>Portail web unifié</td>
+    <td>Point d'entrée permanent</td>
+  </tr>
+  <tr>
+    <td><strong>Notebooks</strong></td>
+    <td>Notebook Controller, Jupyter Web App</td>
+    <td>Environnements Jupyter managés</td>
+    <td>Séance 3 — exploration et prototypage</td>
+  </tr>
+  <tr>
+    <td><strong>Pipelines</strong></td>
+    <td>ML Pipeline, Pipeline UI, Argo</td>
+    <td>Orchestration de workflows ML</td>
+    <td>Séances 4-5 — automatisation MLOps</td>
+  </tr>
+  <tr>
+    <td><strong>Serving</strong></td>
+    <td>KServe, Knative</td>
+    <td>Déploiement de modèles en production</td>
+    <td>Séances futures — model serving</td>
+  </tr>
+  <tr>
+    <td><strong>Training</strong></td>
+    <td>Training Operator, Katib</td>
+    <td>Entraînement distribué, HPO</td>
+    <td>Séances futures — optimisation</td>
+  </tr>
+  <tr>
+    <td><strong>Multi-utilisateurs</strong></td>
+    <td>Profiles, KFAM</td>
+    <td>Isolation par espace utilisateur</td>
+    <td>Dès maintenant — visible dans le dashboard</td>
+  </tr>
+</tbody>
+</table>
+
+<h4>Étape 9.3 — Ce que vous devez retenir à ce stade</h4>
+
+<div class="box accent">
+  <div class="box-title">🎯 L'essentiel à retenir</div>
+  <ol>
+    <li>Kubeflow n'est <strong>pas une seule application</strong> — c'est une plateforme composée de plusieurs briques qui s'appuient sur Kubernetes.</li>
+    <li>Chaque composant est un ensemble de <strong>Pods, Services, Deployments et ConfigMaps</strong> — exactement les objets que nous avons vus en théorie.</li>
+    <li>Istio et l'authentification forment la couche « invisible » qui fait fonctionner le tout.</li>
+    <li>Vous n'avez <strong>pas besoin de tout maîtriser aujourd'hui</strong>. Nous allons explorer chaque composant progressivement dans les séances à venir.</li>
+    <li>L'important aujourd'hui est de comprendre la <strong>structure générale</strong> et de savoir naviguer dans le cluster avec kubectl.</li>
+  </ol>
+</div>
+
+<!-- TP 10 -->
+<div class="tp-header" id="tp10">
+  <h3>TP 10 — Conservation de l'environnement</h3>
+  <p>Objectif : préparer le cluster pour la prochaine séance</p>
+</div>
+
+<p>Notre installation Kubeflow est précieuse — elle a pris du temps et des ressources. Voici comment nous allons la conserver pour la suite.</p>
+
+<h4>Étape 10.1 — Documenter l'état actuel</h4>
+
+<p>Sauvegardons un snapshot de l'état du cluster :</p>
+<div class="cmd">kubectl get pods -A -o wide > ~/etat-cluster-seance2.txt</div>
+<div class="cmd">kubectl get svc -A >> ~/etat-cluster-seance2.txt</div>
+<div class="cmd">kubectl get ns >> ~/etat-cluster-seance2.txt</div>
+<div class="cmd">echo "Date: $(date)" >> ~/etat-cluster-seance2.txt</div>
+
+<p>Ce fichier vous servira de référence. Si quelque chose change entre les séances, vous pourrez comparer.</p>
+
+<h4>Étape 10.2 — Sauvegarder les VMs</h4>
+
+<p>Si Veeam est configuré, lancez une sauvegarde des 3 VMs. Sinon, prenez au minimum un <strong>snapshot VMware</strong> de chaque VM via vCenter :</p>
+<ul>
+  <li>Clic droit sur la VM → Snapshots → Prendre un snapshot</li>
+  <li>Nommez-le : <code>Séance2-Kubeflow-installé</code></li>
+  <li>Incluez la mémoire si possible (pour restaurer sans redémarrage)</li>
+</ul>
+
+<h4>Étape 10.3 — Arrêt propre (si nécessaire)</h4>
+
+<p>Si les VMs doivent être éteintes entre les séances, arrêtez-les dans cet ordre :</p>
+<ol>
+  <li>Arrêter <code>k8s-worker2</code> (<code>sudo shutdown now</code>)</li>
+  <li>Arrêter <code>k8s-worker1</code></li>
+  <li>Arrêter <code>k8s-master</code> en dernier</li>
+</ol>
+
+<p>Au redémarrage, faites l'inverse : master en premier, puis les workers. Kubernetes redémarrera automatiquement les Pods.</p>
+
+<div class="box info">
+  <div class="box-title">💡 Conseil</div>
+  Après un redémarrage complet du cluster, certains Pods mettent plusieurs minutes à revenir en <code>Running</code>. C'est normal — les health checks et readiness probes prennent du temps. Attendez 5 à 10 minutes avant de diagnostiquer un problème.
+</div>
+</section>
+
+<hr>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- LIRE UNE INSTALLATION KUBEFLOW                        -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section id="lire-install">
+<h2>7. Lire une installation Kubeflow avec recul</h2>
+
+<p>Après avoir installé et observé Kubeflow, il est essentiel de savoir <strong>comment lire ce type d'installation</strong> sans se perdre. Voici une méthodologie que vous pourrez réutiliser pour toute plateforme déployée sur Kubernetes.</p>
+
+<h3>7.1. Commencer par les namespaces</h3>
+<p>Les namespaces vous donnent une <strong>carte de haut niveau</strong>. Chaque namespace correspond à un domaine fonctionnel. <code>kubectl get ns</code> est toujours votre premier réflexe.</p>
+
+<h3>7.2. Explorer les Pods par namespace</h3>
+<p>Dans chaque namespace, regardez les Pods (<code>kubectl get pods -n &lt;ns&gt;</code>). Le nom du Pod contient souvent le nom du composant. L'état READY et STATUS vous indique la santé.</p>
+
+<h3>7.3. Identifier les Services</h3>
+<p>Les Services (<code>kubectl get svc -n &lt;ns&gt;</code>) vous montrent les points d'accès. Le type (ClusterIP, NodePort, LoadBalancer) indique si le service est interne ou externe.</p>
+
+<h3>7.4. Repérer les Deployments et contrôleurs</h3>
+<p>Les Deployments gèrent les Pods. <code>kubectl get deploy -n &lt;ns&gt;</code> vous montre quoi est géré et combien de répliques sont actives.</p>
+
+<h3>7.5. Comprendre le stockage</h3>
+<p>Les PersistentVolumeClaims (<code>kubectl get pvc -n &lt;ns&gt;</code>) montrent quels composants utilisent du stockage persistant et combien.</p>
+
+<h3>7.6. Identifier l'authentification et le routage</h3>
+<p>Istio gère le routage réseau via des VirtualServices et Gateways. Dex gère l'authentification. Ces composants sont « invisibles » au quotidien mais essentiels.</p>
+
+<div class="synthese">
+  <h4>🔑 Méthode de lecture en 4 étapes</h4>
+  <p><strong>① Namespaces</strong> → vue d'ensemble / <strong>② Pods</strong> → composants actifs / <strong>③ Services</strong> → points d'accès / <strong>④ PVC</strong> → stockage. Cette séquence fonctionne pour n'importe quelle plateforme sur Kubernetes, pas seulement Kubeflow.</p>
+</div>
+</section>
+
+<hr>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SYNTHÈSE                                               -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section id="synthese">
+<h2>8. Synthèse de fin de séance</h2>
+
+<h3>Ce qu'il faut retenir sur Kubernetes</h3>
+<p>Kubernetes est un orchestrateur de conteneurs qui automatise le déploiement, la gestion et la mise à l'échelle. Son architecture repose sur un control plane (cerveau) et des workers (exécution). Les objets fondamentaux — Pod, Deployment, Service, Namespace, ConfigMap, Secret, PersistentVolume — sont les briques avec lesquelles tout est construit, y compris Kubeflow.</p>
+
+<h3>Ce qu'il faut retenir sur Kubeflow</h3>
+<p>Kubeflow est une <strong>plateforme MLOps complète</strong> qui s'installe sur Kubernetes. Elle est composée de multiples briques (notebooks, pipelines, serving, monitoring) déployées comme des Pods et Services Kubernetes. Comprendre Kubernetes est indispensable pour comprendre et opérer Kubeflow.</p>
+
+<h3>Ce que nous avons réellement accompli aujourd'hui</h3>
+<div class="grid-2">
+  <div class="box success" style="margin:0">
+    <div class="box-title">✅ Accompli</div>
+    <ul>
+      <li>Vérifié l'infrastructure de labo</li>
+      <li>Validé le cluster Kubernetes</li>
+      <li>Manipulé les objets de base (Deployment, Service)</li>
+      <li>Installé les prérequis (kustomize, stockage)</li>
+      <li>Déployé Kubeflow complet sur le cluster</li>
+      <li>Observé et compris les composants installés</li>
+      <li>Accédé au dashboard Kubeflow</li>
+      <li>Documenté l'état pour la suite</li>
+    </ul>
+  </div>
+  <div class="box note" style="margin:0">
+    <div class="box-title">📌 À approfondir dans les séances suivantes</div>
+    <ul>
+      <li>Créer et utiliser des notebooks Jupyter dans Kubeflow</li>
+      <li>Configurer le stockage pour les données ML</li>
+      <li>Construire un premier pipeline ML</li>
+      <li>Comprendre Istio et le routage avancé</li>
+      <li>Gérer les profils multi-utilisateurs</li>
+      <li>Déployer un modèle avec KServe</li>
+    </ul>
+  </div>
+</div>
+</section>
+
+<hr>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SUITE                                                  -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section id="suite">
+<h2>9. Ouverture sur la suite du module</h2>
+
+<p>La prochaine séance sera consacrée à l'<strong>utilisation concrète de Kubeflow</strong>. Voici ce que nous ferons :</p>
+
+<h3>Séance 3 — Kubeflow Notebooks et stockage</h3>
+<ul>
+  <li>Créer un notebook Jupyter directement dans Kubeflow</li>
+  <li>Choisir une image (TensorFlow, PyTorch, scikit-learn)</li>
+  <li>Configurer le stockage persistant pour les données</li>
+  <li>Explorer l'environnement de travail intégré</li>
+  <li>Charger un jeu de données et lancer un premier entraînement</li>
+</ul>
+
+<h3>Séances 4-5 — Kubeflow Pipelines et MLOps</h3>
+<ul>
+  <li>Comprendre le concept de pipeline ML</li>
+  <li>Construire un pipeline étape par étape</li>
+  <li>Exécuter et monitorer un pipeline</li>
+  <li>Versionner les modèles et les expériences</li>
+</ul>
+
+<h3>Séances suivantes — Vers le MLOps complet</h3>
+<ul>
+  <li>Déploiement de modèles avec KServe</li>
+  <li>Optimisation d'hyperparamètres avec Katib</li>
+  <li>Entraînement distribué</li>
+  <li>Monitoring et ré-entraînement</li>
+</ul>
+
+<div class="svg-container">
+<svg viewBox="0 0 780 120" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans, sans-serif">
+  <defs>
+    <marker id="arr2" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="8" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#e67e22"/>
+    </marker>
+  </defs>
+
+  <rect x="10" y="30" width="130" height="60" rx="8" fill="#1a5276"/>
+  <text x="75" y="55" text-anchor="middle" fill="#fff" font-weight="700" font-size="11">Séance 2 ✓</text>
+  <text x="75" y="72" text-anchor="middle" fill="#aed6f1" font-size="9">K8s + Install KF</text>
+
+  <line x1="142" y1="60" x2="170" y2="60" stroke="#e67e22" stroke-width="2" marker-end="url(#arr2)"/>
+
+  <rect x="172" y="30" width="130" height="60" rx="8" fill="#e67e22"/>
+  <text x="237" y="55" text-anchor="middle" fill="#fff" font-weight="700" font-size="11">Séance 3</text>
+  <text x="237" y="72" text-anchor="middle" fill="#fff" font-size="9" opacity="0.85">Notebooks + Data</text>
+
+  <line x1="304" y1="60" x2="332" y2="60" stroke="#e67e22" stroke-width="2" marker-end="url(#arr2)"/>
+
+  <rect x="334" y="30" width="130" height="60" rx="8" fill="#e67e22" opacity="0.8"/>
+  <text x="399" y="55" text-anchor="middle" fill="#fff" font-weight="700" font-size="11">Séances 4-5</text>
+  <text x="399" y="72" text-anchor="middle" fill="#fff" font-size="9" opacity="0.85">Pipelines MLOps</text>
+
+  <line x1="466" y1="60" x2="494" y2="60" stroke="#e67e22" stroke-width="2" marker-end="url(#arr2)"/>
+
+  <rect x="496" y="30" width="130" height="60" rx="8" fill="#1e8449"/>
+  <text x="561" y="55" text-anchor="middle" fill="#fff" font-weight="700" font-size="11">Séances 6+</text>
+  <text x="561" y="72" text-anchor="middle" fill="#fff" font-size="9" opacity="0.85">Serving + Prod</text>
+
+  <line x1="628" y1="60" x2="656" y2="60" stroke="#e67e22" stroke-width="2" marker-end="url(#arr2)"/>
+
+  <rect x="658" y="30" width="110" height="60" rx="8" fill="#1e8449" opacity="0.8"/>
+  <text x="713" y="55" text-anchor="middle" fill="#fff" font-weight="700" font-size="11">Projet final</text>
+  <text x="713" y="72" text-anchor="middle" fill="#fff" font-size="9" opacity="0.85">MLOps complet</text>
+</svg>
+</div>
+</section>
+
+<hr>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- ÉVALUATION                                             -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section id="eval">
+<h2>10. Évaluation rapide</h2>
+
+<h3>Questions de vérification</h3>
+<div class="quiz">
+  <div class="q">Quelle est la différence fondamentale entre Docker et Kubernetes ? Pourquoi a-t-on besoin des deux ?</div>
+  <div class="q">Nommez les 4 composants principaux du Control Plane Kubernetes et expliquez le rôle de chacun en une phrase.</div>
+  <div class="q">Qu'est-ce qu'un Pod ? En quoi est-il différent d'un conteneur Docker ?</div>
+  <div class="q">Quel est le rôle d'un Service dans Kubernetes ? Pourquoi les Pods ne suffisent-ils pas pour accéder à une application ?</div>
+  <div class="q">Pourquoi Kubeflow a-t-il besoin de Kubernetes ? Donnez deux exemples concrets de composants Kubeflow qui s'appuient sur des objets Kubernetes.</div>
+  <div class="q">Quelle commande permet de voir <strong>tous</strong> les Pods du cluster, dans tous les namespaces ? Pourquoi le flag <code>-A</code> est-il important ?</div>
+  <div class="q">Après l'installation de Kubeflow, combien de namespaces supplémentaires apparaissent ? Citez-en trois avec leur rôle.</div>
+  <div class="q">Qu'est-ce que Dex et quel est son rôle dans Kubeflow ?</div>
+  <div class="q">Si un Pod reste en état <code>ImagePullBackOff</code>, quelle est la cause probable ? Comment diagnostiquer ?</div>
+  <div class="q">Décrivez la méthode en 4 étapes pour « lire » une installation sur Kubernetes (namespaces → ?).</div>
+</div>
+
+<h3>Questions de réflexion</h3>
+<div class="quiz">
+  <div class="q">Notre cluster utilise <code>local-path-provisioner</code> pour le stockage. Quelles sont les limites de cette approche ? Que faudrait-il utiliser en production ?</div>
+  <div class="q">Pourquoi Kubeflow installe-t-il Istio (un service mesh) ? Quel serait l'impact si Istio ne fonctionnait pas ?</div>
+  <div class="q">En observant les Pods, certains montrent READY 2/2 tandis que d'autres montrent 1/1. À quoi correspond le deuxième conteneur dans les Pods 2/2 ?</div>
+</div>
+
+<h3>Mini exercice à faire à la maison</h3>
+
+<div class="box accent">
+  <div class="box-title">📝 Exercice — Exploration du cluster</div>
+  <p>Connectez-vous au cluster et réalisez les actions suivantes. Documentez vos commandes et résultats dans un fichier texte.</p>
+  <ol>
+    <li>Listez tous les namespaces et comptez le nombre de Pods dans chacun.</li>
+    <li>Trouvez le nom exact du Pod qui exécute le Central Dashboard. Dans quel namespace se trouve-t-il ?</li>
+    <li>Utilisez <code>kubectl describe</code> sur ce Pod et identifiez : l'image Docker utilisée, les ports exposés, et l'état des readiness probes.</li>
+    <li>Listez tous les Services de type <code>ClusterIP</code> dans le namespace <code>kubeflow</code>. Combien y en a-t-il ?</li>
+    <li>Trouvez les PersistentVolumeClaims créés par Kubeflow et notez leur taille et leur statut.</li>
+  </ol>
+</div>
+</section>
+
+<hr>
+<p style="text-align:center; color:var(--text-light); font-size:0.85rem; margin-top:3rem;">
+  Module Cloud — Séance 2 · Kubernetes &amp; Kubeflow · ENSA Fès — Université Sidi Mohamed Ben Abdellah
+</p>
+
+</main>
+</body>
+</html>

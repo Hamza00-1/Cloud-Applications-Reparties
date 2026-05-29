@@ -1,0 +1,1959 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Séance 7 — Sérialisation et Marshalling (Python)</title>
+<style>
+:root {
+  --primary: #1a237e;
+  --primary-light: #3949ab;
+  --accent: #00897b;
+  --accent-light: #e0f2f1;
+  --warn: #e65100;
+  --warn-bg: #fff3e0;
+  --danger: #b71c1c;
+  --danger-bg: #fce4ec;
+  --info: #0d47a1;
+  --info-bg: #e3f2fd;
+  --security: #4a148c;
+  --security-bg: #f3e5f5;
+  --success: #1b5e20;
+  --success-bg: #e8f5e9;
+  --gray-50: #fafafa;
+  --gray-100: #f5f5f5;
+  --gray-200: #eeeeee;
+  --gray-300: #e0e0e0;
+  --gray-700: #616161;
+  --gray-900: #212121;
+  --radius: 8px;
+  --shadow: 0 2px 8px rgba(0,0,0,0.10);
+  --font-mono: 'Courier New', Courier, monospace;
+  --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { font-size: 16px; scroll-behavior: smooth; }
+body {
+  font-family: var(--font-main);
+  color: var(--gray-900);
+  background: var(--gray-100);
+  margin: 0; padding: 0;
+  line-height: 1.7;
+}
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px 30px 60px;
+  background: #fff;
+  min-height: 100vh;
+}
+/* HEADER */
+.course-header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  color: #fff;
+  padding: 40px 40px 30px;
+  border-radius: 0 0 var(--radius) var(--radius);
+  margin: 0 -30px 30px;
+}
+.course-header h1 {
+  margin: 0 0 8px; font-size: 2rem; font-weight: 700;
+  letter-spacing: -0.5px;
+}
+.course-header .subtitle { font-size: 1.1rem; opacity: 0.92; margin-bottom: 18px; }
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px 20px;
+}
+.meta-item { font-size: 0.92rem; }
+.meta-item strong { opacity: 0.85; font-weight: 600; }
+
+/* BADGES */
+.badge {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 2px 4px 2px 0;
+  vertical-align: middle;
+}
+.badge-json { background: #fff9c4; color: #f57f17; border: 1px solid #f9a825; }
+.badge-xml { background: #e8eaf6; color: #283593; border: 1px solid #5c6bc0; }
+.badge-protobuf { background: #e0f7fa; color: #00695c; border: 1px solid #00897b; }
+.badge-validation { background: #f3e5f5; color: #6a1b9a; border: 1px solid #ab47bc; }
+.badge-security { background: var(--danger-bg); color: var(--danger); border: 1px solid #ef5350; }
+
+/* HEADINGS */
+h2 {
+  color: var(--primary);
+  border-bottom: 3px solid var(--primary-light);
+  padding-bottom: 8px;
+  margin-top: 50px;
+  font-size: 1.6rem;
+}
+h3 {
+  color: var(--primary-light);
+  margin-top: 35px;
+  font-size: 1.25rem;
+}
+h4 {
+  color: var(--accent);
+  margin-top: 25px;
+  font-size: 1.08rem;
+}
+
+/* BOXES / CALLOUTS */
+.box {
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  margin: 22px 0;
+  border-left: 5px solid;
+  position: relative;
+}
+.box .box-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+  font-size: 1rem;
+}
+.box-retenir { background: var(--success-bg); border-color: var(--success); }
+.box-retenir .box-title { color: var(--success); }
+.box-piege { background: var(--warn-bg); border-color: var(--warn); }
+.box-piege .box-title { color: var(--warn); }
+.box-securite { background: var(--security-bg); border-color: var(--security); }
+.box-securite .box-title { color: var(--security); }
+.box-info { background: var(--info-bg); border-color: var(--info); }
+.box-info .box-title { color: var(--info); }
+.box-exemple { background: var(--gray-50); border-color: var(--accent); }
+.box-exemple .box-title { color: var(--accent); }
+
+/* TABLES */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0;
+  font-size: 0.92rem;
+}
+th {
+  background: var(--primary);
+  color: #fff;
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+}
+td {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--gray-300);
+  vertical-align: top;
+}
+tr:nth-child(even) td { background: var(--gray-50); }
+tr:hover td { background: #e8eaf6; }
+
+/* CODE */
+pre {
+  background: #263238;
+  color: #eeffff;
+  padding: 18px 22px;
+  border-radius: var(--radius);
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  margin: 16px 0;
+  position: relative;
+}
+pre .comment { color: #546e7a; }
+pre .keyword { color: #c792ea; }
+pre .string { color: #c3e88d; }
+pre .function { color: #82aaff; }
+pre .number { color: #f78c6c; }
+pre .decorator { color: #ffcb6b; }
+pre .builtin { color: #89ddff; }
+
+code {
+  font-family: var(--font-mono);
+  background: var(--gray-200);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.88em;
+}
+pre code { background: none; padding: 0; }
+
+/* SVG FIGURES */
+.figure-container {
+  text-align: center;
+  margin: 28px 0;
+}
+.figure-container svg {
+  max-width: 100%;
+  height: auto;
+}
+.figure-caption {
+  font-size: 0.88rem;
+  color: var(--gray-700);
+  font-style: italic;
+  margin-top: 8px;
+}
+
+/* TIMELINE */
+.timeline {
+  position: relative;
+  padding-left: 30px;
+  margin: 20px 0;
+}
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 10px; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--primary-light);
+  border-radius: 2px;
+}
+.timeline-item {
+  position: relative;
+  margin-bottom: 18px;
+  padding: 10px 16px;
+  background: var(--gray-50);
+  border-radius: var(--radius);
+  border: 1px solid var(--gray-300);
+}
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -26px; top: 16px;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  border: 2px solid #fff;
+}
+.timeline-item .time {
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 0.9rem;
+}
+.timeline-item .desc { margin-top: 4px; }
+
+/* QUIZ */
+.quiz-q {
+  background: var(--info-bg);
+  border-left: 4px solid var(--info);
+  padding: 12px 18px;
+  margin: 12px 0;
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+.quiz-q .q-num { font-weight: 700; color: var(--info); }
+.corrige {
+  background: var(--success-bg);
+  border-left: 4px solid var(--success);
+  padding: 12px 18px;
+  margin: 12px 0;
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+/* CHECKLIST */
+.checklist { list-style: none; padding-left: 0; }
+.checklist li {
+  padding: 6px 0 6px 30px;
+  position: relative;
+}
+.checklist li::before {
+  content: '☐';
+  position: absolute;
+  left: 4px;
+  font-size: 1.1rem;
+  color: var(--primary-light);
+}
+
+/* TOC */
+.toc {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius);
+  padding: 20px 28px;
+  margin: 25px 0;
+}
+.toc h3 { margin-top: 0; color: var(--primary); }
+.toc ul { padding-left: 20px; }
+.toc li { margin: 5px 0; }
+
+/* PRINT */
+@media print {
+  body { background: #fff; font-size: 11pt; }
+  .container { padding: 0; box-shadow: none; }
+  .course-header { border-radius: 0; }
+  pre { font-size: 9pt; }
+  h2 { page-break-before: always; }
+  .box, table, pre { break-inside: avoid; }
+}
+@media (max-width: 700px) {
+  .container { padding: 10px 12px 40px; }
+  .course-header { padding: 24px 18px 18px; margin: 0 -12px 20px; }
+  .course-header h1 { font-size: 1.4rem; }
+  table { font-size: 0.82rem; }
+  pre { font-size: 0.8rem; padding: 12px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ========== HEADER ========== -->
+<header class="course-header">
+  <h1>Séance 7 — Sérialisation et Marshalling (Python)</h1>
+  <div class="subtitle">Module : Applications Réparties et Cybersécurité</div>
+  <div class="meta-grid">
+    <div class="meta-item"><strong>Durée :</strong> 4 h (240 min)</div>
+    <div class="meta-item"><strong>Public :</strong> 1<sup>ère</sup> année cycle ingénieur cybersécurité</div>
+    <div class="meta-item"><strong>Pré-requis :</strong> Bases Python, notions HTTP/JSON, communication distribuée (séance 6)</div>
+    <div class="meta-item"><strong>Évaluation :</strong> Livrables TP + quiz</div>
+  </div>
+  <div style="margin-top:16px;">
+    <span class="badge badge-json">JSON</span>
+    <span class="badge badge-xml">XML</span>
+    <span class="badge badge-protobuf">Protobuf</span>
+    <span class="badge badge-validation">Validation</span>
+    <span class="badge badge-security">Sécurité</span>
+  </div>
+</header>
+
+<!-- ========== TABLE DES MATIÈRES ========== -->
+<nav class="toc">
+  <h3>Table des matières</h3>
+  <ul>
+    <li>1. Objectifs de la séance</li>
+    <li>2. Déroulement détaillé (240 min)</li>
+    <li>3. Cours — Concepts fondamentaux</li>
+    <li>4. Cours — Formats : texte vs binaire, schema-less vs schema-based</li>
+    <li>5. Cours — JSON en Python (focus professionnel)</li>
+    <li>6. Cours — XML en Python (usage + sécurité)</li>
+    <li>7. Cours — Protocol Buffers (Protobuf) côté Python</li>
+    <li>8. Cours — Désérialisation non sécurisée : comprendre et se protéger</li>
+    <li>9. Démonstrations / Live Coding Python</li>
+    <li>10. TP guidé (90 min)</li>
+    <li>11. Lab Sécurité (30 min)</li>
+    <li>12. Synthèse & évaluation</li>
+    <li>13. Mini-quiz (10 questions) + corrigé</li>
+  </ul>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 1. OBJECTIFS -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="objectifs">1. Objectifs de la séance</h2>
+
+<ul>
+  <li><strong>Comprendre</strong> les concepts de sérialisation, désérialisation, marshalling/unmarshalling en systèmes distribués.</li>
+  <li><strong>Maîtriser</strong> les formats courants côté Python : JSON, XML (concept et parsing sûr), formats à schéma (Protocol Buffers – côté Python).</li>
+  <li><strong>Distinguer</strong> formats texte vs binaire, schema-less vs schema-based, et leurs impacts (performance, compatibilité, sécurité).</li>
+  <li><strong>Identifier</strong> les vulnérabilités liées à la <strong>désérialisation non sécurisée</strong> (pickle, parsing XML, payloads manipulés) et <strong>appliquer les protections</strong>.</li>
+</ul>
+
+<div class="box box-retenir">
+  <div class="box-title">🎯 Fil conducteur de la séance</div>
+  Dans un système distribué, chaque donnée qui transite entre composants doit être transformée en une séquence d'octets (sérialisation), puis reconstruite de l'autre côté (désérialisation).
+  Ce mécanisme est <strong>omniprésent</strong> — et constitue l'une des <strong>surfaces d'attaque les plus sous-estimées</strong>.
+  Aujourd'hui, nous apprenons à le faire <em>correctement et en sécurité</em> en Python.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 2. DÉROULEMENT -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="deroulement">2. Déroulement détaillé (240 min)</h2>
+
+<div class="timeline">
+  <div class="timeline-item">
+    <div class="time">0 – 15 min · Warm-up &amp; révisions</div>
+    <div class="desc">Rappel : transport de données, JSON, erreurs typiques en API REST.
+    Questions-réponses rapides, mini-QCM oral.</div>
+  </div>
+  <div class="timeline-item">
+    <div class="time">15 – 105 min · Cours interactif + démonstrations Python (90 min)</div>
+    <div class="desc">Concepts fondamentaux, formats (JSON, XML, Protobuf), vulnérabilités de désérialisation.
+    Démonstrations live coding (3 mini-exemples).</div>
+  </div>
+  <div class="timeline-item">
+    <div class="time">105 – 195 min · TP guidé (90 min)</div>
+    <div class="desc">TP7.1 Contrat JSON + validation. TP7.2 Versioning JSON. TP7.3 Protobuf Python.
+    TP7.4 Politique pickle.</div>
+  </div>
+  <div class="timeline-item">
+    <div class="time">195 – 225 min · Lab sécurité (30 min)</div>
+    <div class="desc">Threat modeling flux sérialisation. Checklist « Secure Deserialization Baseline ».</div>
+  </div>
+  <div class="timeline-item">
+    <div class="time">225 – 240 min · Synthèse &amp; perspective (15 min)</div>
+    <div class="desc">Résumé en 10 points, mini-quiz, préparation séance suivante.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 3. COURS — CONCEPTS FONDAMENTAUX -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="concepts">3. Cours — Concepts fondamentaux (distribué)</h2>
+
+<h3>3.1 Définitions clés</h3>
+
+<table>
+  <thead>
+    <tr><th>Terme</th><th>Définition</th><th>Analogie</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Sérialisation</strong></td>
+      <td>Transformer une structure de données en mémoire (objet, dictionnaire…) en une séquence d'octets (ou de caractères) transportable ou stockable.</td>
+      <td>Emballer un meuble IKEA dans un carton plat pour le livrer.</td>
+    </tr>
+    <tr>
+      <td><strong>Désérialisation</strong></td>
+      <td>Opération inverse : reconstruire la structure de données à partir de la séquence d'octets.</td>
+      <td>Remonter le meuble à partir des planches et du plan.</td>
+    </tr>
+    <tr>
+      <td><strong>Marshalling</strong></td>
+      <td>Sérialisation + métadonnées nécessaires au transport (types, longueurs, en-têtes de protocole). Souvent utilisé dans les contextes RPC.</td>
+      <td>Emballer + coller l'étiquette d'expédition avec poids, dimensions, destinataire.</td>
+    </tr>
+    <tr>
+      <td><strong>Unmarshalling</strong></td>
+      <td>Désérialisation + interprétation des métadonnées de transport.</td>
+      <td>Recevoir le colis, lire l'étiquette, puis déballer.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>3.2 Pourquoi c'est central en systèmes distribués</h3>
+<p>La sérialisation intervient <strong>partout</strong> dans une architecture distribuée :</p>
+<ul>
+  <li><strong>Échanges réseau</strong> — requêtes/réponses HTTP, messages gRPC, WebSocket</li>
+  <li><strong>Stockage</strong> — bases de données documentaires, fichiers de configuration</li>
+  <li><strong>Caches</strong> — Redis, Memcached : les objets doivent être sérialisés en bytes</li>
+  <li><strong>Logs structurés</strong> — chaque événement est sérialisé (JSON, etc.)</li>
+  <li><strong>Files de messages</strong> — Kafka, RabbitMQ : les messages sont des bytes</li>
+  <li><strong>RPC (Remote Procedure Call)</strong> — gRPC marshalle/unmarshalle automatiquement</li>
+</ul>
+
+<h3>3.3 Le contrat de données</h3>
+<p>Même en JSON (format sans schéma formel obligatoire), il existe un <strong>contrat implicite</strong> entre émetteur et récepteur :</p>
+<ul>
+  <li>Quels <strong>champs</strong> sont attendus ?</li>
+  <li>Quels <strong>types</strong> pour chaque champ ?</li>
+  <li>Quels champs sont <strong>obligatoires</strong> vs <strong>optionnels</strong> ?</li>
+  <li>Que se passe-t-il si un champ inconnu apparaît ? (tolérer ou refuser ?)</li>
+  <li>Comment gérer le <strong>versioning</strong> (évolution du contrat) ?</li>
+</ul>
+
+<div class="box box-piege">
+  <div class="box-title">⚠️ Piège classique : confondre format (JSON) et contrat (schéma attendu)</div>
+  <p>« C'est du JSON, donc c'est compatible. » — <strong>FAUX.</strong><br>
+  JSON n'est qu'un format de représentation textuelle. Deux services peuvent parler JSON mais avoir des <em>contrats incompatibles</em> :
+  un attend <code>"status": "active"</code> (chaîne) et l'autre envoie <code>"status": 1</code> (entier).<br>
+  Le format est le même, le contrat est différent → <strong>erreur silencieuse</strong> ou crash.</p>
+</div>
+
+<h3>3.4 Figure — Pipeline de sérialisation/désérialisation</h3>
+
+<div class="figure-container">
+<svg viewBox="0 0 900 180" xmlns="http://www.w3.org/2000/svg" style="max-width:860px;">
+  <!-- Nœud 1 : Objet Python -->
+  <rect x="10" y="55" width="140" height="65" rx="10" fill="#e8eaf6" stroke="#3949ab" stroke-width="2"/>
+  <text x="80" y="82" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a237e">Objet Python</text>
+  <text x="80" y="102" text-anchor="middle" font-size="11" fill="#616161">(dict, dataclass)</text>
+
+  <!-- Flèche 1 -->
+  <line x1="150" y1="88" x2="210" y2="88" stroke="#3949ab" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="180" y="78" text-anchor="middle" font-size="10" fill="#3949ab">sérialisation</text>
+
+  <!-- Nœud 2 : Bytes / Texte -->
+  <rect x="210" y="55" width="130" height="65" rx="10" fill="#fff9c4" stroke="#f9a825" stroke-width="2"/>
+  <text x="275" y="82" text-anchor="middle" font-size="13" font-weight="bold" fill="#e65100">Bytes / Texte</text>
+  <text x="275" y="102" text-anchor="middle" font-size="11" fill="#616161">(JSON, Protobuf…)</text>
+
+  <!-- Flèche 2 -->
+  <line x1="340" y1="88" x2="400" y2="88" stroke="#e65100" stroke-width="2" marker-end="url(#arrow2)"/>
+  <text x="370" y="78" text-anchor="middle" font-size="10" fill="#e65100">réseau</text>
+
+  <!-- Nœud 3 : Réseau -->
+  <rect x="400" y="45" width="120" height="85" rx="40" fill="#e0f2f1" stroke="#00897b" stroke-width="2"/>
+  <text x="460" y="82" text-anchor="middle" font-size="13" font-weight="bold" fill="#00695c">Réseau</text>
+  <text x="460" y="100" text-anchor="middle" font-size="10" fill="#616161">TCP/HTTP/gRPC</text>
+
+  <!-- Flèche 3 -->
+  <line x1="520" y1="88" x2="580" y2="88" stroke="#e65100" stroke-width="2" marker-end="url(#arrow2)"/>
+  <text x="550" y="78" text-anchor="middle" font-size="10" fill="#e65100">réseau</text>
+
+  <!-- Nœud 4 : Bytes -->
+  <rect x="580" y="55" width="130" height="65" rx="10" fill="#fff9c4" stroke="#f9a825" stroke-width="2"/>
+  <text x="645" y="82" text-anchor="middle" font-size="13" font-weight="bold" fill="#e65100">Bytes / Texte</text>
+  <text x="645" y="102" text-anchor="middle" font-size="11" fill="#616161">(reçus)</text>
+
+  <!-- Flèche 4 -->
+  <line x1="710" y1="88" x2="770" y2="88" stroke="#3949ab" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="740" y="78" text-anchor="middle" font-size="10" fill="#3949ab">désérialisation</text>
+
+  <!-- Nœud 5 : Objet Python -->
+  <rect x="770" y="55" width="120" height="65" rx="10" fill="#e8eaf6" stroke="#3949ab" stroke-width="2"/>
+  <text x="830" y="82" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a237e">Objet Python</text>
+  <text x="830" y="102" text-anchor="middle" font-size="11" fill="#616161">(reconstruit)</text>
+
+  <!-- Zone danger sous réseau -->
+  <rect x="390" y="140" width="140" height="30" rx="6" fill="#fce4ec" stroke="#b71c1c" stroke-width="1.5"/>
+  <text x="460" y="160" text-anchor="middle" font-size="10" font-weight="bold" fill="#b71c1c">⚡ Surface d'attaque</text>
+  <line x1="460" y1="130" x2="460" y2="140" stroke="#b71c1c" stroke-width="1.5" stroke-dasharray="4,3"/>
+
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#3949ab"/>
+    </marker>
+    <marker id="arrow2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#e65100"/>
+    </marker>
+  </defs>
+</svg>
+<div class="figure-caption">Figure 1 — Pipeline : Objet Python → bytes → réseau → bytes → objet Python (la zone réseau est la surface d'attaque principale).</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 4. FORMATS : TEXTE VS BINAIRE -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="formats">4. Cours — Formats : texte vs binaire, schema-less vs schema-based</h2>
+
+<h3>4.1 Deux grandes familles</h3>
+<p><strong>Formats texte</strong> (JSON, XML, YAML) : représentation lisible par l'humain, encodée en caractères (UTF-8 généralement). Plus volumineux, mais faciles à débugger.</p>
+<p><strong>Formats binaires</strong> (Protocol Buffers, MessagePack, CBOR, Avro) : représentation compacte en octets, illisible directement. Plus performants et plus petits.</p>
+
+<h3>4.2 Schema-less vs schema-based</h3>
+<p><strong>Schema-less</strong> : le format ne force pas de schéma formel. JSON est schema-less par nature — l'émetteur peut envoyer n'importe quelle structure. La validation se fait <em>côté applicatif</em>.</p>
+<p><strong>Schema-based</strong> : le format impose un schéma prédéfini (fichier <code>.proto</code>, <code>.avsc</code>…). Le code de sérialisation/désérialisation est <em>généré</em> à partir du schéma. Validation <em>intrinsèque</em>.</p>
+
+<div class="figure-container">
+<svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg" style="max-width:680px;">
+  <!-- Schema-less -->
+  <rect x="20" y="20" width="300" height="160" rx="12" fill="#fff9c4" stroke="#f9a825" stroke-width="2"/>
+  <text x="170" y="48" text-anchor="middle" font-size="15" font-weight="bold" fill="#e65100">Schema-less</text>
+  <text x="170" y="72" text-anchor="middle" font-size="12" fill="#616161">JSON, XML (sans XSD)</text>
+  <text x="40" y="100" font-size="11" fill="#424242">✅ Flexible, rapide à démarrer</text>
+  <text x="40" y="118" font-size="11" fill="#424242">✅ Lisible par l'humain</text>
+  <text x="40" y="136" font-size="11" fill="#b71c1c">❌ Validation à la charge du dev</text>
+  <text x="40" y="154" font-size="11" fill="#b71c1c">❌ Versioning fragile</text>
+  <text x="40" y="172" font-size="11" fill="#b71c1c">❌ Plus volumineux</text>
+
+  <!-- Schema-based -->
+  <rect x="380" y="20" width="300" height="160" rx="12" fill="#e0f7fa" stroke="#00897b" stroke-width="2"/>
+  <text x="530" y="48" text-anchor="middle" font-size="15" font-weight="bold" fill="#00695c">Schema-based</text>
+  <text x="530" y="72" text-anchor="middle" font-size="12" fill="#616161">Protobuf, Avro, Thrift</text>
+  <text x="400" y="100" font-size="11" fill="#424242">✅ Validation intégrée (types)</text>
+  <text x="400" y="118" font-size="11" fill="#424242">✅ Compact, performant</text>
+  <text x="400" y="136" font-size="11" fill="#424242">✅ Versioning formalisé</text>
+  <text x="400" y="154" font-size="11" fill="#b71c1c">❌ Tooling requis (compilateur)</text>
+  <text x="400" y="172" font-size="11" fill="#b71c1c">❌ Illisible directement</text>
+</svg>
+<div class="figure-caption">Figure 2 — Schema-less vs Schema-based : compromis fondamentaux.</div>
+</div>
+
+<h3>4.3 Tableau comparatif des formats</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Critère</th>
+      <th><span class="badge badge-json">JSON</span></th>
+      <th><span class="badge badge-xml">XML</span></th>
+      <th><span class="badge badge-protobuf">Protobuf</span></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Lisibilité humaine</strong></td><td>★★★ Excellent</td><td>★★☆ Bon (verbeux)</td><td>★☆☆ Illisible</td></tr>
+    <tr><td><strong>Taille du payload</strong></td><td>Moyen</td><td>Lourd (balises)</td><td>Très compact (2-10× plus petit)</td></tr>
+    <tr><td><strong>Performance encode/decode</strong></td><td>Bon</td><td>Lent (parsing DOM/SAX)</td><td>Très rapide</td></tr>
+    <tr><td><strong>Validation intrinsèque</strong></td><td>Non (manuelle ou JSON Schema)</td><td>Oui (si XSD/DTD)</td><td>Oui (via .proto)</td></tr>
+    <tr><td><strong>Versioning</strong></td><td>Fragile (convention)</td><td>Fragile</td><td>Natif (champs numérotés)</td></tr>
+    <tr><td><strong>Interopérabilité</strong></td><td>★★★ Universelle</td><td>★★★ Universelle</td><td>★★☆ Besoin du .proto</td></tr>
+    <tr><td><strong>Risques sécurité</strong></td><td>Injection si eval, taille</td><td>XXE, bombes XML, DTD</td><td>Faible (binaire strict)</td></tr>
+    <tr><td><strong>Cas d'usage typique</strong></td><td>API REST, config, logs</td><td>Legacy, SOAP, config</td><td>gRPC, micro-services, IoT</td></tr>
+  </tbody>
+</table>
+
+<div class="box box-retenir">
+  <div class="box-title">📌 À retenir</div>
+  <p>Il n'y a pas de « meilleur format universel ». Le choix dépend du contexte :
+  <strong>JSON</strong> pour l'interopérabilité et le Web, <strong>Protobuf</strong> pour la performance et le versioning strict,
+  <strong>XML</strong> quand l'écosystème l'impose (legacy, standards industriels). En cybersécurité, le format influence directement la surface d'attaque.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 5. JSON EN PYTHON -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="json-python">5. Cours — JSON en Python (focus professionnel) <span class="badge badge-json">JSON</span></h2>
+
+<h3>5.1 Types JSON vs types Python</h3>
+
+<table>
+  <thead>
+    <tr><th>Type JSON</th><th>Type Python</th><th>Limites / Pièges</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>string</code></td><td><code>str</code></td><td>Encodage UTF-8, pas de limite de taille intrinsèque</td></tr>
+    <tr><td><code>number</code> (entier)</td><td><code>int</code></td><td>JSON n'a pas de limite ; certains parsers 64 bits</td></tr>
+    <tr><td><code>number</code> (décimal)</td><td><code>float</code></td><td>Perte de précision IEEE 754 (ex : montants financiers !)</td></tr>
+    <tr><td><code>boolean</code></td><td><code>bool</code></td><td>JSON : <code>true</code>/<code>false</code> (minuscule) ; Python : <code>True</code>/<code>False</code></td></tr>
+    <tr><td><code>null</code></td><td><code>None</code></td><td>Attention : absence de clé ≠ valeur <code>null</code></td></tr>
+    <tr><td><code>array</code></td><td><code>list</code></td><td>Hétérogène en JSON (piège de validation)</td></tr>
+    <tr><td><code>object</code></td><td><code>dict</code></td><td>Clés toujours <code>string</code> en JSON</td></tr>
+    <tr><td><em>— absent —</em></td><td><code>datetime</code></td><td>Pas de type date natif JSON → convention ISO 8601 en string</td></tr>
+    <tr><td><em>— absent —</em></td><td><code>bytes</code></td><td>Pas de type binaire JSON → base64 en string</td></tr>
+    <tr><td><em>— absent —</em></td><td><code>set</code>, <code>tuple</code></td><td>Convertis en <code>list</code> → perte sémantique</td></tr>
+  </tbody>
+</table>
+
+<div class="box box-piege">
+  <div class="box-title">⚠️ Piège classique : les flottants en JSON</div>
+  <p><code>json.loads('{"price": 19.99}')["price"]</code> donne <code>19.99</code> en Python, mais c'est un <code>float</code> IEEE 754.
+  Pour des montants financiers, préférer transmettre en <strong>centimes (entier)</strong> ou en <strong>string</strong> et convertir avec <code>decimal.Decimal</code> côté récepteur.</p>
+</div>
+
+<h3>5.2 Sérialiser / désérialiser : json.dumps &amp; json.loads</h3>
+
+<pre><code><span class="keyword">import</span> json
+
+<span class="comment"># --- Sérialisation ---</span>
+data = {<span class="string">"id"</span>: <span class="number">42</span>, <span class="string">"title"</span>: <span class="string">"Rapport Q1"</span>, <span class="string">"tags"</span>: [<span class="string">"finance"</span>, <span class="string">"interne"</span>]}
+
+<span class="comment"># Bonne pratique : ensure_ascii=False pour garder les accents lisibles</span>
+json_str = json.<span class="function">dumps</span>(data, ensure_ascii=<span class="keyword">False</span>, indent=<span class="number">2</span>)
+<span class="builtin">print</span>(json_str)
+<span class="comment"># {
+#   "id": 42,
+#   "title": "Rapport Q1",
+#   "tags": ["finance", "interne"]
+# }</span>
+
+<span class="comment"># --- Sérialisation en bytes (pour envoi réseau) ---</span>
+json_bytes = json_str.<span class="function">encode</span>(<span class="string">"utf-8"</span>)
+
+<span class="comment"># --- Désérialisation ---</span>
+received = json.<span class="function">loads</span>(json_bytes)  <span class="comment"># accepte str ou bytes</span>
+<span class="builtin">print</span>(received[<span class="string">"title"</span>])  <span class="comment"># Rapport Q1</span>
+</code></pre>
+
+<h3>5.3 Gestion d'erreurs</h3>
+<pre><code><span class="keyword">try</span>:
+    payload = json.<span class="function">loads</span>(raw_input)
+<span class="keyword">except</span> json.JSONDecodeError <span class="keyword">as</span> e:
+    <span class="comment"># Côté log (interne) : détail technique</span>
+    logger.<span class="function">warning</span>(<span class="string">"JSON invalide: %s"</span>, e)
+    <span class="comment"># Côté client : message générique (ne pas fuiter de détails)</span>
+    <span class="keyword">raise</span> <span class="function">ValueError</span>(<span class="string">"Payload invalide"</span>)
+</code></pre>
+
+<h3>5.4 Validation « sans librairie externe »</h3>
+<p>En production, on utilise souvent des librairies de validation (pydantic, marshmallow…).
+Mais il est essentiel de <strong>comprendre</strong> la validation manuelle pour savoir ce qui se passe « sous le capot » :</p>
+
+<pre><code><span class="keyword">def</span> <span class="function">validate_document</span>(data: <span class="builtin">dict</span>) -> <span class="builtin">dict</span>:
+    <span class="string">"""Valide et nettoie un payload Document. Lève ValueError si invalide."""</span>
+    errors = []
+
+    <span class="comment"># Présence des champs obligatoires</span>
+    <span class="keyword">for</span> field <span class="keyword">in</span> (<span class="string">"id"</span>, <span class="string">"title"</span>, <span class="string">"author"</span>):
+        <span class="keyword">if</span> field <span class="keyword">not in</span> data:
+            errors.<span class="function">append</span>(<span class="string">f"Champ obligatoire manquant : {field}"</span>)
+
+    <span class="comment"># Type checking</span>
+    <span class="keyword">if</span> <span class="string">"id"</span> <span class="keyword">in</span> data <span class="keyword">and not</span> <span class="builtin">isinstance</span>(data[<span class="string">"id"</span>], <span class="builtin">int</span>):
+        errors.<span class="function">append</span>(<span class="string">"'id' doit être un entier"</span>)
+
+    <span class="keyword">if</span> <span class="string">"title"</span> <span class="keyword">in</span> data:
+        <span class="keyword">if not</span> <span class="builtin">isinstance</span>(data[<span class="string">"title"</span>], <span class="builtin">str</span>):
+            errors.<span class="function">append</span>(<span class="string">"'title' doit être une chaîne"</span>)
+        <span class="keyword">elif</span> <span class="builtin">len</span>(data[<span class="string">"title"</span>]) > <span class="number">200</span>:
+            errors.<span class="function">append</span>(<span class="string">"'title' trop long (max 200 caractères)"</span>)
+        <span class="keyword">elif</span> <span class="builtin">len</span>(data[<span class="string">"title"</span>].<span class="function">strip</span>()) == <span class="number">0</span>:
+            errors.<span class="function">append</span>(<span class="string">"'title' ne peut être vide"</span>)
+
+    <span class="comment"># Valeurs autorisées (allowlist)</span>
+    ALLOWED_CLASSIFICATIONS = {<span class="string">"public"</span>, <span class="string">"internal"</span>, <span class="string">"confidential"</span>, <span class="string">"secret"</span>}
+    classification = data.<span class="function">get</span>(<span class="string">"classification"</span>, <span class="string">"internal"</span>)
+    <span class="keyword">if</span> classification <span class="keyword">not in</span> ALLOWED_CLASSIFICATIONS:
+        errors.<span class="function">append</span>(<span class="string">f"'classification' invalide : {classification}"</span>)
+
+    <span class="keyword">if</span> errors:
+        <span class="keyword">raise</span> <span class="function">ValueError</span>(<span class="string">f"Validation échouée : {'; '.join(errors)}"</span>)
+
+    <span class="keyword">return</span> data
+</code></pre>
+
+<h3>5.5 Stratégies de compatibilité (versioning JSON)</h3>
+<ul>
+  <li><strong>Champs optionnels</strong> : tout nouveau champ doit avoir une <strong>valeur par défaut</strong> côté récepteur.</li>
+  <li><strong>Tolérance à l'inconnu</strong> : ignorer les champs non reconnus (ne pas planter) — mais <strong>ne pas les stocker</strong> aveuglément.</li>
+  <li><strong>Ne jamais retirer</strong> un champ obligatoire sans plan de migration.</li>
+  <li><strong>Ne jamais changer le type</strong> d'un champ existant (string → int = cassure).</li>
+</ul>
+
+<div class="box box-securite">
+  <div class="box-title">🔒 Point cybersécurité : validation d'entrée ≠ confiance</div>
+  <p>Le fait de valider un JSON (syntaxe correcte, champs présents, types OK) ne signifie <strong>pas</strong> que les données sont fiables ou bienveillantes. La validation est un <strong>filtre nécessaire mais non suffisant</strong>. Il faut aussi :</p>
+  <ul>
+    <li>Vérifier l'<strong>origine</strong> des données (authentification, signature)</li>
+    <li>Limiter les <strong>valeurs</strong> (allowlist, bornes numériques, longueurs max)</li>
+    <li>Appliquer le principe du <strong>moindre privilège</strong> : n'accepter que ce qui est strictement nécessaire</li>
+    <li>Approche <strong>« fail closed »</strong> : en cas de doute, <em>refuser</em> plutôt qu'accepter</li>
+  </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 6. XML EN PYTHON -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="xml-python">6. Cours — XML en Python (usage + sécurité) <span class="badge badge-xml">XML</span> <span class="badge badge-security">Sécurité</span></h2>
+
+<h3>6.1 Pourquoi XML existe encore</h3>
+<ul>
+  <li><strong>Legacy</strong> : des milliers de systèmes (SOAP, WS-*, bancaire, santé) reposent sur XML.</li>
+  <li><strong>Configuration</strong> : pom.xml (Maven), manifestes Android, fichiers Office (OOXML).</li>
+  <li><strong>Standards industriels</strong> : HL7 (santé), XBRL (finance), SVG (graphiques).</li>
+  <li><strong>Schémas riches</strong> : XSD permet des validations très précises (expressions régulières sur les valeurs, cardinalité, héritage de types).</li>
+</ul>
+<p>Même si JSON domine les nouvelles API, un ingénieur cybersécurité <strong>doit</strong> connaître XML — ne serait-ce que pour défendre les systèmes existants.</p>
+
+<h3>6.2 Parsing Python : choix et pièges</h3>
+<p>La bibliothèque standard Python offre plusieurs parseurs XML :</p>
+<table>
+  <thead>
+    <tr><th>Module</th><th>Type</th><th>Sécurité par défaut</th><th>Usage recommandé</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>xml.etree.ElementTree</code></td>
+      <td>Arbre (DOM-like)</td>
+      <td>⚠️ Vulnérable XXE par défaut (versions anciennes)</td>
+      <td>Usage interne, données fiables uniquement</td>
+    </tr>
+    <tr>
+      <td><code>xml.sax</code></td>
+      <td>Événementiel (SAX)</td>
+      <td>⚠️ Configurable</td>
+      <td>Gros fichiers, streaming</td>
+    </tr>
+    <tr>
+      <td><code>xml.dom.minidom</code></td>
+      <td>DOM complet</td>
+      <td>⚠️ Lourd, vulnérable</td>
+      <td>Déconseillé en production</td>
+    </tr>
+    <tr>
+      <td><code>defusedxml</code> (tiers)</td>
+      <td>Wrapper sécurisé</td>
+      <td>✅ Désactive les fonctionnalités dangereuses</td>
+      <td>Entrées non fiables</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>6.3 Risques XML à connaître (défensif)</h3>
+
+<h4>XXE — XML External Entity</h4>
+<p><strong>Concept</strong> : XML permet de définir des « entités » qui référencent des ressources externes (fichiers locaux, URLs). Un attaquant peut inclure dans son payload XML une entité qui pointe vers <code>/etc/passwd</code> ou une URL interne. Si le parseur résout cette entité, il <strong>exfiltre</strong> le contenu vers l'attaquant.</p>
+<p><strong>Impact</strong> : lecture de fichiers serveur, SSRF (Server-Side Request Forgery), déni de service.</p>
+
+<h4>Bombe XML (Billion Laughs)</h4>
+<p><strong>Concept</strong> : un XML de quelques Ko qui définit des entités se référençant entre elles de manière exponentielle. Le parseur tente de les résoudre → consommation mémoire/CPU explosive → <strong>déni de service</strong>.</p>
+
+<div class="figure-container">
+<pre style="background:#263238;color:#eeffff;text-align:left;max-width:640px;margin:auto;font-size:0.85rem;">
+╔══════════════════════════════════════════════════╗
+║           XML Parsing : zones à risque           ║
+╠══════════════════════════════════════════════════╣
+║                                                  ║
+║  Entrée XML ──┬── DTD / DOCTYPE ─── XXE          ║
+║               │                     (lecture      ║
+║               │                      fichiers,    ║
+║               │                      SSRF)        ║
+║               │                                   ║
+║               ├── Entités imbriquées ── Bombe XML ║
+║               │                        (DoS,      ║
+║               ��                         mémoire)  ║
+║               │                                   ║
+║               ├── Taille illimitée ── DoS (RAM)   ║
+║               │                                   ║
+║               └── Contenu non validé ── Injection ║
+║                                                   ║
+║  CONTRÔLES :                                      ║
+║  ☑ Désactiver résolution entités externes         ║
+║  ☑ Désactiver DTD processing                      ║
+║  ☑ Limiter taille max du payload                  ║
+║  ☑ Utiliser un parseur sécurisé (defusedxml)      ║
+║  ☑ Valider contenu après parsing                  ║
+╚══════════════════════════════════════════════════╝
+</pre>
+<div class="figure-caption">Figure 3 — XML parsing : zones à risque et contrôles défensifs.</div>
+</div>
+
+<h3>6.4 Mesures de protection</h3>
+<ul>
+  <li><strong>Éviter XML si inutile</strong> : pour une nouvelle API, préférer JSON ou Protobuf.</li>
+  <li><strong>Limiter la taille</strong> du payload avant même de parser (ex : max 1 Mo).</li>
+  <li><strong>Parseur sûr</strong> : utiliser <code>defusedxml</code> qui désactive par défaut les entités externes, la résolution DTD, les entités récursives.</li>
+  <li><strong>Désactiver les features dangereuses</strong> : pas de résolution d'entités externes, pas de DTD processing, pas de XInclude.</li>
+  <li><strong>Valider le contenu</strong> après parsing : mêmes principes que JSON (présence, types, longueurs, allowlist).</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 7. PROTOBUF EN PYTHON -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="protobuf">7. Cours — Protocol Buffers (Protobuf) côté Python <span class="badge badge-protobuf">Protobuf</span></h2>
+
+<h3>7.1 L'idée fondamentale</h3>
+<p>Protocol Buffers (développé par Google) est un format de sérialisation <strong>binaire</strong>, <strong>compact</strong>, <strong>rapide</strong>, et — surtout — <strong>basé sur un schéma formel</strong>. Le workflow :</p>
+<ul>
+  <li>Décrire les données dans un fichier <code>.proto</code></li>
+  <li>Compiler ce fichier avec <code>protoc</code> pour générer du code Python</li>
+  <li>Utiliser le code généré pour encoder/décoder</li>
+</ul>
+
+<div class="figure-container">
+<svg viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg" style="max-width:760px;">
+  <!-- .proto -->
+  <rect x="10" y="40" width="150" height="70" rx="10" fill="#e0f7fa" stroke="#00897b" stroke-width="2"/>
+  <text x="85" y="70" text-anchor="middle" font-size="13" font-weight="bold" fill="#00695c">.proto</text>
+  <text x="85" y="90" text-anchor="middle" font-size="10" fill="#616161">document.proto</text>
+
+  <!-- Flèche -->
+  <line x1="160" y1="75" x2="230" y2="75" stroke="#00897b" stroke-width="2" marker-end="url(#arrowG)"/>
+  <text x="195" y="65" text-anchor="middle" font-size="10" fill="#00897b">protoc</text>
+
+  <!-- Code généré -->
+  <rect x="230" y="40" width="160" height="70" rx="10" fill="#e8eaf6" stroke="#3949ab" stroke-width="2"/>
+  <text x="310" y="70" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a237e">Code Python</text>
+  <text x="310" y="90" text-anchor="middle" font-size="10" fill="#616161">document_pb2.py</text>
+
+  <!-- Flèche encode -->
+  <line x1="390" y1="58" x2="470" y2="38" stroke="#3949ab" stroke-width="2" marker-end="url(#arrowB)"/>
+  <text x="430" y="40" text-anchor="middle" font-size="10" fill="#3949ab">encode</text>
+
+  <!-- Bytes -->
+  <rect x="470" y="10" width="130" height="55" rx="10" fill="#fff9c4" stroke="#f9a825" stroke-width="2"/>
+  <text x="535" y="35" text-anchor="middle" font-size="13" font-weight="bold" fill="#e65100">bytes</text>
+  <text x="535" y="52" text-anchor="middle" font-size="10" fill="#616161">compact, binaire</text>
+
+  <!-- Flèche réseau -->
+  <line x1="600" y1="38" x2="660" y2="38" stroke="#e65100" stroke-width="2" marker-end="url(#arrowO)"/>
+
+  <!-- Récepteur -->
+  <rect x="660" y="10" width="110" height="55" rx="10" fill="#e8eaf6" stroke="#3949ab" stroke-width="2"/>
+  <text x="715" y="35" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a237e">Récepteur</text>
+  <text x="715" y="52" text-anchor="middle" font-size="10" fill="#616161">decode</text>
+
+  <!-- Flèche decode -->
+  <line x1="390" y1="92" x2="470" y2="112" stroke="#3949ab" stroke-width="2" marker-end="url(#arrowB)"/>
+  <text x="430" y="114" text-anchor="middle" font-size="10" fill="#3949ab">decode</text>
+
+  <!-- Objet -->
+  <rect x="470" y="90" width="130" height="55" rx="10" fill="#e8eaf6" stroke="#3949ab" stroke-width="2"/>
+  <text x="535" y="115" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a237e">Objet Python</text>
+  <text x="535" y="132" text-anchor="middle" font-size="10" fill="#616161">typé, validé</text>
+
+  <defs>
+    <marker id="arrowG" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#00897b"/>
+    </marker>
+    <marker id="arrowB" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#3949ab"/>
+    </marker>
+    <marker id="arrowO" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#e65100"/>
+    </marker>
+  </defs>
+</svg>
+<div class="figure-caption">Figure 4 — Protobuf : .proto → génération de code → encode/decode.</div>
+</div>
+
+<h3>7.2 Exemple de fichier .proto</h3>
+
+<pre><code><span class="comment">// document.proto</span>
+<span class="keyword">syntax</span> = <span class="string">"proto3"</span>;
+
+<span class="keyword">message</span> <span class="function">Document</span> {
+    <span class="builtin">int32</span>  id     = <span class="number">1</span>;          <span class="comment">// Numéro de champ unique</span>
+    <span class="builtin">string</span> title  = <span class="number">2</span>;
+    <span class="builtin">string</span> author = <span class="number">3</span>;
+    <span class="keyword">repeated</span> <span class="builtin">string</span> tags = <span class="number">4</span>;  <span class="comment">// Liste (repeated = 0..N)</span>
+}
+</code></pre>
+
+<h3>7.3 Notions cruciales pour le versioning</h3>
+
+<table>
+  <thead>
+    <tr><th>Règle</th><th>Explication</th><th>Conséquence si violée</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Ne jamais réutiliser un numéro de champ</strong></td>
+      <td>Un numéro = un champ pour toujours. Si on supprime le champ 3, on le marque <code>reserved</code>.</td>
+      <td>Données corrompues silencieusement</td>
+    </tr>
+    <tr>
+      <td><strong>Ajouter des champs optionnels</strong></td>
+      <td>Les nouveaux champs ont une valeur par défaut (0, "", false). Les anciens lecteurs les ignorent.</td>
+      <td>Rétro/antéro-compatible ✅</td>
+    </tr>
+    <tr>
+      <td><strong>Ne jamais changer le type d'un champ</strong></td>
+      <td><code>int32</code> → <code>string</code> = cassure binaire.</td>
+      <td>Décodage erroné, crash</td>
+    </tr>
+    <tr>
+      <td><strong>Ne jamais changer le numéro d'un champ</strong></td>
+      <td>Le numéro est l'identifiant binaire.</td>
+      <td>Données mappées au mauvais champ</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4>Ajout de champ vs changement de type</h4>
+<pre><code><span class="comment">// Version 1</span>
+<span class="keyword">message</span> <span class="function">Document</span> {
+    <span class="builtin">int32</span>  id     = <span class="number">1</span>;
+    <span class="builtin">string</span> title  = <span class="number">2</span>;
+    <span class="builtin">string</span> author = <span class="number">3</span>;
+}
+
+<span class="comment">// Version 2 — COMPATIBLE ✅ (ajout de champs optionnels)</span>
+<span class="keyword">message</span> <span class="function">Document</span> {
+    <span class="builtin">int32</span>  id             = <span class="number">1</span>;
+    <span class="builtin">string</span> title          = <span class="number">2</span>;
+    <span class="builtin">string</span> author         = <span class="number">3</span>;
+    <span class="keyword">repeated</span> <span class="builtin">string</span> tags  = <span class="number">4</span>;  <span class="comment">// NOUVEAU — ignoré par v1</span>
+    <span class="builtin">string</span> classification  = <span class="number">5</span>;  <span class="comment">// NOUVEAU — défaut ""</span>
+}
+
+<span class="comment">// Version CASSÉE ❌ (changement de type du champ 1)</span>
+<span class="keyword">message</span> <span class="function">Document</span> {
+    <span class="builtin">string</span> id = <span class="number">1</span>;  <span class="comment">// ❌ Était int32 → CASSURE BINAIRE</span>
+    ...
+}
+</code></pre>
+
+<div class="box box-retenir">
+  <div class="box-title">📌 À retenir — Protobuf en 4 points</div>
+  <ul>
+    <li>Le schéma (.proto) est le <strong>contrat formel</strong> entre services.</li>
+    <li>Les numéros de champ sont <strong>immuables</strong> : on ne les change ni ne les réutilise.</li>
+    <li>Ajouter un champ optionnel est <strong>toujours safe</strong>.</li>
+    <li>Installer la librairie Python : <code>pip install protobuf</code> ; compiler avec <code>protoc --python_out=. document.proto</code>.</li>
+  </ul>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 8. DÉSÉRIALISATION NON SÉCURISÉE -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="deserialization">8. Cours — Désérialisation non sécurisée : comprendre et se protéger <span class="badge badge-security">Sécurité</span></h2>
+
+<h3>8.1 Le problème fondamental</h3>
+<p>La désérialisation, c'est <strong>transformer des bytes en objets vivants</strong> dans la mémoire du programme. Si l'entrée est contrôlée par un attaquant, cette transformation peut déclencher des <strong>comportements inattendus</strong> :</p>
+<ul>
+  <li>Exécution de code arbitraire (si le format permet de représenter des objets exécutables)</li>
+  <li>Instanciation d'objets dangereux</li>
+  <li>Déni de service (payload géant, récursion infinie)</li>
+  <li>Fuite d'information (erreurs détaillées, sérialisation de champs internes)</li>
+</ul>
+
+<p><strong>Analogie</strong> : Imaginez recevoir un colis postal qui, une fois ouvert, <em>exécute automatiquement les instructions écrites dessus</em>. C'est exactement ce que fait <code>pickle.loads()</code> avec des données non fiables.</p>
+
+<h3>8.2 Côté Python : pourquoi pickle est dangereux avec entrée non fiable</h3>
+<p>Le module <code>pickle</code> de Python permet de sérialiser <em>n'importe quel objet Python</em>, y compris des objets qui, lors de leur reconstruction, exécutent du code arbitraire. Le protocole pickle contient littéralement des <strong>instructions de machine virtuelle</strong> qui sont interprétées lors du <code>loads()</code>.</p>
+
+<div class="box box-piege">
+  <div class="box-title">⚠️ Piège classique : « pickle c'est pratique, je l'utilise partout »</div>
+  <p><code>pickle</code> est <strong>acceptable</strong> dans un contexte de <strong>confiance totale</strong> :</p>
+  <ul>
+    <li>Cache local entre processus du même serveur</li>
+    <li>Stockage temporaire de données que <em>vous seul</em> avez produites</li>
+    <li>Communication inter-processus sur la même machine, avec données signées (HMAC)</li>
+  </ul>
+  <p><code>pickle</code> est <strong>interdit</strong> pour :</p>
+  <ul>
+    <li>Toute donnée reçue du réseau (API, WebSocket, fichier uploadé…)</li>
+    <li>Toute donnée stockée dans un emplacement modifiable par un tiers</li>
+    <li>Tout échange entre services distincts (même internes)</li>
+  </ul>
+</div>
+
+<h3>8.3 Autres surfaces de risque</h3>
+<table>
+  <thead>
+    <tr><th>Mécanisme</th><th>Risque</th><th>Contexte Python</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>yaml.load()</code> (PyYAML)</td>
+      <td>Exécution de code via constructeurs YAML spéciaux</td>
+      <td>Utiliser <strong>toujours</strong> <code>yaml.safe_load()</code></td>
+    </tr>
+    <tr>
+      <td><code>eval()</code> / <code>exec()</code> sur données désérialisées</td>
+      <td>Exécution de code arbitraire</td>
+      <td>Ne <strong>jamais</strong> utiliser sur des entrées utilisateur</td>
+    </tr>
+    <tr>
+      <td>Hooks JSON (<code>object_hook</code>)</td>
+      <td>Si le hook instancie des classes dynamiquement selon l'entrée</td>
+      <td>Limiter aux types connus (allowlist)</td>
+    </tr>
+    <tr>
+      <td>XML parsing (XXE, bombes)</td>
+      <td>Lecture fichiers, SSRF, DoS</td>
+      <td>Désactiver entités, utiliser <code>defusedxml</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>8.4 Protections détaillées</h3>
+
+<table>
+  <thead>
+    <tr><th>Protection</th><th>Description</th><th>Mise en œuvre Python</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Préférer des formats sûrs</strong></td>
+      <td>JSON et Protobuf ne permettent pas l'exécution de code lors du décodage</td>
+      <td><code>json.loads()</code>, <code>message.ParseFromString()</code></td>
+    </tr>
+    <tr>
+      <td><strong>Validation stricte (allowlist)</strong></td>
+      <td>Ne garder que les champs/types/valeurs explicitement autorisés</td>
+      <td>Fonction de validation avec champs, types, bornes</td>
+    </tr>
+    <tr>
+      <td><strong>Signature d'intégrité (HMAC)</strong></td>
+      <td>Signer le payload sérialisé pour détecter toute modification</td>
+      <td><code>hmac.new(secret, data, 'sha256').hexdigest()</code></td>
+    </tr>
+    <tr>
+      <td><strong>Limites de taille</strong></td>
+      <td>Rejeter tout payload dépassant une taille maximale <em>avant</em> parsing</td>
+      <td><code>if len(raw) > MAX_PAYLOAD: reject()</code></td>
+    </tr>
+    <tr>
+      <td><strong>Timeouts</strong></td>
+      <td>Ne pas laisser un parsing s'exécuter indéfiniment</td>
+      <td><code>signal.alarm()</code> ou timeout au niveau framework</td>
+    </tr>
+    <tr>
+      <td><strong>Logs d'audit</strong></td>
+      <td>Tracer les désérialisations échouées (sans données sensibles)</td>
+      <td><code>logger.warning("Désérialisation échouée: source=%s", source_id)</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>8.5 Tableau récapitulatif : Risques de désérialisation</h3>
+
+<table>
+  <thead>
+    <tr><th>Risque</th><th>Exemple</th><th>Impact</th><th>Indices de détection</th><th>Mesure</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Exécution de code (pickle)</td>
+      <td>Payload pickle forgé reçu via API</td>
+      <td>Contrôle total du serveur</td>
+      <td>Appels <code>pickle.loads()</code> sur entrées réseau</td>
+      <td>Interdire pickle pour entrées non fiables</td>
+    </tr>
+    <tr>
+      <td>XXE (XML)</td>
+      <td>Entité externe dans XML uploadé</td>
+      <td>Lecture fichiers, SSRF</td>
+      <td>Présence de <code>&lt;!DOCTYPE</code>, <code>&lt;!ENTITY</code></td>
+      <td>Parseur sécurisé, désactiver DTD</td>
+    </tr>
+    <tr>
+      <td>Bombe XML</td>
+      <td>Entités imbriquées exponentielles</td>
+      <td>Déni de service (RAM/CPU)</td>
+      <td>Payload petit mais parsing lent/gourmand</td>
+      <td>Limite taille, limite entités, <code>defusedxml</code></td>
+    </tr>
+    <tr>
+      <td>Payload géant</td>
+      <td>JSON de 500 Mo envoyé à l'API</td>
+      <td>OOM, déni de service</td>
+      <td><code>Content-Length</code> anormalement grand</td>
+      <td>Limite taille côté serveur (nginx, code)</td>
+    </tr>
+    <tr>
+      <td>Injection de type</td>
+      <td>Champ <code>"__class__"</code> dans JSON avec hook naïf</td>
+      <td>Instanciation d'objets dangereux</td>
+      <td>Présence de clés méta (<code>__class__</code>, <code>__reduce__</code>)</td>
+      <td>Allowlist de champs, pas d'instanciation dynamique</td>
+    </tr>
+    <tr>
+      <td>YAML unsafe load</td>
+      <td>Tag <code>!!python/object</code> dans YAML</td>
+      <td>Exécution de code</td>
+      <td>Appels <code>yaml.load()</code> sans <code>Loader=SafeLoader</code></td>
+      <td>Toujours <code>yaml.safe_load()</code></td>
+    </tr>
+    <tr>
+      <td>Fuite d'info dans erreurs</td>
+      <td>Stack trace retournée au client avec chemins internes</td>
+      <td>Reconnaissance, fuite de structure</td>
+      <td>Messages d'erreur détaillés côté client</td>
+      <td>Messages génériques côté client, détail côté logs</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="box box-securite">
+  <div class="box-title">🔒 Point cybersécurité : la règle d'or</div>
+  <p><strong>Ne jamais désérialiser des données non fiables dans un format qui permet l'exécution de code.</strong><br>
+  En Python : <code>pickle</code>, <code>yaml.load()</code>, <code>eval()</code>, <code>exec()</code> sont des « formats exécutables ».
+  <code>json.loads()</code> et Protobuf <code>ParseFromString()</code> sont des formats <strong>inertes</strong> (pas d'exécution de code lors du décodage).</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 9. DÉMONSTRATIONS / LIVE CODING -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="demos">9. Démonstrations / Live Coding Python</h2>
+
+<h3>9.1 Démo 1 — JSON robuste (stdlib) <span class="badge badge-json">JSON</span> <span class="badge badge-validation">Validation</span></h3>
+
+<pre><code><span class="keyword">import</span> json
+<span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass, field, asdict
+<span class="keyword">from</span> typing <span class="keyword">import</span> List, Optional
+<span class="keyword">import</span> logging
+
+logger = logging.<span class="function">getLogger</span>(__name__)
+
+<span class="comment"># ──────────────────────────────────────────────</span>
+<span class="comment"># MODÈLE : Document (via dataclass)</span>
+<span class="comment"># ──────────────────────────────────────────────</span>
+<span class="decorator">@dataclass</span>
+<span class="keyword">class</span> <span class="function">Document</span>:
+    id: <span class="builtin">int</span>
+    title: <span class="builtin">str</span>
+    author: <span class="builtin">str</span>
+    tags: List[<span class="builtin">str</span>] = field(default_factory=<span class="builtin">list</span>)
+    classification: <span class="builtin">str</span> = <span class="string">"internal"</span>
+    <span class="comment"># Champ sensible : ne sera PAS sérialisé</span>
+    _internal_score: <span class="builtin">float</span> = field(default=<span class="number">0.0</span>, repr=<span class="keyword">False</span>)
+
+
+<span class="comment"># ──────────────────────────────────────────────</span>
+<span class="comment"># SÉRIALISATION : exclure les champs sensibles</span>
+<span class="comment"># ──────────────────────────────────────────────</span>
+EXCLUDED_FIELDS = {<span class="string">"_internal_score"</span>}
+
+<span class="keyword">def</span> <span class="function">serialize_document</span>(doc: Document) -> <span class="builtin">str</span>:
+    <span class="string">"""Sérialise un Document en JSON, sans champs sensibles."""</span>
+    data = {k: v <span class="keyword">for</span> k, v <span class="keyword">in</span> <span class="function">asdict</span>(doc).items()
+            <span class="keyword">if</span> k <span class="keyword">not in</span> EXCLUDED_FIELDS}
+    <span class="keyword">return</span> json.<span class="function">dumps</span>(data, ensure_ascii=<span class="keyword">False</span>)
+
+
+<span class="comment"># ──────────────────────────────────────────────</span>
+<span class="comment"># VALIDATION + DÉSÉRIALISATION</span>
+<span class="comment"># ──────────────────────────────────────────────</span>
+ALLOWED_CLASSIFICATIONS = {<span class="string">"public"</span>, <span class="string">"internal"</span>, <span class="string">"confidential"</span>, <span class="string">"secret"</span>}
+MAX_TITLE_LEN = <span class="number">200</span>
+MAX_TAGS = <span class="number">20</span>
+
+<span class="keyword">def</span> <span class="function">deserialize_document</span>(raw: <span class="builtin">str</span>) -> Document:
+    <span class="string">"""Désérialise et valide un JSON en Document."""</span>
+    <span class="comment"># Étape 1 : parsing JSON</span>
+    <span class="keyword">try</span>:
+        data = json.<span class="function">loads</span>(raw)
+    <span class="keyword">except</span> json.JSONDecodeError <span class="keyword">as</span> e:
+        logger.<span class="function">warning</span>(<span class="string">"JSON invalide : %s"</span>, e)
+        <span class="keyword">raise</span> <span class="function">ValueError</span>(<span class="string">"Payload invalide"</span>)
+
+    <span class="comment"># Étape 2 : doit être un dict</span>
+    <span class="keyword">if not</span> <span class="builtin">isinstance</span>(data, <span class="builtin">dict</span>):
+        <span class="keyword">raise</span> <span class="function">ValueError</span>(<span class="string">"Payload invalide"</span>)
+
+    errors = []
+
+    <span class="comment"># Étape 3 : champs obligatoires</span>
+    <span class="keyword">for</span> f <span class="keyword">in</span> (<span class="string">"id"</span>, <span class="string">"title"</span>, <span class="string">"author"</span>):
+        <span class="keyword">if</span> f <span class="keyword">not in</span> data:
+            errors.<span class="function">append</span>(<span class="string">f"Champ obligatoire manquant : {f}"</span>)
+
+    <span class="comment"># Étape 4 : vérification de types</span>
+    <span class="keyword">if</span> <span class="string">"id"</span> <span class="keyword">in</span> data <span class="keyword">and not</span> <span class="builtin">isinstance</span>(data[<span class="string">"id"</span>], <span class="builtin">int</span>):
+        errors.<span class="function">append</span>(<span class="string">"'id' doit être un entier"</span>)
+
+    <span class="keyword">if</span> <span class="string">"title"</span> <span class="keyword">in</span> data:
+        <span class="keyword">if not</span> <span class="builtin">isinstance</span>(data[<span class="string">"title"</span>], <span class="builtin">str</span>):
+            errors.<span class="function">append</span>(<span class="string">"'title' doit être une chaîne"</span>)
+        <span class="keyword">elif</span> <span class="builtin">len</span>(data[<span class="string">"title"</span>]) > MAX_TITLE_LEN:
+            errors.<span class="function">append</span>(<span class="string">"Titre trop long"</span>)
+
+    <span class="keyword">if</span> <span class="string">"author"</span> <span class="keyword">in</span> data <span class="keyword">and not</span> <span class="builtin">isinstance</span>(data[<span class="string">"author"</span>], <span class="builtin">str</span>):
+        errors.<span class="function">append</span>(<span class="string">"'author' doit être une chaîne"</span>)
+
+    <span class="comment"># Étape 5 : tags (optionnel, liste de strings)</span>
+    tags = data.<span class="function">get</span>(<span class="string">"tags"</span>, [])
+    <span class="keyword">if not</span> <span class="builtin">isinstance</span>(tags, <span class="builtin">list</span>):
+        errors.<span class="function">append</span>(<span class="string">"'tags' doit être une liste"</span>)
+    <span class="keyword">elif</span> <span class="builtin">len</span>(tags) > MAX_TAGS:
+        errors.<span class="function">append</span>(<span class="string">"Trop de tags"</span>)
+    <span class="keyword">elif not</span> <span class="builtin">all</span>(<span class="builtin">isinstance</span>(t, <span class="builtin">str</span>) <span class="keyword">for</span> t <span class="keyword">in</span> tags):
+        errors.<span class="function">append</span>(<span class="string">"Chaque tag doit être une chaîne"</span>)
+
+    <span class="comment"># Étape 6 : classification (optionnel, allowlist)</span>
+    classification = data.<span class="function">get</span>(<span class="string">"classification"</span>, <span class="string">"internal"</span>)
+    <span class="keyword">if</span> classification <span class="keyword">not in</span> ALLOWED_CLASSIFICATIONS:
+        errors.<span class="function">append</span>(<span class="string">"Classification non autorisée"</span>)
+
+    <span class="comment"># Étape 7 : fail closed</span>
+    <span class="keyword">if</span> errors:
+        logger.<span class="function">warning</span>(<span class="string">"Validation échouée : %s"</span>, errors)
+        <span class="keyword">raise</span> <span class="function">ValueError</span>(<span class="string">"Payload invalide"</span>)  <span class="comment"># Message générique côté client</span>
+
+    <span class="keyword">return</span> <span class="function">Document</span>(
+        id=data[<span class="string">"id"</span>],
+        title=data[<span class="string">"title"</span>].<span class="function">strip</span>(),
+        author=data[<span class="string">"author"</span>].<span class="function">strip</span>(),
+        tags=tags,
+        classification=classification,
+    )
+
+
+<span class="comment"># ──────────────────────────────────────────────</span>
+<span class="comment"># TEST</span>
+<span class="comment"># ──────────────────────────────────────────────</span>
+<span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:
+    doc = <span class="function">Document</span>(id=<span class="number">1</span>, title=<span class="string">"Rapport Q1"</span>, author=<span class="string">"Alice"</span>,
+                    tags=[<span class="string">"finance"</span>], _internal_score=<span class="number">9.5</span>)
+
+    <span class="comment"># Sérialisation (sans le champ sensible)</span>
+    json_out = <span class="function">serialize_document</span>(doc)
+    <span class="builtin">print</span>(<span class="string">"Sérialisé :"</span>, json_out)
+
+    <span class="comment"># Désérialisation + validation</span>
+    doc2 = <span class="function">deserialize_document</span>(json_out)
+    <span class="builtin">print</span>(<span class="string">"Désérialisé :"</span>, doc2)
+
+    <span class="comment"># Test invalide</span>
+    <span class="keyword">try</span>:
+        <span class="function">deserialize_document</span>(<span class="string">'{"id": "abc", "title": 123}'</span>)
+    <span class="keyword">except</span> <span class="function">ValueError</span> <span class="keyword">as</span> e:
+        <span class="builtin">print</span>(<span class="string">"Rejeté :"</span>, e)  <span class="comment"># "Payload invalide"</span>
+</code></pre>
+
+<div class="box box-exemple">
+  <div class="box-title">💡 Exemple concret — Points clés de cette démo</div>
+  <ul>
+    <li>Le champ <code>_internal_score</code> est exclu de la sérialisation → <strong>ne fuite pas</strong>.</li>
+    <li>La validation est <strong>exhaustive</strong> : présence, type, longueur, allowlist.</li>
+    <li>L'erreur côté client est <strong>générique</strong> (<code>"Payload invalide"</code>) ; le détail va dans les <strong>logs</strong>.</li>
+    <li>Approche <strong>fail closed</strong> : toute anomalie → rejet.</li>
+  </ul>
+</div>
+
+<h3>9.2 Démo 2 — XML parsing (stdlib) + rappel sécurité <span class="badge badge-xml">XML</span> <span class="badge badge-security">Sécurité</span></h3>
+
+<pre><code><span class="keyword">import</span> xml.etree.ElementTree <span class="keyword">as</span> ET
+<span class="keyword">import</span> logging
+
+logger = logging.<span class="function">getLogger</span>(__name__)
+
+<span class="comment"># ──────────────────────────────────────────────</span>
+<span class="comment"># CONSTANTES DE SÉCURITÉ</span>
+<span class="comment"># ──────────────────────────────────────────────</span>
+MAX_XML_SIZE = <span class="number">1_000_000</span>  <span class="comment"># 1 Mo maximum</span>
+EXPECTED_FIELDS = {<span class="string">"id"</span>, <span class="string">"title"</span>, <span class="string">"author"</span>, <span class="string">"date"</span>}
+
+
+<span class="keyword">def</span> <span class="function">parse_document_xml</span>(raw_xml: <span class="builtin">str</span>) -> <span class="builtin">dict</span>:
+    <span class="string">"""Parse un XML de métadonnées document de manière défensive."""</span>
+
+    <span class="comment"># Contrôle 1 : taille maximale AVANT tout parsing</span>
+    <span class="keyword">if</span> <span class="builtin">len</span>(raw_xml) > MAX_XML_SIZE:
+        logger.<span class="function">warning</span>(<span class="string">"XML trop volumineux : %d octets"</span>, <span class="builtin">len</span>(raw_xml))
+        <span class="keyword">raise</span> <span class="function">ValueError</span>(<span class="string">"Payload trop volumineux"</span>)
+
+    <span class="comment"># Contrôle 2 : rejet basique de DOCTYPE (défense en profondeur)</span>
+    <span class="keyword">if</span> <span class="string">"<!DOCTYPE"</span> <span class="keyword">in</span> raw_xml.<span class="function">upper</span>() <span class="keyword">or</span> <span class="string">"<!ENTITY"</span> <span class="keyword">in</span> raw_xml.<span class="function">upper</span>():
+        logger.<span class="function">warning</span>(<span class="string">"DOCTYPE/ENTITY détecté dans XML — rejeté"</span>)
+        <span class="keyword">raise</span> <span class="function">ValueError</span>(<span class="string">"Payload invalide"</span>)
+
+    <span class="comment"># Contrôle 3 : parsing</span>
+    <span class="keyword">try</span>:
+        root = ET.<span class="function">fromstring</span>(raw_xml)
+    <span class="keyword">except</span> ET.ParseError <span class="keyword">as</span> e:
+        logger.<span class="function">warning</span>(<span class="string">"XML mal formé : %s"</span>, e)
+        <span class="keyword">raise</span> <span class="function">ValueError</span>(<span class="string">"Payload invalide"</span>)
+
+    <span class="comment"># Contrôle 4 : extraire uniquement les champs attendus</span>
+    result = {}
+    <span class="keyword">for</span> field_name <span class="keyword">in</span> EXPECTED_FIELDS:
+        elem = root.<span class="function">find</span>(field_name)
+        <span class="keyword">if</span> elem <span class="keyword">is not</span> <span class="keyword">None</span> <span class="keyword">and</span> elem.text:
+            result[field_name] = elem.text.<span class="function">strip</span>()
+
+    <span class="comment"># Contrôle 5 : champs obligatoires</span>
+    missing = {<span class="string">"id"</span>, <span class="string">"title"</span>} - result.<span class="function">keys</span>()
+    <span class="keyword">if</span> missing:
+        logger.<span class="function">warning</span>(<span class="string">"Champs manquants dans XML : %s"</span>, missing)
+        <span class="keyword">raise</span> <span class="function">ValueError</span>(<span class="string">"Payload invalide"</span>)
+
+    <span class="keyword">return</span> result
+
+
+<span class="comment"># ──────────────────────────────────────────────</span>
+<span class="comment"># TEST</span>
+<span class="comment"># ──────────────────────────────────────────────</span>
+<span class="keyword">if</span> __name__ == <span class="string">"__main__"</span>:
+    xml_input = <span class="string">"""&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+    &lt;document&gt;
+        &lt;id&gt;42&lt;/id&gt;
+        &lt;title&gt;Rapport annuel&lt;/title&gt;
+        &lt;author&gt;Bob&lt;/author&gt;
+        &lt;date&gt;2026-01-15&lt;/date&gt;
+    &lt;/document&gt;"""</span>
+
+    result = <span class="function">parse_document_xml</span>(xml_input)
+    <span class="builtin">print</span>(<span class="string">"Parsé :"</span>, result)
+</code></pre>
+
+<div class="box box-securite">
+  <div class="box-title">🔒 Ce qu'il faut éviter en XML (concept, sans code d'attaque)</div>
+  <ul>
+    <li><strong>Ne pas parser d'XML non fiable sans protections</strong> : les parseurs par défaut peuvent résoudre des entités externes, ouvrant la voie à l'exfiltration de fichiers.</li>
+    <li><strong>En production avec données non fiables</strong> : utiliser <code>defusedxml.ElementTree</code> au lieu de <code>xml.etree.ElementTree</code>. Le module <code>defusedxml</code> désactive automatiquement les fonctionnalités dangereuses.</li>
+    <li><strong>Toujours limiter la taille</strong> avant parsing — un XML de 10 Ko peut consommer des Go de RAM si des entités sont imbriquées.</li>
+  </ul>
+</div>
+
+<h3>9.3 Démo 3 — Protobuf en Python (concept + extraits) <span class="badge badge-protobuf">Protobuf</span></h3>
+
+<h4>Étape A : Le fichier .proto</h4>
+<pre><code><span class="comment">// document.proto</span>
+<span class="keyword">syntax</span> = <span class="string">"proto3"</span>;
+
+<span class="keyword">package</span> demo;
+
+<span class="keyword">message</span> <span class="function">Document</span> {
+    <span class="builtin">int32</span>  id             = <span class="number">1</span>;
+    <span class="builtin">string</span> title          = <span class="number">2</span>;
+    <span class="builtin">string</span> author         = <span class="number">3</span>;
+    <span class="keyword">repeated</span> <span class="builtin">string</span> tags  = <span class="number">4</span>;
+
+    <span class="comment">// Ajouté en v2 — compatible avec v1</span>
+    <span class="builtin">string</span> classification  = <span class="number">5</span>;
+}
+</code></pre>
+
+<h4>Étape B : Compilation (commande shell)</h4>
+<pre><code><span class="comment"># Installer protobuf : pip install protobuf</span>
+<span class="comment"># Compiler le .proto :</span>
+protoc --python_out=. document.proto
+<span class="comment"># → génère document_pb2.py</span>
+</code></pre>
+
+<h4>Étape C : Encode / Decode en Python</h4>
+<pre><code><span class="keyword">import</span> document_pb2  <span class="comment"># Module généré par protoc</span>
+
+<span class="comment"># ── Encode (sérialisation) ──</span>
+doc = document_pb2.<span class="function">Document</span>()
+doc.id = <span class="number">42</span>
+doc.title = <span class="string">"Rapport Q1"</span>
+doc.author = <span class="string">"Alice"</span>
+doc.tags.<span class="function">append</span>(<span class="string">"finance"</span>)
+doc.tags.<span class="function">append</span>(<span class="string">"interne"</span>)
+doc.classification = <span class="string">"confidential"</span>
+
+binary_data = doc.<span class="function">SerializeToString</span>()
+<span class="builtin">print</span>(<span class="string">f"Taille Protobuf : {<span class="builtin">len</span>(binary_data)} octets"</span>)
+
+<span class="comment"># ── Decode (désérialisation) ──</span>
+doc2 = document_pb2.<span class="function">Document</span>()
+doc2.<span class="function">ParseFromString</span>(binary_data)
+<span class="builtin">print</span>(<span class="string">f"Titre : {doc2.title}"</span>)
+<span class="builtin">print</span>(<span class="string">f"Tags : {<span class="builtin">list</span>(doc2.tags)}"</span>)
+
+<span class="comment"># ── Comparaison de taille avec JSON ──</span>
+<span class="keyword">import</span> json
+json_data = json.<span class="function">dumps</span>({
+    <span class="string">"id"</span>: <span class="number">42</span>, <span class="string">"title"</span>: <span class="string">"Rapport Q1"</span>, <span class="string">"author"</span>: <span class="string">"Alice"</span>,
+    <span class="string">"tags"</span>: [<span class="string">"finance"</span>, <span class="string">"interne"</span>], <span class="string">"classification"</span>: <span class="string">"confidential"</span>
+}).<span class="function">encode</span>(<span class="string">"utf-8"</span>)
+<span class="builtin">print</span>(<span class="string">f"Taille JSON : {<span class="builtin">len</span>(json_data)} octets"</span>)
+<span class="builtin">print</span>(<span class="string">f"Ratio : Protobuf est ~{<span class="builtin">len</span>(json_data) / <span class="builtin">len</span>(binary_data):.1f}× plus petit"</span>)
+</code></pre>
+
+<h4>Étape D : Test de compatibilité (v1 lit du v2)</h4>
+<pre><code><span class="comment"># Un lecteur v1 (qui ne connaît pas "classification")</span>
+<span class="comment"># ignore simplement le champ 5 — pas d'erreur.</span>
+<span class="comment"># Les champs inconnus sont préservés dans le buffer</span>
+<span class="comment"># → rétrocompatibilité native de Protobuf.</span>
+
+<span class="comment"># Simulons : on lit binary_data (v2) avec le même proto</span>
+<span class="comment"># mais en n'accédant qu'aux champs v1 :</span>
+<span class="builtin">print</span>(<span class="string">f"ID: {doc2.id}, Title: {doc2.title}, Author: {doc2.author}"</span>)
+<span class="comment"># Fonctionne parfaitement — les champs v2 sont simplement ignorés</span>
+</code></pre>
+
+<div class="box box-retenir">
+  <div class="box-title">📌 À retenir — Protobuf Python en résumé</div>
+  <ul>
+    <li>Écrire le <code>.proto</code> → compiler avec <code>protoc</code> → importer <code>_pb2.py</code></li>
+    <li><code>SerializeToString()</code> → bytes compacts</li>
+    <li><code>ParseFromString()</code> → objet Python typé</li>
+    <li>Ajout de champ = compatible ; changement de type/numéro = cassure</li>
+  </ul>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 10. TP GUIDÉ (90 min) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="tp">10. TP guidé (90 min) <span class="badge badge-validation">Validation</span></h2>
+
+<!-- TP 7.1 -->
+<h3>TP7.1 — Contrat JSON + validation stricte (API) <span class="badge badge-json">JSON</span></h3>
+
+<h4>Objectif</h4>
+<p>Définir un contrat JSON formel pour les entités <code>Document</code> et <code>UserPublic</code>, puis implémenter la sérialisation, la désérialisation et la validation stricte en Python.</p>
+
+<h4>Spécifications du contrat</h4>
+
+<table>
+  <thead>
+    <tr><th>Champ</th><th>Type</th><th>Obligatoire</th><th>Règles de validation</th><th>Exemple</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>int</td><td>✅ Oui</td><td>Entier positif, &gt; 0</td><td><code>42</code></td></tr>
+    <tr><td><code>title</code></td><td>str</td><td>✅ Oui</td><td>1–200 caractères, non vide après strip</td><td><code>"Rapport Q1"</code></td></tr>
+    <tr><td><code>author</code></td><td>str</td><td>✅ Oui</td><td>1–100 caractères</td><td><code>"Alice Dupont"</code></td></tr>
+    <tr><td><code>tags</code></td><td>list[str]</td><td>❌ Non</td><td>0–20 éléments, chaque tag 1–50 chars</td><td><code>["finance"]</code></td></tr>
+    <tr><td><code>classification</code></td><td>str</td><td>❌ Non</td><td>Allowlist : public, internal, confidential, secret. Défaut : "internal"</td><td><code>"confidential"</code></td></tr>
+    <tr><td><code>created_at</code></td><td>str</td><td>❌ Non</td><td>Format ISO 8601 (YYYY-MM-DDTHH:MM:SSZ)</td><td><code>"2026-01-15T10:30:00Z"</code></td></tr>
+  </tbody>
+</table>
+
+<table>
+  <thead>
+    <tr><th>Champ (UserPublic)</th><th>Type</th><th>Obligatoire</th><th>Règles</th><th>Exemple</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>username</code></td><td>str</td><td>✅ Oui</td><td>3–30 chars, alphanumérique + underscore</td><td><code>"alice_d"</code></td></tr>
+    <tr><td><code>display_name</code></td><td>str</td><td>✅ Oui</td><td>1–100 chars</td><td><code>"Alice Dupont"</code></td></tr>
+    <tr><td><code>role</code></td><td>str</td><td>✅ Oui</td><td>Allowlist : viewer, editor, admin</td><td><code>"editor"</code></td></tr>
+  </tbody>
+</table>
+
+<h4>Consignes</h4>
+<ul class="checklist">
+  <li>Créer les <code>@dataclass</code> Python pour <code>Document</code> et <code>UserPublic</code></li>
+  <li>Écrire une fonction <code>serialize_*(obj) → str</code> qui exclut tout champ privé/sensible</li>
+  <li>Écrire une fonction <code>deserialize_*(raw: str) → objet</code> avec validation exhaustive</li>
+  <li>Respecter le pattern : message générique côté client, détail côté logs</li>
+  <li>Implémenter l'approche « fail closed » : tout champ non conforme → rejet total</li>
+  <li>Écrire au moins 5 cas de test : 2 valides, 3 invalides (champ manquant, type erroné, valeur hors allowlist)</li>
+</ul>
+
+<h4>Livrable attendu</h4>
+<ul>
+  <li>Tableau de contrat (ci-dessus complété/adapté)</li>
+  <li>Code Python fonctionnel (<code>dataclasses</code> + serialize + deserialize + validate)</li>
+  <li>Cas de test avec résultats attendus</li>
+</ul>
+
+<!-- TP 7.2 -->
+<h3>TP7.2 — Versioning JSON (compatibilité) <span class="badge badge-json">JSON</span></h3>
+
+<h4>Objectif</h4>
+<p>Faire évoluer le payload <code>Document</code> d'une version 1 à une version 2, <strong>sans casser</strong> la compatibilité de lecture.</p>
+
+<h4>Scénario</h4>
+<ul>
+  <li><strong>v1</strong> : <code>{ "id": ..., "title": ..., "author": ... }</code></li>
+  <li><strong>v2</strong> : ajoute <code>"tags"</code> (liste) + <code>"classification"</code> (chaîne, allowlist)</li>
+</ul>
+
+<div class="figure-container">
+<svg viewBox="0 0 700 140" xmlns="http://www.w3.org/2000/svg" style="max-width:680px;">
+  <!-- V1 -->
+  <rect x="20" y="20" width="200" height="100" rx="10" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+  <text x="120" y="45" text-anchor="middle" font-size="14" font-weight="bold" fill="#0d47a1">v1</text>
+  <text x="40" y="68" font-size="11" fill="#424242">• id (int)</text>
+  <text x="40" y="86" font-size="11" fill="#424242">• title (str)</text>
+  <text x="40" y="104" font-size="11" fill="#424242">• author (str)</text>
+
+  <!-- Flèche -->
+  <line x1="220" y1="70" x2="310" y2="70" stroke="#1565c0" stroke-width="2" marker-end="url(#arrowV)"/>
+  <text x="265" y="60" text-anchor="middle" font-size="11" font-weight="bold" fill="#1565c0">évolution</text>
+
+  <!-- V2 -->
+  <rect x="310" y="10" width="220" height="120" rx="10" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+  <text x="420" y="35" text-anchor="middle" font-size="14" font-weight="bold" fill="#1b5e20">v2</text>
+  <text x="330" y="58" font-size="11" fill="#424242">• id (int)</text>
+  <text x="330" y="76" font-size="11" fill="#424242">• title (str)</text>
+  <text x="330" y="94" font-size="11" fill="#424242">• author (str)</text>
+  <text x="330" y="112" font-size="11" font-weight="bold" fill="#2e7d32">+ tags (list) — NOUVEAU</text>
+  <text x="330" y="128" font-size="11" font-weight="bold" fill="#2e7d32" style="font-size:10px">+ classification (str) — NOUVEAU</text>
+
+  <!-- Note -->
+  <rect x="560" y="30" width="130" height="80" rx="8" fill="#fff9c4" stroke="#f9a825" stroke-width="1.5"/>
+  <text x="625" y="52" text-anchor="middle" font-size="10" font-weight="bold" fill="#e65100">Règles :</text>
+  <text x="575" y="70" font-size="9" fill="#424242">✅ Ajout OK</text>
+  <text x="575" y="85" font-size="9" fill="#424242">❌ Retrait interdit</text>
+  <text x="575" y="100" font-size="9" fill="#424242">❌ Changement type</text>
+
+  <defs>
+    <marker id="arrowV" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1565c0"/>
+    </marker>
+  </defs>
+</svg>
+<div class="figure-caption">Figure 5 — Versioning : évolution v1 → v2 par ajout de champs optionnels.</div>
+</div>
+
+<h4>Consignes</h4>
+<ul class="checklist">
+  <li>Écrire un désérialiseur v2 qui accepte aussi les payloads v1 (champs manquants → valeurs par défaut)</li>
+  <li>Définir les valeurs par défaut : <code>tags → []</code>, <code>classification → "internal"</code></li>
+  <li>Décider et justifier le comportement face aux champs inconnus (tolérer ou refuser ?)</li>
+  <li>Remplir la matrice de compatibilité ci-dessous</li>
+</ul>
+
+<h4>Matrice de compatibilité (à compléter)</h4>
+
+<table>
+  <thead>
+    <tr><th>Version payload</th><th>Lecteur</th><th>Payload exemple</th><th>Accepté ?</th><th>Raison</th><th>Risque</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>v1</td><td>v2</td><td><code>{"id":1,"title":"X","author":"A"}</code></td>
+      <td>✅</td><td>Champs manquants → défauts</td><td>Aucun</td>
+    </tr>
+    <tr>
+      <td>v2</td><td>v1</td><td><code>{"id":1,"title":"X","author":"A","tags":[],"classification":"public"}</code></td>
+      <td>⚠️</td><td>Champs inconnus ignorés</td><td>Perte d'info si v1 réémet</td>
+    </tr>
+    <tr>
+      <td>v2 altéré</td><td>v2</td><td><code>{"id":1,"title":"X","author":"A","classification":"top_secret"}</code></td>
+      <td>❌</td><td>Valeur hors allowlist</td><td>Injection de classification</td>
+    </tr>
+    <tr>
+      <td>v2 + champ inconnu</td><td>v2</td><td><code>{...,"priority":"urgent"}</code></td>
+      <td>?</td><td>À décider et justifier</td><td>À évaluer</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4>Livrable</h4>
+<ul>
+  <li>Code Python avec désérialiseur compatible v1/v2</li>
+  <li>Matrice complétée avec justifications sécurité</li>
+</ul>
+
+<!-- TP 7.3 -->
+<h3>TP7.3 — Protobuf en Python (schéma + échange) <span class="badge badge-protobuf">Protobuf</span></h3>
+
+<h4>Objectif</h4>
+<p>Utiliser Protocol Buffers pour sérialiser/désérialiser <code>Document</code> et comparer avec JSON.</p>
+
+<h4>Consignes</h4>
+<ul class="checklist">
+  <li>Écrire le fichier <code>document.proto</code> avec les champs : <code>id</code>, <code>title</code>, <code>author</code>, <code>tags</code>, <code>classification</code></li>
+  <li>Compiler avec <code>protoc --python_out=. document.proto</code></li>
+  <li>Écrire un script Python qui encode un <code>Document</code> et le décode</li>
+  <li>Ajouter un champ optionnel (ex : <code>priority</code> = 6) et vérifier la compatibilité arrière</li>
+  <li>Mesurer et comparer la taille du payload JSON vs Protobuf (même données)</li>
+  <li>Remplir le tableau comparatif</li>
+</ul>
+
+<h4>Tableau comparatif à remplir</h4>
+
+<table>
+  <thead>
+    <tr><th>Critère</th><th>JSON (votre mesure)</th><th>Protobuf (votre mesure)</th><th>Commentaire</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Taille payload (octets)</td><td>___</td><td>___</td><td>Ratio ?</td></tr>
+    <tr><td>Lisibilité</td><td>___</td><td>___</td><td></td></tr>
+    <tr><td>Validation de types</td><td>___</td><td>___</td><td></td></tr>
+    <tr><td>Compatibilité ajout champ</td><td>___</td><td>___</td><td></td></tr>
+    <tr><td>Tooling nécessaire</td><td>___</td><td>___</td><td></td></tr>
+  </tbody>
+</table>
+
+<h4>Livrable</h4>
+<ul>
+  <li>Fichier <code>.proto</code></li>
+  <li>Script Python avec encode/decode + test compatibilité</li>
+  <li>Tableau comparatif rempli</li>
+</ul>
+
+<!-- TP 7.4 -->
+<h3>TP7.4 — « Pickle : où c'est acceptable, où c'est interdit » <span class="badge badge-security">Sécurité</span></h3>
+
+<h4>Objectif</h4>
+<p>Analyser et formaliser une <strong>politique de sérialisation sûre</strong> pour un projet Python.</p>
+
+<h4>Consignes</h4>
+<ul class="checklist">
+  <li>Lister les cas où <code>pickle</code> est <strong>autorisé</strong> (données internes, signées, stockage local de confiance)</li>
+  <li>Lister les cas où <code>pickle</code> est <strong>interdit</strong> (entrée réseau, fichiers de source inconnue, échanges inter-services)</li>
+  <li>Proposer des alternatives pour chaque cas interdit : JSON + validation, Protobuf + schéma, signature HMAC</li>
+  <li>Rédiger une checklist « Safe Serialization Policy » (8–10 points)</li>
+  <li>Remplir le tableau de politique</li>
+</ul>
+
+<h4>Tableau « Politique de sérialisation »</h4>
+
+<table>
+  <thead>
+    <tr><th>Source des données</th><th>Format autorisé</th><th>Contrôles requis</th><th>Justification</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>API REST (entrée client)</td>
+      <td>JSON uniquement</td>
+      <td>Validation stricte, limite taille, authentification</td>
+      <td>Entrée non fiable → format inerte obligatoire</td>
+    </tr>
+    <tr>
+      <td>Inter-services (réseau interne)</td>
+      <td>JSON ou Protobuf</td>
+      <td>Authentification mTLS, validation, HMAC</td>
+      <td>Réseau interne ≠ confiance totale (zero trust)</td>
+    </tr>
+    <tr>
+      <td>Cache local (même processus)</td>
+      <td>pickle autorisé</td>
+      <td>Données générées localement uniquement</td>
+      <td>Confiance totale, pas d'entrée externe</td>
+    </tr>
+    <tr>
+      <td>Fichier uploadé par utilisateur</td>
+      <td>JSON/CSV/XML (defused)</td>
+      <td>Limite taille, validation, sandbox</td>
+      <td>Jamais pickle : risque d'exécution de code</td>
+    </tr>
+    <tr>
+      <td>File de messages (Kafka, RabbitMQ)</td>
+      <td>JSON ou Protobuf</td>
+      <td>Schéma registry, validation, signature</td>
+      <td>Producteurs multiples → format interopérable sûr</td>
+    </tr>
+    <tr>
+      <td>Stockage persistant (DB, fichier)</td>
+      <td>JSON ou Protobuf</td>
+      <td>Intégrité (HMAC/chiffrement), migration schéma</td>
+      <td>Données peuvent être altérées entre écriture et lecture</td>
+    </tr>
+  </tbody>
+</table>
+
+<h4>Checklist « Safe Serialization Policy »</h4>
+<ul class="checklist">
+  <li><strong>Interdire</strong> <code>pickle</code>/<code>marshal</code>/<code>shelve</code> pour toute entrée non fiable</li>
+  <li><strong>Utiliser</strong> <code>yaml.safe_load()</code> au lieu de <code>yaml.load()</code></li>
+  <li><strong>Limiter</strong> la taille des payloads avant parsing (ex : 1 Mo max)</li>
+  <li><strong>Valider</strong> chaque champ après désérialisation (type, longueur, allowlist)</li>
+  <li><strong>Signer</strong> les données sérialisées si elles transitent ou sont stockées (HMAC)</li>
+  <li><strong>Logger</strong> les échecs de désérialisation (sans données sensibles)</li>
+  <li><strong>Versionner</strong> les contrats de données (champs optionnels, pas de breaking change)</li>
+  <li><strong>Tester</strong> les cas limites : payload vide, géant, types incohérents, champs inconnus</li>
+  <li><strong>Reviewer</strong> tout usage de pickle en code review (flag automatique si possible)</li>
+  <li><strong>Documenter</strong> le format accepté à chaque point d'entrée (API doc, README)</li>
+</ul>
+
+<h4>Livrable</h4>
+<ul>
+  <li>Checklist « Safe Serialization Policy » personnalisée</li>
+  <li>Tableau de politique complété pour le contexte de votre projet</li>
+</ul>
+
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 11. LAB SÉCURITÉ (30 min) -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="lab-secu">11. Lab Sécurité (30 min) — Threat Modeling Sérialisation <span class="badge badge-security">Sécurité</span></h2>
+
+<h3>11.1 Le flux à analyser</h3>
+<pre style="text-align:left;max-width:700px;margin:auto;font-size:0.85rem;">
+╔═══════╗     ╔═══════╗     ╔═══════════════╗     ╔═══════╗     ╔══════════════════╗
+║Client ║────▶║  API  ║────▶║ Sérialisation ║────▶║Réseau ║────▶║ Désérialisation  ║
+║(HTTP) ║     ║Gateway║     ║   (encode)    ║     ║(TCP)  ║     ║  (decode+valid.) ║
+╚═══════╝     ╚═══════╝     ╚═══════════════╝     ╚═══════╝     ╚══════════════════╝
+    │              │                │                   │                 │
+    ▼              ▼                ▼                   ▼                 ▼
+ Menace:       Menace:          Menace:             Menace:          Menace:
+ Payload       Auth bypass      Fuite champs       Man-in-the-      Exécution code
+ malformé      Injection        sensibles dans     Middle           (si pickle)
+               headers          le payload sér.    Tampering        Payload géant
+                                                   Replay           Injection type
+</pre>
+
+<h3>11.2 Identification des menaces</h3>
+
+<table>
+  <thead>
+    <tr><th>Menace</th><th>Description</th><th>Point du flux</th><th>Contrôle proposé</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Tampering</strong></td>
+      <td>Modification du payload en transit</td>
+      <td>Réseau</td>
+      <td>HMAC (signature d'intégrité) ou TLS (chiffrement)</td>
+    </tr>
+    <tr>
+      <td><strong>Injection de champs</strong></td>
+      <td>Ajout de champs non prévus (<code>is_admin: true</code>)</td>
+      <td>Client → API</td>
+      <td>Validation stricte avec allowlist de champs</td>
+    </tr>
+    <tr>
+      <td><strong>Replay</strong></td>
+      <td>Renvoi d'un payload légitime capturé</td>
+      <td>Réseau</td>
+      <td>Nonce/timestamp + vérification côté serveur</td>
+    </tr>
+    <tr>
+      <td><strong>Fuite logs</strong></td>
+      <td>Données sensibles (tokens, passwords) dans les logs</td>
+      <td>Sérialisation / Désérialisation</td>
+      <td>Exclusion de champs sensibles, masquage</td>
+    </tr>
+    <tr>
+      <td><strong>Payload géant (DoS)</strong></td>
+      <td>Payload de taille déraisonnable pour épuiser les ressources</td>
+      <td>Client → API</td>
+      <td>Limite Content-Length, rejet avant parsing</td>
+    </tr>
+    <tr>
+      <td><strong>Exécution de code</strong></td>
+      <td>Pickle/YAML unsafe sur entrée non fiable</td>
+      <td>Désérialisation</td>
+      <td>Format inerte uniquement (JSON/Protobuf)</td>
+    </tr>
+    <tr>
+      <td><strong>Type confusion</strong></td>
+      <td>Champ envoyé avec mauvais type (string au lieu d'int)</td>
+      <td>Désérialisation</td>
+      <td>Vérification de type stricte après parsing</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>11.3 Concept HMAC (intégrité)</h3>
+<p><strong>HMAC</strong> (Hash-based Message Authentication Code) : on calcule un hash du payload avec une clé secrète partagée entre émetteur et récepteur. Le récepteur recalcule le HMAC et compare — si différent, le payload a été altéré.</p>
+
+<pre><code><span class="keyword">import</span> hmac
+<span class="keyword">import</span> hashlib
+<span class="keyword">import</span> json
+
+SECRET_KEY = <span class="string">b"cle_partagee_entre_services"</span>  <span class="comment"># En prod : variable d'env, vault</span>
+
+<span class="keyword">def</span> <span class="function">sign_payload</span>(data: <span class="builtin">dict</span>) -> <span class="builtin">tuple</span>:
+    <span class="string">"""Retourne (payload_json, signature_hex)."""</span>
+    payload = json.<span class="function">dumps</span>(data, sort_keys=<span class="keyword">True</span>, ensure_ascii=<span class="keyword">False</span>)
+    sig = hmac.<span class="function">new</span>(SECRET_KEY, payload.<span class="function">encode</span>(<span class="string">"utf-8"</span>), hashlib.sha256)
+    <span class="keyword">return</span> payload, sig.<span class="function">hexdigest</span>()
+
+<span class="keyword">def</span> <span class="function">verify_payload</span>(payload_json: <span class="builtin">str</span>, received_sig: <span class="builtin">str</span>) -> <span class="builtin">bool</span>:
+    <span class="string">"""Vérifie l'intégrité du payload."""</span>
+    expected = hmac.<span class="function">new</span>(SECRET_KEY, payload_json.<span class="function">encode</span>(<span class="string">"utf-8"</span>), hashlib.sha256)
+    <span class="keyword">return</span> hmac.<span class="function">compare_digest</span>(expected.<span class="function">hexdigest</span>(), received_sig)
+</code></pre>
+
+<h3>11.4 Checklist « Secure Deserialization Baseline »</h3>
+<ul class="checklist">
+  <li>Utiliser <strong>uniquement</strong> des formats inertes (JSON, Protobuf) pour les entrées non fiables</li>
+  <li><strong>Interdire</strong> <code>pickle</code>, <code>yaml.load()</code>, <code>eval()</code>, <code>exec()</code> sur entrées réseau</li>
+  <li><strong>Limiter la taille</strong> du payload avant parsing (Content-Length, <code>len()</code>)</li>
+  <li><strong>Valider</strong> la structure : type racine (dict/list), champs attendus (allowlist)</li>
+  <li><strong>Valider</strong> les types de chaque champ (isinstance, pas de coercition implicite)</li>
+  <li><strong>Valider</strong> les valeurs : bornes numériques, longueurs, allowlist pour enums</li>
+  <li><strong>Signer</strong> les payloads inter-services avec HMAC ou vérifier via TLS mutuel</li>
+  <li><strong>Vérifier</strong> l'authentification/autorisation <em>avant</em> la désérialisation</li>
+  <li><strong>Logger</strong> les échecs (source, timestamp, type d'erreur) <em>sans</em> données sensibles</li>
+  <li><strong>Appliquer un timeout</strong> au parsing pour prévenir les DoS</li>
+  <li><strong>Rejeter</strong> par défaut (fail closed) tout payload non conforme</li>
+  <li><strong>Tester</strong> régulièrement avec des payloads malformés (fuzzing basique)</li>
+</ul>
+
+<div class="box box-retenir">
+  <div class="box-title">📌 À retenir — Threat modeling en 1 phrase</div>
+  <p>Pour chaque point du flux où des données sont transformées (sérialisées ou désérialisées), demandez-vous : <strong>« Qui contrôle ces bytes ? Et que peut-il me faire faire ? »</strong></p>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 12. SYNTHÈSE & ÉVALUATION -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="synthese">12. Synthèse &amp; évaluation</h2>
+
+<h3>12.1 Résumé « À retenir en 10 points »</h3>
+
+<div class="box box-retenir">
+  <div class="box-title">📌 Les 10 points essentiels de la Séance 7</div>
+  <ol>
+    <li><strong>Sérialisation = objet → bytes</strong> ; <strong>désérialisation = bytes → objet</strong>. Marshalling ajoute les métadonnées de transport.</li>
+    <li><strong>Le format (JSON) ≠ le contrat</strong> (schéma attendu). Deux services en JSON peuvent être incompatibles si le contrat diffère.</li>
+    <li><strong>JSON</strong> est universel et lisible, mais sans validation intrinsèque — la s��curité repose sur le code applicatif.</li>
+    <li><strong>XML</strong> est puissant mais dangereux avec entrées non fiables (XXE, bombes XML). Utiliser un parseur sécurisé.</li>
+    <li><strong>Protobuf</strong> offre un schéma formel, un encodage compact et un versioning natif (champs numérotés).</li>
+    <li><strong>Versioning sûr</strong> = ajouter des champs optionnels, ne jamais changer les types/numéros, valeurs par défaut.</li>
+    <li><strong>pickle est interdit</strong> pour les entrées non fiables — il permet l'exécution de code lors du <code>loads()</code>.</li>
+    <li><strong>Validation stricte</strong> : présence, type, longueur, allowlist. Approche « fail closed » (en cas de doute → refuser).</li>
+    <li><strong>Erreurs sûres</strong> : message générique côté client, détail technique côté logs (pas de fuite d'info).</li>
+    <li><strong>Signature HMAC</strong> pour garantir l'intégrité des données entre services, combinée à une validation après vérification.</li>
+  </ol>
+</div>
+
+<h3>12.2 Livrables de la séance</h3>
+
+<table>
+  <thead>
+    <tr><th>TP</th><th>Livrable</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>TP7.1</td><td>Contrat JSON + code validation</td><td>Dataclass + serialize + deserialize + tests</td></tr>
+    <tr><td>TP7.2</td><td>Versioning JSON</td><td>Code compatible v1/v2 + matrice complétée</td></tr>
+    <tr><td>TP7.3</td><td>Protobuf Python</td><td>.proto + script + tableau comparatif</td></tr>
+    <tr><td>TP7.4</td><td>Politique pickle</td><td>Checklist + tableau de politique</td></tr>
+  </tbody>
+</table>
+
+<h3>12.3 Barème</h3>
+
+<table>
+  <thead>
+    <tr><th>Critère</th><th>Poids</th><th>Éléments évalués</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Maîtrise concepts + formats</strong></td>
+      <td>40%</td>
+      <td>Définitions correctes, choix de format justifié, compréhension Protobuf vs JSON vs XML</td>
+    </tr>
+    <tr>
+      <td><strong>Qualité validation / versioning</strong></td>
+      <td>35%</td>
+      <td>Code de validation complet, gestion des erreurs, compatibilité v1/v2, tests pertinents</td>
+    </tr>
+    <tr>
+      <td><strong>Analyse sécurité &amp; contrôles</strong></td>
+      <td>25%</td>
+      <td>Politique pickle argumentée, threat modeling, checklist secure deserialization</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>12.4 Perspective — Prochaine séance</h3>
+<p>La séance suivante abordera les <strong>mécanismes d'appel distant (RPC)</strong> : gRPC (qui repose sur Protobuf), patterns synchrones vs asynchrones, et sécurisation des canaux de communication. Les compétences de sérialisation acquises aujourd'hui seront directement réutilisées.</p>
+
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- 13. MINI-QUIZ (10 QUESTIONS) + CORRIGÉ -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="quiz">13. Mini-quiz (10 questions)</h2>
+
+<div class="quiz-q">
+  <span class="q-num">Q1.</span> Quelle est la différence fondamentale entre sérialisation et marshalling ?
+</div>
+
+<div class="quiz-q">
+  <span class="q-num">Q2.</span> JSON possède-t-il un type natif pour les dates ? Si non, quelle convention est recommandée ?
+</div>
+
+<div class="quiz-q">
+  <span class="q-num">Q3.</span> Pourquoi dit-on que JSON est « schema-less » ? Cela signifie-t-il qu'il n'y a aucun contrat entre émetteur et récepteur ?
+</div>
+
+<div class="quiz-q">
+  <span class="q-num">Q4.</span> Quel est le risque principal de <code>pickle.loads()</code> sur des données reçues du réseau ?
+</div>
+
+<div class="quiz-q">
+  <span class="q-num">Q5.</span> En Protobuf, que se passe-t-il si un lecteur v1 reçoit un message v2 contenant un champ supplémentaire qu'il ne connaît pas ?
+</div>
+
+<div class="quiz-q">
+  <span class="q-num">Q6.</span> Qu'est-ce que le pattern « fail closed » en validation de données ?
+</div>
+
+<div class="quiz-q">
+  <span class="q-num">Q7.</span> Citez deux risques spécifiques au parsing XML que JSON ne présente pas.
+</div>
+
+<div class="quiz-q">
+  <span class="q-num">Q8.</span> Pourquoi ne faut-il <strong>jamais</strong> réutiliser un numéro de champ en Protobuf, même après suppression ?
+</div>
+
+<div class="quiz-q">
+  <span class="q-num">Q9.</span> En Python, quelle est la différence entre <code>yaml.load()</code> et <code>yaml.safe_load()</code> du point de vue sécurité ?
+</div>
+
+<div class="quiz-q">
+  <span class="q-num">Q10.</span> Vous recevez un payload JSON d'un client. Votre validation accepte la syntaxe et les types. Pouvez-vous considérer les données comme fiables ? Justifiez.
+</div>
+
+<h3>Corrigé</h3>
+
+<div class="corrige">
+  <strong>R1.</strong> La <strong>sérialisation</strong> transforme un objet en séquence d'octets. Le <strong>marshalling</strong> inclut en plus les métadonnées de transport nécessaires (types, longueurs, en-têtes) pour que le récepteur puisse correctement interpréter et reconstruire la structure. Le marshalling est un sur-ensemble de la sérialisation, typiquement utilisé en RPC.
+</div>
+
+<div class="corrige">
+  <strong>R2.</strong> Non, JSON n'a <strong>pas</strong> de type date natif. La convention recommandée est d'utiliser une <strong>chaîne au format ISO 8601</strong> (ex : <code>"2026-01-15T10:30:00Z"</code>). Le récepteur la parse explicitement avec <code>datetime.fromisoformat()</code> ou équivalent.
+</div>
+
+<div class="corrige">
+  <strong>R3.</strong> JSON est « schema-less » car le format lui-même n'impose aucune structure prédéfinie — n'importe quelle combinaison de clés/valeurs est syntaxiquement valide. Cependant, il <strong>existe toujours un contrat implicite</strong> entre émetteur et récepteur (quels champs, quels types, quelles valeurs). Ce contrat doit être défini et validé par le code applicatif (ou via JSON Schema).
+</div>
+
+<div class="corrige">
+  <strong>R4.</strong> <code>pickle.loads()</code> peut <strong>exécuter du code arbitraire</strong> lors de la reconstruction des objets. Le protocole pickle contient des instructions de machine virtuelle qui sont interprétées pendant le chargement. Un attaquant peut forger un payload pickle qui exécute des commandes système sur le serveur.
+</div>
+
+<div class="corrige">
+  <strong>R5.</strong> Le lecteur v1 <strong>ignore silencieusement</strong> les champs inconnus. Protobuf est conçu pour la rétrocompatibilité : les champs non reconnus sont simplement sautés lors du décodage, sans erreur. C'est un avantage majeur pour le versioning progressif.
+</div>
+
+<div class="corrige">
+  <strong>R6.</strong> « Fail closed » signifie qu'en cas de doute ou d'ambiguïté lors de la validation, le système <strong>refuse</strong> l'entrée plutôt que de l'accepter. C'est l'opposé de « fail open » (accepter par défaut). En sécurité, on préfère toujours fail closed : un faux positif (rejet d'un légitime) est préférable à un faux négatif (acceptation d'un malveillant).
+</div>
+
+<div class="corrige">
+  <strong>R7.</strong> <strong>XXE (XML External Entity)</strong> : résolution d'entités qui pointent vers des fichiers locaux ou des URLs, permettant l'exfiltration de données ou le SSRF. <strong>Bombe XML (Billion Laughs)</strong> : entités imbriquées exponentiellement causant un déni de service par épuisement mémoire/CPU. JSON ne supporte ni entités ni DTD, donc n'est pas vulnérable à ces attaques.
+</div>
+
+<div class="corrige">
+  <strong>R8.</strong> En Protobuf, le numéro de champ est <strong>l'identifiant binaire</strong> dans le flux encodé. Si on réutilise le numéro 3 pour un nouveau champ de type différent, les anciens messages (qui avaient l'ancien champ 3) seront <strong>décodés incorrectement</strong> — les bytes seront interprétés avec le mauvais type, causant des données corrompues <em>silencieusement</em>. Il faut utiliser <code>reserved</code> pour marquer les numéros retirés.
+</div>
+
+<div class="corrige">
+  <strong>R9.</strong> <code>yaml.load()</code> sans spécifier <code>Loader=SafeLoader</code> utilise le loader complet qui peut instancier <strong>n'importe quel objet Python</strong> via les tags YAML (ex : <code>!!python/object/apply:os.system</code>). Cela permet l'exécution de code arbitraire. <code>yaml.safe_load()</code> (ou <code>Loader=SafeLoader</code>) restreint aux types de base (str, int, list, dict…) et ne permet <strong>aucune instanciation d'objet</strong>.
+</div>
+
+<div class="corrige">
+  <strong>R10.</strong> <strong>Non.</strong> La validation syntaxique et de types est une condition <strong>nécessaire mais non suffisante</strong>. Des données peuvent être syntaxiquement correctes et typées correctement, mais contenir des valeurs malveillantes (injection SQL dans un champ texte, classification élevée non autorisée pour cet utilisateur, etc.). Il faut aussi vérifier l'<strong>origine</strong> (authentification), les <strong>autorisations</strong> (l'utilisateur a-t-il le droit d'envoyer ces données ?), les <strong>valeurs métier</strong> (allowlist, bornes), et idéalement l'<strong>intégrité</strong> (signature).
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- FOOTER -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<hr style="margin-top:50px; border:none; border-top:2px solid var(--gray-300);">
+<p style="text-align:center; color:var(--gray-700); font-size:0.85rem; margin-top:20px;">
+  Module <strong>Applications Réparties et Cybersécurité</strong> · Séance 7 · Sérialisation et Marshalling (Python)<br>
+  1<sup>ère</sup> année cycle ingénieur cybersécurité · 2025–2026
+</p>
+
+</div>
+</body>
+</html>
