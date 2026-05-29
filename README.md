@@ -9,13 +9,15 @@
 ## 📑 Structure du Dépôt
 
 ```
-├── TP1/                    → Docker : Introduction & Conteneurisation
-├── TP2/                    → Kubernetes & Kubeflow
-├── TP5/                    → Concepts des Systèmes Distribués
-├── TP6/                    → Communication, APIs et Fiabilité
-├── TP7/                    → Sérialisation et Marshalling
-├── TP10/                   → Invocation d'Objets Distants (Pyro5)
+├── Applications_Reparties/ → TPs d'Applications Réparties uniquement
+│   ├── TP5/                → Concepts des Systèmes Distribués
+│   ├── TP6/                → Communication, APIs et Fiabilité
+│   ├── TP7/                → Sérialisation et Marshalling
+│   └── TP10/               → Invocation d'Objets Distants (Pyro5)
 ├── Cloud/                  → TPs Cloud (Hyperviseurs, vCenter, Proxmox, Veeam)
+├── Combines/               → TPs combinant Cloud & App Réparties
+│   ├── TP1/                → Docker : Introduction & Conteneurisation
+│   └── TP2/                → Kubernetes & Kubeflow
 ├── Projet/                 → (à ajouter ultérieurement)
 ├── Rapport-final/          → Rapport final global
 └── README.md               → Ce fichier
@@ -75,7 +77,7 @@
 pip install flask pyro5 grpcio protobuf requests
 
 # Exemple : Lancer le TP10 (Objets Distants)
-cd TP10/
+cd Applications_Reparties/TP10/
 python -m Pyro5.nameserver &   # Démarrer le Name Server
 python server_docs.py &         # Démarrer le serveur
 python client_docs.py            # Lancer le client
