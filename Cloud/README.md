@@ -104,9 +104,10 @@ Maîtriser l'administration d'hyperviseurs de type 1 (ESXi et Proxmox VE), la ge
 ## 📂 Fichiers du dossier Cloud
 - `TP - HYPERVISEUR(1).html` — Support de cours TP1 (ESXi vs Proxmox)
 - `TP2_vCenter_Proxmox_Datacenter.html` — Support de cours TP2 (vCenter & Datacenter)
-- `master.txt` — Script d'installation Kubernetes (nœud master)
-- `worker.txt` — Script d'installation Kubernetes (nœud worker)
-- `server.py` — Serveur de test pour Hyperledger Fabric Explorer
+- `Rapport_TP_Hyperviseur.pdf` — Rapport détaillé de l'étudiant avec réponses aux questions de réflexion
+- `scripts/proxmox_hardening.sh` — Script de durcissement sécurité pour Proxmox VE
+- `scripts/proxmox_network.sh` — Script de configuration réseau et segmentation Proxmox
+- `screenshots/` — Captures d'écran extraites du rapport illustrant la configuration d'ESXi (vSwitch, Hardening) et de Proxmox VE (Datacenter)
 
 ---
 
