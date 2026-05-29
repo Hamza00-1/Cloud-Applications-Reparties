@@ -1,7 +1,7 @@
 # 📚 Travaux Pratiques — Cloud & Applications Réparties
 
 > **Module :** Applications Réparties et Cloud  
-> **Formation :** 1ère année Cycle Ingénieur — Cybersécurité (ENSA)  
+> **Formation :** 1ère année Cycle Ingénieur — Cybersécurité (EIDIA)  
 > **Année universitaire :** 2025 – 2026
 
 ---
