@@ -1,0 +1,10 @@
+# TP2 — Namespace Kubernetes
+# Description : Isolation logique des ressources du TP
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tp2-kubeflow
+  labels:
+    tp: "2"
+    module: "cloud-app-reparties"
+    environnement: "laboratoire"

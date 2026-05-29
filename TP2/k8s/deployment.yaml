@@ -1,0 +1,87 @@
+# TP2 — Deployment Kubernetes
+# Description : Déploiement d'une application Nginx avec 3 réplicas
+# Séance 2 : Kubernetes & Kubeflow
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tp2-webapp
+  namespace: tp2-kubeflow
+  labels:
+    app: tp2-webapp
+    tp: "2"
+spec:
+  replicas: 3          # 3 instances pour la haute disponibilité
+  selector:
+    matchLabels:
+      app: tp2-webapp
+  template:
+    metadata:
+      labels:
+        app: tp2-webapp
+        version: "1.0"
+    spec:
+      containers:
+        - name: webapp
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+              name: http
+          resources:
+            requests:
+              cpu: "100m"       # 0.1 CPU minimum
+              memory: "64Mi"    # 64 Mo minimum
+            limits:
+              cpu: "250m"       # 0.25 CPU maximum
+              memory: "128Mi"   # 128 Mo maximum
+          livenessProbe:        # Vérification de vivacité
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:       # Vérification de disponibilité
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          volumeMounts:
+            - name: config-volume
+              mountPath: /usr/share/nginx/html
+              readOnly: true
+      volumes:
+        - name: config-volume
+          configMap:
+            name: tp2-webapp-html
+---
+# ConfigMap avec une page HTML personnalisée
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tp2-webapp-html
+  namespace: tp2-kubeflow
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8">
+      <title>TP2 Kubernetes</title>
+      <style>
+        body { font-family: Arial, sans-serif; background: #1a1a2e; color: #eee;
+               display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #16213e; border-radius: 12px; padding: 40px; text-align: center;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+        h1 { color: #00d4ff; }
+        .info { color: #aaa; margin-top: 12px; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <h1>☸️ TP2 — Kubernetes</h1>
+        <p>Application déployée avec succès sur le cluster K8s !</p>
+        <p class="info">Déployé via kubeadm sur Proxmox VE</p>
+      </div>
+    </body>
+    </html>
