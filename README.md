@@ -85,6 +85,6 @@ python client_docs.py            # Lancer le client
 
 ## 👤 Auteur
 
-- **Nom :** Hamza
-- **Formation :** Ingénieur Cybersécurité — ENSA
+- **Nom :** Hamza Khchichine
+- **Formation :** Ingénieur Cybersécurité — EIDIA
 - **Année :** 2025–2026
