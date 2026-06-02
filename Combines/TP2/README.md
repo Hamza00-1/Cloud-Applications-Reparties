@@ -59,15 +59,43 @@ kubeadm join <MASTER_IP>:6443 --token <TOKEN> \
     --discovery-token-ca-cert-hash sha256:<HASH>
 ```
 
+## 🖼️ Captures d'écran du déploiement
+
+### 1. Initialisation du Master — containerd + kubectl
+![Master - containerd et kubectl get nodes](screenshots/01_master_containerd_kubectl_nodes.jpeg)
+
+### 2. Pods système du cluster (kube-system)
+![Master - pods kube-system](screenshots/02_master_pods_kube_system.jpeg)
+
+### 3. Jonction du Worker au cluster (kubeadm join)
+![Worker - kubeadm join réussi](screenshots/03_worker_kubeadm_join.jpeg)
+
+### 4. Worker rejoint + déploiement Nginx
+![Worker joined + nginx deploy](screenshots/04_worker_joined_nginx_deploy.jpeg)
+
+### 5. Cluster Ready — Master + Worker + ping
+![Cluster ready avec ping](screenshots/05_cluster_ready_ping_worker.jpeg)
+
+### 6. Test Nginx via NodePort (curl)
+![Nginx NodePort curl test](screenshots/06_nginx_nodeport_curl_test.jpeg)
+
+### 7. Serveur Flask (Smart Farming IoT) sur le cluster
+![Flask server Smart Farming](screenshots/07_flask_server_smart_farming.jpeg)
+
+---
+
 ## 📂 Fichiers
 - `seance2-kubernetes-kubeflow.html` — Support de cours complet
 - `master.txt` — Script d'installation du nœud master
 - `worker.txt` — Script d'installation du nœud worker
+- `k8s/` — Manifestes Kubernetes (namespace, deployment, service, script de déploiement)
+- `screenshots/` — Captures d'écran du déploiement réel sur Proxmox VE
 
 ## ⏱ Durée
 4 heures (240 min)
 
 ## 📌 Environnement
-- 2 VMs Ubuntu sur Proxmox VE (master + worker)
-- Kubernetes v1.30 via kubeadm
-- Réseau : Calico CNI
+- 2 VMs Ubuntu 22.04 sur Proxmox VE (master: 192.168.114.132 + worker: 192.168.114.131)
+- Kubernetes v1.30.14 via kubeadm
+- Container runtime : containerd 2.2.3
+- Réseau : Weave Net CNI
