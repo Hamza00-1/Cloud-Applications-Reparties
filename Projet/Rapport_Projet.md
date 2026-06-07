@@ -3,6 +3,7 @@
 **Réalisé par :** Hamza Khchichine  
 **Formation :** 1ère année Cycle Ingénieur — Cybersécurité (EIDIA - UEMF)  
 **Modules concernés :** Applications Réparties et Cloud  
+**Dépôt Original du Projet :** [Hamza00-1/CampusOps-](https://github.com/Hamza00-1/CampusOps-)
 
 ---
 

@@ -18,7 +18,7 @@
 ├── Combines/               → TPs combinant Cloud & App Réparties
 │   ├── TP1/                → Docker : Introduction & Conteneurisation
 │   └── TP2/                → Kubernetes & Kubeflow
-├── Projet/                 → (à ajouter ultérieurement)
+├── Projet/                 → Projet de fin de semestre (CampusOps)
 ├── Rapport-final/          → Rapport final global
 └── README.md               → Ce fichier
 ```
@@ -60,6 +60,12 @@
 | TP Cloud 1 | Hyperviseurs | ESXi vs Proxmox VE, VM, snapshots, réseau, RBAC |
 | TP Cloud 2 | Datacenter | vCenter, Proxmox Datacenter, RBAC, firewall, backup |
 | Veeam | Sauvegarde | Veeam Backup & Replication, stratégies de sauvegarde |
+
+### Projet de Fin de Semestre
+
+| Projet | Description | Lien Original |
+|--------|-------------|---------------|
+| **CampusOps** | Plateforme de gestion universitaire complète (React, Node.js, Docker). Voir le dossier `Projet/` pour le code complet et le rapport détaillé. | [Hamza00-1/CampusOps-](https://github.com/Hamza00-1/CampusOps-) |
 
 ---
 
