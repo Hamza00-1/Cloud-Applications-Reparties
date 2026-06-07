@@ -1,0 +1,102 @@
+Projet de fin de semestre
+“CampusOps” Gestion académique + Automatisation OpenClaw
+Voici l’énoncé du projet complet basé sur tes points : OpenClaw + appli type Konosys (planning/absence/paiement) + intégrations WhatsApp/Telegram + intégration email sans navigateur.
+1) Contexte :
+Les établissements (écoles, centres de formation, universités) ont besoin d’un outil centralisé pour gérer : Le planning (cours, modules, salles, enseignants), les absences/retards, le suivi d’avancement pédagogique, et une partie paiement (inscriptions, mensualités, états).
+L’objectif de ce projet est de concevoir une application web *similaire à Konosys* (fonctionnellement), puis de la connecter à OpenClaw pour automatiser des actions et exposer des informations via (WhatsApp/Telegram) et via email (réception de notifications) sans utiliser de navigateur.
+2) Objectifs pédagogiques :
+À la fin du projet, l’étudiant doit être capable de :
+Concevoir une application web full-stack (front + back + DB).
+Modéliser une base de données (planning, utilisateurs, absences, paiements).
+Mettre en place une API sécurisée (JWT / sessions).
+Intégrer OpenClaw pour automatiser / orchestrer.
+Développer une interface “chat” via Telegram et/ou WhatsApp.
+Se connecter à une boîte mail (IMAP/SMTP) pour lire les notifications et mails récents sans UI navigateur.
+Gérer sécurité, logs, permissions, et conformité (données personnelles).
+3) Périmètre fonctionnel (MVP obligatoire)
+A. Gestion des utilisateurs et rôles
+Rôles minimum : Admin, Scolarité/Secrétariat, Enseignant, Étudiant
+Fonctions :
+CRUD utilisateurs
+Gestion des droits selon rôle
+Authentification (JWT recommandé) + reset mot de passe (email)
+B. Module Planning
+Fonctions :
+Créer/modifier/supprimer un planning (par semaine/jour)
+Associer : module, groupe, enseignant, salle, horaire
+* consultation : Planning du jour, Planning de la semaine, Planning par étudiant / groupe / enseignant
+C. Module Absences
+Fonctions :
+Marquer présence/absence/retard
+Justificatifs (optionnel)
+Statistiques (par étudiant, par groupe, par période)
+Export PDF/Excel (optionnel)
+D. Module Suivi d’avancement
+Fonctions :
+Suivi par module : chapitres/compétences/TP
+% d’avancement par groupe et par étudiant (au moins par groupe)
+Historique des mises à jour
+E. Module Paiement (simplifié)
+Fonctions :
+Plan de paiement (inscription + mensualités)
+État : payé / partiel / impayé
+Alertes de retard (générer notification)
+> Pas besoin d’intégrer une passerelle de paiement réelle. Le but est la gestion et le suivi.
+4) Intégration OpenClaw (obligatoire)
+OpenClaw sert d’orchestrateur : il déclenche des workflows et connecte les canaux (messagerie + email + API).
+Cas d’usage minimum (au moins 3)
+1. *Tous les matins* : envoyer le planning du jour aux enseignants et/ou groupes.
+2. Quand une absence est enregistrée : notifier l’étudiant et/ou parent (si présent dans le modèle).
+3. Quand un paiement devient en retard : notifier l’étudiant + générer une tâche de relance.
+Attendu : une architecture claire du flux OpenClaw → API → Notifications.
+5) Bot Telegram + WhatsApp (au moins Telegram obligatoire)
+A. Telegram Bot (obligatoire)
+Commandes minimum :
+`/today` : planning du jour
+`/week` : planning de la semaine
+`/absence` : absences récentes + total du mois
+`/progress` : avancement du/des modules en cours
+`/help`
+Contraintes : Authentifier l’utilisateur (liaison compte ↔ chat_id via code OTP ou lien unique)
+Respecter les permissions (étudiant ≠ admin)
+B. WhatsApp (optionnel si difficile)
+Intégration via fournisseur (ex : Cloud API) ou simulateur
+Mêmes commandes que Telegram (version minimaliste)
+6) Connexion à une boîte email sans navigateur (obligatoire)
+Objectif : lire les derniers mails/notifications depuis une boîte email et les injecter dans le système.
+Minimum requis :
+Lecture via *IMAP*, Envoi via *SMTP*, Extraction : expéditeur, sujet, date, aperçu
+Endpoints API :
+GET /mail/latest (10 derniers), POST /mail/send (envoi),  notifications : transformer certains mails en notification interne (ex: “absence justifiée”, “paiement reçu”, etc.)
+7) Exigences techniques (au choix)
+Les étudiants choisissent un stack, mais doivent respecter :
+Back-end :
+API REST (ou GraphQL si motivés), Auth (JWT + refresh recommandé)
+Validation des données, Logs + gestion d’erreurs
+Front-end:
+Dashboard web : Planning (agenda / liste), Absences, Paiements,  Avancement, Notifications
+Base de données :
+Schéma normalisé (ex : PostgreSQL/MySQL), Migrations, Seed/demo data
+Sécurité (obligatoire) :
+Hash des mots de passe (bcrypt/argon2)
+Rôles/permissions
+Protection basique injection + rate limiting
+RGPD-like : minimisation des données, export/suppression (optionnel)
+8) Livrables attendus
+1. Cahier des charges (2–5 pages)
+2. Diagramme UML / ERD (BD + principales classes)
+3. API documentation (Swagger/OpenAPI recommandé)
+4. Code source (Git + README)
+5. Démo (vidéo 5–10 min ou présentation)
+6. Jeu de données (fichier seed + comptes test)
+7. Rapport d’intégration OpenClaw :
+* workflows implémentés
+* déclencheurs
+* schéma d’architecture
+11) Bonus (facultatif)
+Export PDF du planning
+Tableau de bord statistiques (absences/paiements)
+Multi-établissement / multi-branch
+Notifications push (WebSocket)
+Mode offline / PWA
+OCR de justificatif absence (optionnel)

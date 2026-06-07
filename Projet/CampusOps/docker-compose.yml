@@ -1,0 +1,88 @@
+# ============================================
+# CampusOps — Docker Compose Global
+# ============================================
+# Permet de lancer le projet complet :
+# - Frontend : http://localhost:5173
+# - Backend API : http://localhost:3000
+# - DB PostgreSQL & Redis Cache
+# ============================================
+
+services:
+  # ---------- Frontend React (Nginx) ----------
+  frontend:
+    build:
+      context: ./CompusOS_Frontend
+      dockerfile: Dockerfile
+    container_name: campusops-frontend
+    ports:
+      - "5173:80"
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  # ---------- Backend API (Node.js) ----------
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: campusops-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./backend/.env
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      API_PREFIX: /api
+      DATABASE_URL: postgresql://campusops:campusops_secret@db:5432/campusops_db?schema=public
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGIN: http://localhost:5173,http://127.0.0.1:5173
+      LOG_LEVEL: debug
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ---------- PostgreSQL Database ----------
+  db:
+    image: postgres:16-alpine
+    container_name: campusops-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: campusops
+      POSTGRES_PASSWORD: campusops_secret
+      POSTGRES_DB: campusops_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U campusops -d campusops_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------- Redis Cache ----------
+  redis:
+    image: redis:7-alpine
+    container_name: campusops-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+  redisdata:

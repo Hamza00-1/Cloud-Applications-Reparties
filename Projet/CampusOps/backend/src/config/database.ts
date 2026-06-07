@@ -1,0 +1,26 @@
+import { PrismaClient } from '@prisma/client';
+import { env } from './env';
+
+// ============================================
+// Prisma Client Singleton
+// ============================================
+// In development, we store the client on globalThis
+// to prevent hot-reloading from creating multiple
+// database connections.
+// ============================================
+
+const globalForPrisma = globalThis as unknown as {
+    prisma: PrismaClient | undefined;
+};
+
+export const prisma =
+    globalForPrisma.prisma ??
+    new PrismaClient({
+        log: env.NODE_ENV === 'development' ? ['query', 'warn', 'error'] : ['error'],
+    });
+
+if (env.NODE_ENV !== 'production') {
+    globalForPrisma.prisma = prisma;
+}
+
+export default prisma;
